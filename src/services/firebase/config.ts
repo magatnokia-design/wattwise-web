@@ -3,8 +3,6 @@ import { getAuth, browserLocalPersistence, setPersistence } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 
-const env = import.meta.env;
-
 const firebaseConfig = {
   apiKey: "AIzaSyD0jBN6PpEPyWuw1On83_T9BIXWhhCoqMo",
   authDomain: "wattwise-fe394.firebaseapp.com",
