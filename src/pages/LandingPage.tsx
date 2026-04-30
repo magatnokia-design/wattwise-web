@@ -1,465 +1,622 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
 
-const outletSnapshots = [
+const outletCards = [
   {
     id: 'outlet1',
     label: 'Outlet 1',
     location: 'Kitchen',
-    status: 'On',
-    watts: 420,
-    voltage: 120,
-    current: 3.5,
-    todayKwh: 2.8,
+    status: 'Offline',
+    appliance: 'Not assigned',
   },
   {
     id: 'outlet2',
     label: 'Outlet 2',
     location: 'Living Room',
-    status: 'Standby',
-    watts: 95,
-    voltage: 120,
-    current: 0.8,
-    todayKwh: 0.9,
+    status: 'Offline',
+    appliance: 'Not assigned',
   },
-]
+];
+
+const featureHighlights = [
+  {
+    id: 'realtime',
+    title: 'Real-time telemetry',
+    description:
+      'Stream power, voltage, and current the moment your outlets update. Pin alert thresholds without leaving the dashboard.',
+    tags: ['Power', 'Voltage', 'Current'],
+  },
+  {
+    id: 'automation',
+    title: 'Smart schedules',
+    description:
+      'Set countdown timers or weekly schedules so devices power down automatically when usage spikes or time runs out.',
+    tags: ['Countdowns', 'Weeklies', 'Auto-off'],
+  },
+  {
+    id: 'exports',
+    title: 'Export-ready history',
+    description:
+      'Pull CSV, Excel, or PDF reports whenever you need receipts, audits, or a quick budget snapshot.',
+    tags: ['CSV', 'Excel', 'PDF'],
+  },
+  {
+    id: 'safety',
+    title: 'Power safety guardrails',
+    description:
+      'Define voltage and current limits so devices shut down safely when readings go out of range.',
+    tags: ['Auto-shutdown', 'Alerts', 'Protection'],
+  },
+];
+
+const roadmapSteps = [
+  {
+    title: 'Connect devices',
+    description: 'Pair two WattWise outlets to start streaming live telemetry.',
+  },
+  {
+    title: 'Monitor and label',
+    description: 'Name appliances and tag usage to clarify which loads cost the most.',
+  },
+  {
+    title: 'Optimize spend',
+    description: 'Set budgets, schedules, and alerts to prevent energy surprises.',
+  },
+  {
+    title: 'Export proof',
+    description: 'Download compliant reports for billing, audits, or reimbursements.',
+  },
+];
 
 const faqItems = [
   {
-    question: 'Does WattWise work without Wi-Fi?',
+    question: 'How many outlets are supported?',
     answer:
-      'Live monitoring requires Wi-Fi, but safety shutoffs and schedules keep running on the device.',
+      'The web dashboard supports two outlets (outlet1, outlet2) to match the WattWise hardware.',
   },
   {
-    question: 'How many outlets are supported right now?',
+    question: 'Is the dashboard mobile-friendly?',
     answer:
-      'The beta supports two outlets. Multi-room expansion is planned once the core dashboard is stable.',
+      'The web app is optimized for desktop and tablet. Mobile access is handled by the WattWise mobile app.',
   },
   {
-    question: 'Can I export my data?',
+    question: 'Can I control outlets remotely?',
     answer:
-      'Yes. You can export CSV, Excel, or PDF reports directly from the dashboard.',
+      'Yes. Outlet toggles run through secure Cloud Functions and mirror the WattWise mobile app behavior.',
   },
-]
+];
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
   maximumFractionDigits: 0,
-})
-
-const decimalFormatter = new Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 1,
-})
+});
 
 export default function LandingPage() {
-  const [activeOutletId, setActiveOutletId] = useState(outletSnapshots[0].id)
-  const [monthlyKwh, setMonthlyKwh] = useState(420)
-  const [savingsMode, setSavingsMode] = useState<'eco' | 'comfort'>('eco')
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0)
-  const [email, setEmail] = useState('')
-  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [activeOutletId, setActiveOutletId] = useState(outletCards[0].id);
+  const [usageTarget, setUsageTarget] = useState(320);
+  const [ratePerKwh, setRatePerKwh] = useState(0.15);
+  const [mode, setMode] = useState<'eco' | 'comfort'>('eco');
+  const [autoShutdown, setAutoShutdown] = useState(true);
+  const [activeFeatureId, setActiveFeatureId] = useState(featureHighlights[0].id);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [email, setEmail] = useState('');
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+  const [splashLeaving, setSplashLeaving] = useState(false);
 
-  const activeOutlet =
-    outletSnapshots.find((outlet) => outlet.id === activeOutletId) ?? outletSnapshots[0]
-  const loadPercent = Math.min(100, Math.round((activeOutlet.watts / 1200) * 100))
-  const ratePerKwh = 0.15
-  const savingsRate = savingsMode === 'eco' ? 0.18 : 0.12
-  const monthlyCost = monthlyKwh * ratePerKwh
-  const monthlySavings = monthlyCost * savingsRate
-  const annualSavings = monthlySavings * 12
+  useEffect(() => {
+    const leaveTimer = setTimeout(() => setSplashLeaving(true), 900);
+    const hideTimer = setTimeout(() => setShowSplash(false), 1500);
+
+    return () => {
+      clearTimeout(leaveTimer);
+      clearTimeout(hideTimer);
+    };
+  }, []);
+
+  const activeOutlet = outletCards.find((outlet) => outlet.id === activeOutletId) ?? outletCards[0];
+  const activeFeature =
+    featureHighlights.find((feature) => feature.id === activeFeatureId) ?? featureHighlights[0];
+  const loadPercent = Math.min(100, Math.round((usageTarget / 900) * 100));
+  const savingsRate = mode === 'eco' ? 0.18 : 0.12;
+  const monthlyCost = usageTarget * ratePerKwh;
+  const monthlySavings = monthlyCost * savingsRate;
+  const annualSavings = monthlySavings * 12;
+
+  const handleRateChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextValue = Number(event.target.value);
+    setRatePerKwh(Number.isFinite(nextValue) ? nextValue : 0);
+  };
 
   const handleNotifySubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+    event.preventDefault();
     if (!email.trim()) {
-      return
+      return;
     }
-    setIsSubmitted(true)
-  }
+    setIsSubmitted(true);
+  };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top,_#ecfdf3_0%,_#f8fafc_45%,_#ffffff_100%)] font-['Space_Grotesk'] text-gray-900">
+    <div className="relative min-h-screen overflow-hidden bg-[#f6faf8] font-['Manrope'] text-[color:var(--color-text)]">
+      {showSplash && (
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-primary)] text-white transition-all duration-700 ${
+            splashLeaving ? 'opacity-0 scale-105' : 'opacity-100'
+          }`}
+          aria-live="polite"
+        >
+          <div className="text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 text-2xl font-semibold">
+              W
+            </div>
+            <p className="mt-4 text-xs uppercase tracking-[0.4em] text-white/80">WattWise</p>
+            <div className="mt-6 flex items-center justify-center gap-2 text-xs text-white/80">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+              <span>Syncing device state</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
-        className="pointer-events-none absolute -top-20 right-0 h-72 w-72 rounded-full bg-green-200/40 blur-3xl"
+        className="pointer-events-none absolute -top-24 right-10 h-72 w-72 rounded-full bg-emerald-200/50 blur-3xl float-slow"
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none absolute bottom-0 left-0 h-72 w-72 rounded-full bg-emerald-100/50 blur-3xl"
+        className="pointer-events-none absolute bottom-10 left-10 h-80 w-80 rounded-full bg-emerald-100/60 blur-3xl float-fast"
         aria-hidden="true"
       />
 
-      {/* Header */}
-      <header className="bg-white/80 shadow-sm backdrop-blur">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-white font-bold text-xl">
+      <header className="sticky top-0 z-30 border-b border-white/60 bg-white/70 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--color-primary)] text-white">
               W
             </div>
-            <span className="text-2xl font-bold text-gray-900">WattWise</span>
+            <div>
+              <p className="text-lg font-semibold font-['Space_Grotesk']">WattWise</p>
+              <p className="text-xs text-[color:var(--color-text-light)]">Energy command desk</p>
+            </div>
           </div>
-          <a
-            href="/login"
-            className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-          >
-            Login
-          </a>
+          <nav className="hidden items-center gap-6 text-sm text-[color:var(--color-text-light)] md:flex">
+            <a href="#features" className="hover:text-[color:var(--color-primary)]">
+              Features
+            </a>
+            <a href="#preview" className="hover:text-[color:var(--color-primary)]">
+              Savings
+            </a>
+            <a href="#safety" className="hover:text-[color:var(--color-primary)]">
+              Safety
+            </a>
+            <a href="#faq" className="hover:text-[color:var(--color-primary)]">
+              FAQ
+            </a>
+          </nav>
+          <div className="flex items-center gap-3">
+            <a
+              href="/login"
+              className="rounded-full border border-[color:var(--color-border)] px-4 py-2 text-sm text-[color:var(--color-text)] transition hover:border-[color:var(--color-primary)]"
+            >
+              Log in
+            </a>
+            <a
+              href="/register"
+              className="rounded-full bg-[color:var(--color-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[color:var(--color-primary-dark)]"
+            >
+              Get started
+            </a>
+          </div>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="grid gap-12 md:grid-cols-[1.1fr_0.9fr] items-center">
-          <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-green-700 mb-4">
-              Smart energy for small spaces
+      <main>
+        <section className="mx-auto grid max-w-7xl gap-12 px-6 pb-16 pt-16 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="space-y-6">
+            <p className="text-xs uppercase tracking-[0.35em] text-[color:var(--color-primary-dark)]">
+              Desktop energy companion
             </p>
-            <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">
-              Monitor your energy.
-              <br />
-              Save money without guesswork.
+            <h1 className="text-4xl font-semibold leading-tight md:text-5xl font-['Space_Grotesk']">
+              See every watt in your space and act before the bill hits.
             </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl">
-              WattWise helps you track real-time energy consumption from smart outlets,
-              analyze usage patterns, set budgets, and control appliances remotely.
+            <p className="max-w-xl text-lg text-[color:var(--color-text-light)]">
+              WattWise Web gives you a live control center for two smart outlets. Track power draw,
+              schedule appliances, and export reports without touching your phone.
             </p>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-3">
               <a
                 href="/register"
-                className="px-8 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition"
+                className="rounded-full bg-[color:var(--color-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[color:var(--color-primary-dark)]"
               >
-                Get Started
+                Launch the dashboard
               </a>
               <a
                 href="#preview"
-                className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:border-green-500 hover:text-green-500 transition"
+                className="rounded-full border border-[color:var(--color-border)] px-6 py-3 text-sm font-semibold text-[color:var(--color-text)] transition hover:border-[color:var(--color-primary)]"
               >
-                Live Preview
+                Estimate savings
               </a>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-6 text-sm">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-text-light)]">
+                  Hardware
+                </p>
+                <p className="font-semibold">2 smart outlets</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-text-light)]">
+                  Backend
+                </p>
+                <p className="font-semibold">Firebase + Cloud Functions</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-text-light)]">
+                  Platform
+                </p>
+                <p className="font-semibold">Desktop + tablet</p>
+              </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-emerald-100 bg-white/90 p-6 shadow-xl backdrop-blur">
+          <div className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-xl backdrop-blur">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Live Outlet Snapshot</h2>
-              <span className="text-xs uppercase tracking-widest text-green-600">Demo</span>
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--color-text-light)]">
+                  Outlet preview
+                </p>
+                <h2 className="text-lg font-semibold">Control cockpit</h2>
+              </div>
+              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                Preview
+              </span>
             </div>
-            <div className="mt-4 flex gap-2">
-              {outletSnapshots.map((outlet) => (
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {outletCards.map((outlet) => (
                 <button
                   key={outlet.id}
                   type="button"
                   onClick={() => setActiveOutletId(outlet.id)}
                   aria-pressed={activeOutletId === outlet.id}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                     activeOutletId === outlet.id
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-green-50'
+                      ? 'bg-[color:var(--color-primary)] text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-emerald-50'
                   }`}
                 >
                   {outlet.label}
                 </button>
               ))}
             </div>
-            <div className="mt-6 grid grid-cols-2 gap-4">
-              <div className="rounded-lg bg-gray-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-gray-500">Power</p>
-                <p className="text-2xl font-semibold text-gray-900">{activeOutlet.watts}W</p>
-              </div>
-              <div className="rounded-lg bg-gray-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-gray-500">Voltage</p>
-                <p className="text-2xl font-semibold text-gray-900">{activeOutlet.voltage}V</p>
-              </div>
-              <div className="rounded-lg bg-gray-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-gray-500">Current</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {decimalFormatter.format(activeOutlet.current)}A
-                </p>
-              </div>
-              <div className="rounded-lg bg-gray-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-gray-500">Today</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {decimalFormatter.format(activeOutlet.todayKwh)}kWh
-                </p>
-              </div>
-            </div>
-            <div className="mt-6">
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Load</span>
-                <span>{loadPercent}%</span>
-              </div>
-              <div className="mt-2 h-2 rounded-full bg-gray-200">
-                <div
-                  className="h-2 rounded-full bg-green-500 transition-all"
-                  style={{ width: `${loadPercent}%` }}
-                />
-              </div>
-            </div>
-            <div className="mt-6 flex items-center justify-between text-sm">
-              <span className="text-gray-600">
-                {activeOutlet.location}
-              </span>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  activeOutlet.status === 'On'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                {activeOutlet.status}
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Savings Preview */}
-      <section id="preview" className="bg-white/80 py-16 backdrop-blur">
-        <div className="max-w-7xl mx-auto px-6 grid gap-10 md:grid-cols-2 items-center">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Estimate your savings in seconds
-            </h2>
-            <p className="text-gray-600 text-lg mb-6">
-              Slide to match your monthly usage and toggle between Eco and Comfort modes to
-              preview how WattWise optimizes your bill.
+            <div className="mt-6 grid gap-5 md:grid-cols-[140px_1fr]">
+              <div className="flex items-center justify-center">
+                <div
+                  className="relative flex h-32 w-32 items-center justify-center rounded-full p-3"
+                  style={{
+                    background: `conic-gradient(var(--color-primary) ${loadPercent}%, rgba(226, 232, 240, 0.7) ${loadPercent}% 100%)`,
+                  }}
+                >
+                  <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white text-center">
+                    <span className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-text-light)]">
+                      Load
+                    </span>
+                    <span className="text-2xl font-semibold">{loadPercent}%</span>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-xl bg-gray-50 px-3 py-2">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-text-light)]">
+                    Status
+                  </p>
+                  <p className="font-semibold">{activeOutlet.status}</p>
+                </div>
+                <div className="rounded-xl bg-gray-50 px-3 py-2">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-text-light)]">
+                    Location
+                  </p>
+                  <p className="font-semibold">{activeOutlet.location}</p>
+                </div>
+                <div className="rounded-xl bg-gray-50 px-3 py-2">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-text-light)]">
+                    Appliance
+                  </p>
+                  <p className="font-semibold">{activeOutlet.appliance}</p>
+                </div>
+                <div className="rounded-xl bg-gray-900 px-3 py-2 text-white">
+                  <p className="text-xs uppercase tracking-[0.2em] text-gray-300">Live power</p>
+                  <p className="font-semibold">0 W</p>
+                </div>
+              </div>
+            </div>
+            <p className="mt-4 text-xs text-[color:var(--color-text-light)]">
+              Connect your WattWise outlets to replace previews with live readings.
             </p>
-            <ul className="space-y-3 text-gray-600">
-              <li className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-green-500" />
-                Smart alerts keep loads balanced
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-green-500" />
-                Schedule heavy appliances off-peak
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-green-500" />
-                Spot idle devices instantly
-              </li>
-            </ul>
           </div>
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-lg">
+        </section>
+
+        <section id="features" className="bg-white/70 py-16 backdrop-blur">
+          <div className="mx-auto max-w-7xl px-6">
+            <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-[color:var(--color-text-light)]">
+                  Feature runway
+                </p>
+                <h2 className="mt-3 text-3xl font-semibold font-['Space_Grotesk']">
+                  Build a smarter energy rhythm
+                </h2>
+                <p className="mt-4 text-[color:var(--color-text-light)]">
+                  Hover or tap a feature to preview how WattWise orchestrates monitoring, automation,
+                  and reporting for your space.
+                </p>
+                <div className="mt-6 space-y-3">
+                  {featureHighlights.map((feature) => (
+                    <button
+                      key={feature.id}
+                      type="button"
+                      onClick={() => setActiveFeatureId(feature.id)}
+                      onFocus={() => setActiveFeatureId(feature.id)}
+                      className={`flex w-full items-start justify-between rounded-2xl border px-4 py-3 text-left transition ${
+                        activeFeatureId === feature.id
+                          ? 'border-[color:var(--color-primary)] bg-emerald-50/60'
+                          : 'border-transparent bg-white hover:border-[color:var(--color-border)]'
+                      }`}
+                    >
+                      <div>
+                        <p className="text-sm font-semibold">{feature.title}</p>
+                        <p className="text-xs text-[color:var(--color-text-light)]">
+                          {feature.description}
+                        </p>
+                      </div>
+                      <span className="text-xs text-[color:var(--color-primary-dark)]">View</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-3xl border border-white/70 bg-white/90 p-6 shadow-lg">
+                <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--color-text-light)]">
+                  Highlight
+                </p>
+                <h3 className="mt-3 text-2xl font-semibold font-['Space_Grotesk']">
+                  {activeFeature.title}
+                </h3>
+                <p className="mt-3 text-[color:var(--color-text-light)]">
+                  {activeFeature.description}
+                </p>
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                  {activeFeature.tags.map((tag) => (
+                    <div
+                      key={tag}
+                      className="rounded-2xl border border-[color:var(--color-border)] bg-white px-4 py-3 text-center text-sm font-semibold"
+                    >
+                      {tag}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 rounded-2xl bg-gray-900 px-5 py-4 text-white">
+                  <p className="text-xs uppercase tracking-[0.2em] text-gray-300">Status</p>
+                  <p className="mt-2 text-lg font-semibold">All systems ready for live data.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="preview" className="mx-auto grid max-w-7xl gap-10 px-6 py-16 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-lg">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Savings Simulator</h3>
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-[color:var(--color-text-light)]">
+                  Savings lab
+                </p>
+                <h2 className="text-2xl font-semibold font-['Space_Grotesk']">Plan your monthly bill</h2>
+              </div>
               <div className="flex gap-2">
-                {(['eco', 'comfort'] as const).map((mode) => (
+                {(['eco', 'comfort'] as const).map((option) => (
                   <button
-                    key={mode}
+                    key={option}
                     type="button"
-                    onClick={() => setSavingsMode(mode)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide transition ${
-                      savingsMode === mode
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-green-50'
+                    onClick={() => setMode(option)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] transition ${
+                      mode === option
+                        ? 'bg-[color:var(--color-primary)] text-white'
+                        : 'bg-gray-100 text-gray-500 hover:bg-emerald-50'
                     }`}
                   >
-                    {mode}
+                    {option}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="mt-6">
-              <label className="text-sm text-gray-600">Monthly usage</label>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-3xl font-semibold text-gray-900">{monthlyKwh}</span>
-                <span className="text-sm text-gray-500">kWh</span>
+
+            <div className="mt-6 space-y-4">
+              <div>
+                <label className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-text-light)]">
+                  Monthly usage target
+                </label>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="text-3xl font-semibold">{usageTarget}</span>
+                  <span className="text-xs text-[color:var(--color-text-light)]">kWh</span>
+                </div>
+                <input
+                  type="range"
+                  min={150}
+                  max={900}
+                  step={10}
+                  value={usageTarget}
+                  onChange={(event) => setUsageTarget(Number(event.target.value))}
+                  className="mt-3 w-full accent-emerald-500"
+                  aria-label="Monthly energy usage"
+                />
               </div>
-              <input
-                type="range"
-                min={150}
-                max={900}
-                step={10}
-                value={monthlyKwh}
-                onChange={(event) => setMonthlyKwh(Number(event.target.value))}
-                className="mt-4 w-full accent-green-500"
-                aria-label="Monthly energy usage"
+              <Input
+                label="Energy rate (per kWh)"
+                type="number"
+                min={0}
+                step={0.01}
+                value={ratePerKwh}
+                onChange={handleRateChange}
               />
             </div>
-            <div className="mt-6 grid grid-cols-3 gap-4 text-center">
-              <div className="rounded-lg bg-gray-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-gray-500">Bill</p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {currencyFormatter.format(monthlyCost)}
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl bg-gray-50 px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-text-light)]">
+                  Bill
                 </p>
+                <p className="text-lg font-semibold">{currencyFormatter.format(monthlyCost)}</p>
               </div>
-              <div className="rounded-lg bg-green-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-green-700">Monthly</p>
-                <p className="text-lg font-semibold text-green-700">
-                  {currencyFormatter.format(monthlySavings)}
-                </p>
+              <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-emerald-700">
+                <p className="text-xs uppercase tracking-[0.2em]">Monthly savings</p>
+                <p className="text-lg font-semibold">{currencyFormatter.format(monthlySavings)}</p>
               </div>
-              <div className="rounded-lg bg-gray-900 p-3">
-                <p className="text-xs uppercase tracking-wide text-gray-300">Annual</p>
-                <p className="text-lg font-semibold text-white">
-                  {currencyFormatter.format(annualSavings)}
-                </p>
+              <div className="rounded-2xl bg-gray-900 px-4 py-3 text-white">
+                <p className="text-xs uppercase tracking-[0.2em] text-gray-300">Annual</p>
+                <p className="text-lg font-semibold">{currencyFormatter.format(annualSavings)}</p>
               </div>
             </div>
-            <p className="mt-4 text-xs text-gray-500">
-              Based on an average rate of $0.15 per kWh. Demo numbers only.
+            <p className="mt-4 text-xs text-[color:var(--color-text-light)]">
+              Projections update based on your inputs. Replace with live data after device setup.
             </p>
           </div>
-        </div>
-      </section>
 
-      {/* Features */}
-      <section id="features" className="bg-white py-20">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">Key Features</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center rounded-2xl border border-gray-100 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Real-Time Monitoring</h3>
-              <p className="text-gray-600">Track power, voltage, and current from 2 smart outlets in real-time.</p>
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-white/80 bg-white/80 p-6 shadow-lg">
+              <p className="text-xs uppercase tracking-[0.35em] text-[color:var(--color-text-light)]">
+                Automation
+              </p>
+              <h3 className="mt-2 text-2xl font-semibold font-['Space_Grotesk']">
+                Set it and forget it
+              </h3>
+              <p className="mt-3 text-[color:var(--color-text-light)]">
+                WattWise can power down outlets automatically when limits are reached. Toggle the
+                guardrail to preview the behavior.
+              </p>
+              <button
+                type="button"
+                onClick={() => setAutoShutdown((current) => !current)}
+                className="mt-6 flex w-full items-center justify-between rounded-2xl border border-[color:var(--color-border)] bg-white px-4 py-3"
+              >
+                <div>
+                  <p className="text-sm font-semibold">Auto-shutdown</p>
+                  <p className="text-xs text-[color:var(--color-text-light)]">
+                    Safety limits are {autoShutdown ? 'armed' : 'paused'}
+                  </p>
+                </div>
+                <span
+                  className={`relative h-7 w-12 rounded-full transition ${
+                    autoShutdown ? 'bg-emerald-500' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${
+                      autoShutdown ? 'right-1' : 'left-1'
+                    }`}
+                  />
+                </span>
+              </button>
             </div>
-
-            <div className="text-center rounded-2xl border border-gray-100 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
+            <div id="safety" className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-lg">
+              <p className="text-xs uppercase tracking-[0.35em] text-[color:var(--color-text-light)]">
+                Safety flow
+              </p>
+              <h3 className="mt-2 text-2xl font-semibold font-['Space_Grotesk']">
+                Keep appliances within safe ranges
+              </h3>
+              <div className="mt-4 space-y-4">
+                {roadmapSteps.map((step, index) => (
+                  <div key={step.title} className="flex items-start gap-4">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">{step.title}</p>
+                      <p className="text-xs text-[color:var(--color-text-light)]">{step.description}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Usage Analytics</h3>
-              <p className="text-gray-600">Visualize daily, weekly, and monthly energy consumption trends.</p>
-            </div>
-
-            <div className="text-center rounded-2xl border border-gray-100 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Budget Management</h3>
-              <p className="text-gray-600">Set monthly budgets and get alerts when reaching thresholds.</p>
-            </div>
-
-            <div className="text-center rounded-2xl border border-gray-100 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Smart Scheduling</h3>
-              <p className="text-gray-600">Schedule outlet on/off times or set countdown timers.</p>
-            </div>
-
-            <div className="text-center rounded-2xl border border-gray-100 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Export Reports</h3>
-              <p className="text-gray-600">Download usage data in CSV, Excel, or PDF formats.</p>
-            </div>
-
-            <div className="text-center rounded-2xl border border-gray-100 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Power Safety</h3>
-              <p className="text-gray-600">Auto-shutdown on voltage/current spikes. Get instant alerts.</p>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* FAQ */}
-      <section className="py-16">
-        <div className="max-w-5xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-gray-900 text-center">Questions answered</h2>
-          <div className="mt-8 space-y-3">
-            {faqItems.map((item, index) => {
-              const isOpen = openFaqIndex === index
-              return (
-                <div key={item.question} className="rounded-2xl border border-gray-100 bg-white">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setOpenFaqIndex((current) => (current === index ? null : index))
-                    }
-                    aria-expanded={isOpen}
-                    aria-controls={`faq-panel-${index}`}
-                    className="w-full px-5 py-4 text-left flex items-center justify-between"
-                  >
-                    <span className="font-semibold text-gray-900">{item.question}</span>
-                    <span
-                      className={`text-xl font-bold transition ${
-                        isOpen ? 'text-green-600' : 'text-gray-400'
+        <section id="faq" className="bg-white/80 py-16 backdrop-blur">
+          <div className="mx-auto max-w-5xl px-6">
+            <h2 className="text-center text-3xl font-semibold font-['Space_Grotesk']">
+              Questions, answered
+            </h2>
+            <div className="mt-8 space-y-3">
+              {faqItems.map((item, index) => {
+                const isOpen = openFaqIndex === index;
+                return (
+                  <div key={item.question} className="rounded-2xl border border-[color:var(--color-border)] bg-white">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenFaqIndex((current) => (current === index ? null : index))
+                      }
+                      aria-expanded={isOpen}
+                      aria-controls={`faq-panel-${index}`}
+                      className="flex w-full items-center justify-between px-5 py-4 text-left"
+                    >
+                      <span className="font-semibold">{item.question}</span>
+                      <span
+                        className={`text-xl font-semibold transition ${
+                          isOpen ? 'text-emerald-600' : 'text-gray-400'
+                        }`}
+                      >
+                        {isOpen ? '-' : '+'}
+                      </span>
+                    </button>
+                    <div
+                      id={`faq-panel-${index}`}
+                      className={`px-5 pb-4 text-sm text-[color:var(--color-text-light)] ${
+                        isOpen ? 'block' : 'hidden'
                       }`}
                     >
-                      {isOpen ? '-' : '+'}
-                    </span>
-                  </button>
-                  <div
-                    id={`faq-panel-${index}`}
-                    className={`px-5 pb-4 text-gray-600 transition-all ${
-                      isOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'
-                    } overflow-hidden`}
-                  >
-                    {item.answer}
+                      {item.answer}
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Status Banner */}
-      <section className="bg-green-50 py-12">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <div className="inline-block px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold mb-4">
-            🚧 Beta Testing
+        <section className="mx-auto max-w-5xl px-6 py-16">
+          <div className="rounded-3xl border border-white/70 bg-gray-900 p-8 text-white shadow-xl">
+            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <div>
+                <p className="text-xs uppercase tracking-[0.4em] text-gray-300">Launch alert</p>
+                <h2 className="mt-3 text-3xl font-semibold font-['Space_Grotesk']">
+                  Be the first to run the WattWise desktop dashboard
+                </h2>
+                <p className="mt-3 text-sm text-gray-300">
+                  Leave your email to get notified when the production dashboard opens.
+                </p>
+              </div>
+              <form className="space-y-3" onSubmit={handleNotifySubmit}>
+                <Input
+                  label="Work email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+                <Button type="submit" variant="primary" isLoading={false}>
+                  {isSubmitted ? 'Added to the list' : 'Notify me'}
+                </Button>
+                {isSubmitted && (
+                  <p className="text-xs text-emerald-200">You are on the list. Watch your inbox.</p>
+                )}
+              </form>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            WattWise Web is currently in development
-          </h2>
-          <p className="text-gray-600 mb-6">
-            This is a coded version for early testing. Features are being actively developed.
-            Works best on desktop and tablet devices.
-          </p>
-          <form
-            onSubmit={handleNotifySubmit}
-            className="mx-auto flex flex-col sm:flex-row gap-3 justify-center max-w-xl"
-          >
-            <input
-              type="email"
-              placeholder="you@email.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="flex-1 rounded-lg border border-gray-200 bg-white px-4 py-2 text-gray-700 focus:border-green-500 focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="px-6 py-2 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition"
-            >
-              {isSubmitted ? 'Joined' : 'Notify Me'}
-            </button>
-          </form>
-          <p className="text-sm text-gray-500 mt-3">
-            {isSubmitted
-              ? 'Thanks for joining. We will share early updates.'
-              : 'No spam. We only email major milestones.'}
-          </p>
-          <p className="text-sm text-gray-500 mt-4">
-            Supports only 2 outlets (outlet1, outlet2) • Low-voltage appliances only
-          </p>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-gray-400">© 2024 WattWise. All rights reserved.</p>
-          <p className="text-sm text-gray-500 mt-2">Powered by Firebase • ESP32 • React</p>
-        </div>
-      </footer>
+        </section>
+      </main>
     </div>
-  )
+  );
 }
