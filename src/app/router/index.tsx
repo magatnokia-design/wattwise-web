@@ -22,6 +22,7 @@ const SettingsPage = lazy(() => import('../../features/settings/pages/SettingsPa
 const NotificationsPage = lazy(() => import('../../features/notifications/pages/NotificationsPage.tsx'));
 const PowerSafetyPage = lazy(() => import('../../features/power-safety/pages/PowerSafetyPage.tsx'));
 const ReferenceComparisonPage = lazy(() => import('../../features/reference-comparison/pages/ReferenceComparisonPage.tsx'));
+const LandingPage = lazy(() => import('../../pages/LandingPage.tsx'));
 
 const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<Loading fullScreen />}>
@@ -30,10 +31,10 @@ const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const router = createBrowserRouter([
-  // Root redirect
+  // Landing page
   {
     path: '/',
-    element: <Navigate to="/dashboard" replace />,
+    element: <SuspenseWrapper><LandingPage /></SuspenseWrapper>,
   },
 
   // Auth routes (redirect to dashboard if logged in)
@@ -115,6 +116,6 @@ export const router = createBrowserRouter([
   // Catch all
   {
     path: '*',
-    element: <Navigate to="/dashboard" replace />,
+    element: <Navigate to="/" replace />,
   },
 ]);
