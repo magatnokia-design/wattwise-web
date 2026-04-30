@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 
@@ -100,11 +100,14 @@ export default function LandingPage() {
   const [mode, setMode] = useState<'eco' | 'comfort'>('eco');
   const [autoShutdown, setAutoShutdown] = useState(true);
   const [activeFeatureId, setActiveFeatureId] = useState(featureHighlights[0].id);
+  const [featureAutoRotate, setFeatureAutoRotate] = useState(true);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [splashLeaving, setSplashLeaving] = useState(false);
+  const [showPairingSteps, setShowPairingSteps] = useState(false);
+  const featurePauseTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const leaveTimer = setTimeout(() => setSplashLeaving(true), 900);
@@ -116,6 +119,30 @@ export default function LandingPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!featureAutoRotate) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setActiveFeatureId((current) => {
+        const currentIndex = featureHighlights.findIndex((feature) => feature.id === current);
+        const nextIndex = (currentIndex + 1) % featureHighlights.length;
+        return featureHighlights[nextIndex].id;
+      });
+    }, 7000);
+
+    return () => window.clearInterval(interval);
+  }, [featureAutoRotate]);
+
+  useEffect(() => {
+    return () => {
+      if (featurePauseTimeoutRef.current !== null) {
+        window.clearTimeout(featurePauseTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const activeOutlet = outletCards.find((outlet) => outlet.id === activeOutletId) ?? outletCards[0];
   const activeFeature =
     featureHighlights.find((feature) => feature.id === activeFeatureId) ?? featureHighlights[0];
@@ -124,6 +151,7 @@ export default function LandingPage() {
   const monthlyCost = usageTarget * ratePerKwh;
   const monthlySavings = monthlyCost * savingsRate;
   const annualSavings = monthlySavings * 12;
+  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
 
   const handleRateChange = (event: ChangeEvent<HTMLInputElement>) => {
     const nextValue = Number(event.target.value);
@@ -136,6 +164,21 @@ export default function LandingPage() {
       return;
     }
     setIsSubmitted(true);
+  };
+
+  const pauseFeatureRotation = () => {
+    if (featurePauseTimeoutRef.current !== null) {
+      window.clearTimeout(featurePauseTimeoutRef.current);
+    }
+    setFeatureAutoRotate(false);
+    featurePauseTimeoutRef.current = window.setTimeout(() => {
+      setFeatureAutoRotate(true);
+    }, 12000);
+  };
+
+  const handleFeatureSelect = (featureId: string) => {
+    pauseFeatureRotation();
+    setActiveFeatureId(featureId);
   };
 
   return (
@@ -238,6 +281,16 @@ export default function LandingPage() {
                 Estimate savings
               </a>
             </div>
+            {isAndroid && (
+              <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-[color:var(--color-border)] bg-white/80 px-4 py-3 text-sm">
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                  Android only
+                </span>
+                <Button type="button" variant="secondary" size="sm" disabled className="w-full sm:w-auto">
+                  Download Android app (coming soon)
+                </Button>
+              </div>
+            )}
             <div className="mt-6 flex flex-wrap gap-6 text-sm">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-text-light)]">
@@ -332,6 +385,26 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPairingSteps((current) => !current)}
+                aria-expanded={showPairingSteps}
+                className="text-xs font-semibold text-emerald-700 transition hover:text-emerald-800"
+              >
+                {showPairingSteps ? 'Hide pairing steps' : 'View pairing steps'}
+              </button>
+              <span className="text-xs text-[color:var(--color-text-light)]">Status: Offline</span>
+            </div>
+            {showPairingSteps && (
+              <div className="mt-4 rounded-2xl border border-[color:var(--color-border)] bg-white px-4 py-3 text-xs text-[color:var(--color-text-light)]">
+                <ol className="space-y-2">
+                  <li>1. Power the outlet and confirm the LED is blinking.</li>
+                  <li>2. Open the WattWise mobile app to pair the device.</li>
+                  <li>3. Name each outlet to unlock live telemetry here.</li>
+                </ol>
+              </div>
+            )}
             <p className="mt-4 text-xs text-[color:var(--color-text-light)]">
               Connect your WattWise outlets to replace previews with live readings.
             </p>
@@ -357,8 +430,9 @@ export default function LandingPage() {
                     <button
                       key={feature.id}
                       type="button"
-                      onClick={() => setActiveFeatureId(feature.id)}
-                      onFocus={() => setActiveFeatureId(feature.id)}
+                      onClick={() => handleFeatureSelect(feature.id)}
+                      onFocus={() => handleFeatureSelect(feature.id)}
+                      onMouseEnter={() => handleFeatureSelect(feature.id)}
                       className={`flex w-full items-start justify-between rounded-2xl border px-4 py-3 text-left transition ${
                         activeFeatureId === feature.id
                           ? 'border-[color:var(--color-primary)] bg-emerald-50/60'
