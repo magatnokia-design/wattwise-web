@@ -83,6 +83,17 @@ body {
   }
 }
 
+@keyframes phone-screen-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
 .float-slow {
   animation: float-slow 14s ease-in-out infinite;
 }
@@ -91,9 +102,17 @@ body {
   animation: float-fast 9s ease-in-out infinite;
 }
 
+.phone-screen-in {
+  animation: phone-screen-in 320ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .float-slow,
   .float-fast {
+    animation: none;
+  }
+
+  .phone-screen-in {
     animation: none;
   }
 }
