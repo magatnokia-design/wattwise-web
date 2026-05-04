@@ -50,6 +50,53 @@ const featureHighlights = [
   },
 ];
 
+const trustTags = [
+  'Campus facilities',
+  'Co-working ops',
+  'Apartment managers',
+  'Retail pilots',
+  'Energy auditors',
+];
+
+const trustStack = ['Firebase Auth', 'Cloud Functions', 'Firestore', 'Vercel'];
+
+const testimonials = [
+  {
+    quote: 'Peak alerts helped us stagger loads before demand spikes hit.',
+    name: 'R. Santos',
+    role: 'Facilities lead',
+  },
+  {
+    quote: 'The outlet labels and history view made audits painless.',
+    name: 'J. Navarro',
+    role: 'Ops manager',
+  },
+  {
+    quote: 'Schedules keep our shared spaces quiet overnight without manual checks.',
+    name: 'K. Lim',
+    role: 'Property supervisor',
+  },
+];
+
+const howItWorksSteps = [
+  {
+    title: 'Pair outlets',
+    description: 'Connect two WattWise outlets with the mobile app in minutes.',
+  },
+  {
+    title: 'Label devices',
+    description: 'Name appliances and rooms to keep telemetry organized.',
+  },
+  {
+    title: 'Automate rules',
+    description: 'Set schedules, budgets, and safety guardrails.',
+  },
+  {
+    title: 'Export proof',
+    description: 'Download history and cost reports for audits.',
+  },
+];
+
 const phoneFeatureHighlights = [
   {
     title: 'Live household snapshot',
@@ -435,9 +482,9 @@ const faqItems = [
   },
 ];
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
+const currencyFormatter = new Intl.NumberFormat('en-PH', {
   style: 'currency',
-  currency: 'USD',
+  currency: 'PHP',
   maximumFractionDigits: 0,
 });
 
@@ -455,19 +502,35 @@ export default function LandingPage() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(false);
   const [splashLeaving, setSplashLeaving] = useState(false);
   const [showPairingSteps, setShowPairingSteps] = useState(false);
   const featurePauseTimeoutRef = useRef<number | null>(null);
   const phonePauseTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const leaveTimer = setTimeout(() => setSplashLeaving(true), 900);
-    const hideTimer = setTimeout(() => setShowSplash(false), 1500);
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const shouldShowSplash = window.innerWidth >= 1024 && !prefersReducedMotion;
+
+    if (!shouldShowSplash) {
+      return;
+    }
+
+    const showTimer = window.setTimeout(() => setShowSplash(true), 120);
+    const leaveTimer = window.setTimeout(() => setSplashLeaving(true), 700);
+    const hideTimer = window.setTimeout(() => {
+      setShowSplash(false);
+      setSplashLeaving(false);
+    }, 1100);
 
     return () => {
-      clearTimeout(leaveTimer);
-      clearTimeout(hideTimer);
+      window.clearTimeout(showTimer);
+      window.clearTimeout(leaveTimer);
+      window.clearTimeout(hideTimer);
     };
   }, []);
 
@@ -616,6 +679,9 @@ export default function LandingPage() {
             <a href="#features" className="hover:text-[color:var(--color-primary)]">
               Features
             </a>
+            <a href="#how-it-works" className="hover:text-[color:var(--color-primary)]">
+              How it works
+            </a>
             <a href="#preview" className="hover:text-[color:var(--color-primary)]">
               Savings
             </a>
@@ -643,7 +709,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main>
+      <main className="pb-24 md:pb-0">
         <section className="mx-auto grid max-w-7xl gap-12 px-6 pb-16 pt-16 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="space-y-6">
             <p className="text-xs uppercase tracking-[0.35em] text-[color:var(--color-primary-dark)]">
@@ -652,6 +718,9 @@ export default function LandingPage() {
             <h1 className="text-4xl font-semibold leading-tight md:text-5xl font-['Space_Grotesk']">
               See every watt in your space and act before the bill hits.
             </h1>
+            <p className="text-sm font-semibold text-[color:var(--color-primary-dark)]">
+              Built for apartment managers, co-working teams, and energy-aware households.
+            </p>
             <p className="max-w-xl text-lg text-[color:var(--color-text-light)]">
               WattWise Web gives you a live control center for two smart outlets. Track power draw,
               schedule appliances, and export reports without touching your phone.
@@ -702,7 +771,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-xl backdrop-blur">
+          <div className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-lg backdrop-blur sm:shadow-xl">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--color-text-light)]">
@@ -797,6 +866,104 @@ export default function LandingPage() {
             <p className="mt-4 text-xs text-[color:var(--color-text-light)]">
               Connect your WattWise outlets to replace previews with live readings.
             </p>
+          </div>
+        </section>
+
+        <section id="trust" className="py-12">
+          <div className="mx-auto max-w-7xl px-6">
+            <div className="grid gap-8 rounded-3xl border border-white/70 bg-white/80 p-8 shadow-lg sm:grid-cols-[1.1fr_0.9fr]">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-[color:var(--color-text-light)]">
+                  Early access teams
+                </p>
+                <h2 className="mt-3 text-2xl font-semibold font-['Space_Grotesk']">
+                  Trusted by energy-focused operators.
+                </h2>
+                <p className="mt-3 text-[color:var(--color-text-light)]">
+                  Teams use WattWise to keep shared spaces efficient, safe, and accountable.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {trustTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full border border-[color:var(--color-border)] bg-white px-3 py-1 text-xs font-semibold text-[color:var(--color-text)]"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--color-text-light)]">
+                    Platform stack
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {trustStack.map((stack) => (
+                      <span
+                        key={stack}
+                        className="rounded-full border border-[color:var(--color-border)] bg-white px-3 py-1 text-xs font-semibold text-[color:var(--color-text)]"
+                      >
+                        {stack}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="grid gap-3">
+                {testimonials.map((testimonial) => (
+                  <div
+                    key={testimonial.name}
+                    className="rounded-2xl border border-[color:var(--color-border)] bg-white px-4 py-4"
+                  >
+                    <p className="text-sm text-[color:var(--color-text)]">"{testimonial.quote}"</p>
+                    <p className="mt-3 text-xs font-semibold text-[color:var(--color-text)]">
+                      {testimonial.name}
+                    </p>
+                    <p className="text-xs text-[color:var(--color-text-light)]">
+                      {testimonial.role}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="how-it-works" className="py-16">
+          <div className="mx-auto max-w-7xl px-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-[color:var(--color-text-light)]">
+                  How it works
+                </p>
+                <h2 className="mt-3 text-3xl font-semibold font-['Space_Grotesk']">
+                  Four steps to a calmer power bill.
+                </h2>
+              </div>
+              <a
+                href="/register"
+                className="rounded-full border border-[color:var(--color-border)] px-4 py-2 text-sm font-semibold text-[color:var(--color-text)] transition hover:border-[color:var(--color-primary)]"
+              >
+                Start in minutes
+              </a>
+            </div>
+            <div className="mt-6 grid gap-4 md:grid-cols-4">
+              {howItWorksSteps.map((step, index) => (
+                <div
+                  key={step.title}
+                  className="rounded-2xl border border-white/70 bg-white/80 px-4 py-4 shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700">
+                      {index + 1}
+                    </span>
+                    <p className="text-sm font-semibold">{step.title}</p>
+                  </div>
+                  <p className="mt-3 text-xs text-[color:var(--color-text-light)]">
+                    {step.description}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -923,7 +1090,7 @@ export default function LandingPage() {
                     </span>
                   </div>
                   <div
-                    className="rounded-[2.75rem] border border-emerald-100/80 bg-white/90 p-4 shadow-2xl"
+                    className="rounded-[2.75rem] border border-emerald-100/80 bg-white/90 p-4 shadow-xl sm:shadow-2xl"
                     onMouseEnter={pausePhoneRotation}
                     onFocusCapture={pausePhoneRotation}
                     onTouchStart={pausePhoneRotation}
@@ -1787,8 +1954,42 @@ export default function LandingPage() {
                     {activePhoneScreen.description}
                   </p>
                   <p className="mt-2 text-[10px] text-[color:var(--color-text-light)]">
-                    Swipe or tap to preview.
+                    Tap or hover to preview.
                   </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-12">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="rounded-3xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 p-8 text-white shadow-lg sm:shadow-xl">
+              <div className="grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.4em] text-white/70">
+                    Ready to launch
+                  </p>
+                  <h2 className="mt-3 text-3xl font-semibold font-['Space_Grotesk']">
+                    Bring live energy control to your desktop today.
+                  </h2>
+                  <p className="mt-3 text-sm text-white/80">
+                    Start monitoring two smart outlets with real-time alerts and export-ready reports.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 md:justify-end">
+                  <a
+                    href="/register"
+                    className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                  >
+                    Get started
+                  </a>
+                  <a
+                    href="#phone"
+                    className="rounded-full border border-white/40 px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white"
+                  >
+                    See mobile preview
+                  </a>
                 </div>
               </div>
             </div>
@@ -1977,7 +2178,7 @@ export default function LandingPage() {
         </section>
 
         <section className="mx-auto max-w-5xl px-6 py-16">
-          <div className="rounded-3xl border border-white/70 bg-gray-900 p-8 text-white shadow-xl">
+          <div className="rounded-3xl border border-white/70 bg-gray-900 p-8 text-white shadow-lg sm:shadow-xl">
             <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <div>
                 <p className="text-xs uppercase tracking-[0.4em] text-gray-300">Launch alert</p>
@@ -2007,6 +2208,21 @@ export default function LandingPage() {
           </div>
         </section>
       </main>
+
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/70 bg-white/90 backdrop-blur md:hidden">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3">
+          <div>
+            <p className="text-xs text-[color:var(--color-text-light)]">Live energy control</p>
+            <p className="text-sm font-semibold text-[color:var(--color-text)]">Start with WattWise</p>
+          </div>
+          <a
+            href="/register"
+            className="rounded-full bg-[color:var(--color-primary)] px-4 py-2 text-xs font-semibold text-white"
+          >
+            Get started
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
