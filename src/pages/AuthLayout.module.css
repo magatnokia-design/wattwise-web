@@ -78,29 +78,20 @@
 }
 
 /* Right-hand panel */
+/* Sized to fit one viewport without scrolling. The three sections inside all
+   scale on viewport height (the showcase stage, the column gaps, the title),
+   so the panel compresses rather than overflowing. `overflow-y: auto` stays
+   only as a last resort for extremely short windows — at normal desktop and
+   laptop heights it never engages. */
 .aside {
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: var(--ww-space-6) var(--ww-space-5);
+  padding: clamp(20px, 3.5vh, 40px) var(--ww-space-5);
   background: linear-gradient(160deg, #f0fdf9 0%, #d1fae5 55%, #a7f3d0 100%);
   border-left: 1px solid var(--ww-border);
-  overflow: hidden;
-}
-
-/* The panel now holds a showcase, the outlet diagram and three feature rows.
-   On a short viewport that overflows, so let it scroll rather than clip. */
-@media (max-height: 860px) {
-  .aside {
-    overflow-y: auto;
-    justify-content: flex-start;
-  }
-
-  .asideInner {
-    margin: 0 auto;
-    padding: var(--ww-space-4) 0;
-  }
+  overflow: hidden auto;
 }
 
 /* Slow drifting wash, so the panel is not a flat block of green. */
@@ -128,11 +119,11 @@
   position: relative;
   margin: auto;
   width: 100%;
-  max-width: 440px;
+  max-width: 420px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--ww-space-5);
+  gap: clamp(12px, 2.2vh, 20px);
 }
 
 .asideHead {
@@ -149,8 +140,8 @@
 }
 
 .asideTitle {
-  margin-top: 8px;
-  font-size: 24px;
+  margin-top: 6px;
+  font-size: clamp(19px, 2.1vw, 22px);
   line-height: 1.25;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -163,15 +154,15 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--ww-space-2);
+  gap: 6px;
   width: 100%;
 }
 
 .feature {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: 10px;
+  padding: 8px 12px;
   border-radius: var(--ww-radius-sm);
   border: 1px solid transparent;
   background: rgba(255, 255, 255, 0.55);
@@ -193,15 +184,15 @@
 }
 
 .featureTitle {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
+  line-height: 1.35;
   color: #064e3b;
 }
 
 .featureBody {
-  margin-top: 2px;
-  font-size: 12.5px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.4;
   color: #047857;
 }
 

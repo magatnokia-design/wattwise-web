@@ -2,21 +2,23 @@ import AppShowcase from '../components/auth/AppShowcase';
 import PowerPreview from '../components/auth/PowerPreview';
 import styles from './AuthLayout.module.css';
 
+// Bodies are kept to one line at this column width on purpose — three
+// two-line rows was most of what pushed the panel past a single viewport.
 const FEATURES = [
   {
     icon: '🔌',
     title: 'Both outlets, side by side',
-    body: 'Live wattage for each, above the fold — no scrolling between them.',
+    body: 'Live wattage for each, above the fold.',
   },
   {
     icon: '⚡',
     title: 'Switch a real relay',
-    body: 'Toggle here and the hardware follows; your phone reflects it in a second.',
+    body: 'Toggle here; the hardware follows.',
   },
   {
     icon: '🧾',
     title: 'PELCO III, itemised',
-    body: 'Every block of the tariff, so the total is explainable rather than asserted.',
+    body: 'Every block of the tariff, explained.',
   },
 ];
 

@@ -4,28 +4,20 @@ import styles from './PowerPreview.module.css';
 /**
  * Interactive illustration for the sign-in page.
  *
+ * Laid out horizontally — hub above, two outlets side by side — so it costs
+ * about 100px of height instead of the 240px the earlier vertical version took.
+ * The sign-in panel has to fit one viewport without scrolling.
+ *
  * Deliberately abstract: no wattage, no kWh, no peso figures. The app's rule is
- * that no number is ever invented, so this shows the *shape* of the product —
- * a hub feeding two outlets, and the toggle that is the whole interaction —
- * without pretending to be a reading. Real figures appear after sign-in or not
- * at all.
+ * that no number is ever invented, so this shows the *shape* of the product and
+ * the toggle that is the whole interaction, without pretending to be a reading.
  */
 const OUTLETS = [
-  {
-    id: 1,
-    label: 'Outlet 1',
-    cx: 72,
-    cy: 170,
-    wire: 'M160 62 C 160 120, 72 112, 72 144',
-  },
-  {
-    id: 2,
-    label: 'Outlet 2',
-    cx: 248,
-    cy: 170,
-    wire: 'M160 62 C 160 120, 248 112, 248 144',
-  },
+  { id: 1, label: 'Outlet 1', cx: 100, wire: 'M150 36 C 150 44, 100 38, 100 45' },
+  { id: 2, label: 'Outlet 2', cx: 200, wire: 'M150 36 C 150 44, 200 38, 200 45' },
 ];
+
+const NODE_CY = 68;
 
 export const PowerPreview = () => {
   const [live, setLive] = useState({ 1: true, 2: false });
@@ -44,7 +36,7 @@ export const PowerPreview = () => {
   return (
     <figure className={styles.figure}>
       <svg
-        viewBox="0 0 320 232"
+        viewBox="0 0 300 124"
         className={styles.svg}
         role="group"
         aria-label="Interactive diagram of a hub feeding two outlets"
@@ -56,13 +48,9 @@ export const PowerPreview = () => {
           </linearGradient>
         </defs>
 
-        {/* Hub */}
         <g className={`${styles.hub} ${anyLive ? styles.hubLive : ''}`}>
-          <rect x="126" y="14" width="68" height="48" rx="14" className={styles.hubBody} />
-          <path
-            d="M163 28 L153 44 h7 l-3 12 l10 -16 h-7 z"
-            className={styles.hubBolt}
-          />
+          <rect x="126" y="4" width="48" height="32" rx="10" className={styles.hubBody} />
+          <path d="M152 12 L144 24 h5 l-2 9 l8 -13 h-5 z" className={styles.hubBolt} />
         </g>
 
         {OUTLETS.map((outlet) => {
@@ -88,51 +76,46 @@ export const PowerPreview = () => {
               >
                 <circle
                   cx={outlet.cx}
-                  cy={outlet.cy}
-                  r="30"
+                  cy={NODE_CY}
+                  r="26"
                   className={`${styles.halo} ${isLive ? styles.haloOn : ''}`}
                 />
                 <circle
                   cx={outlet.cx}
-                  cy={outlet.cy}
-                  r="26"
+                  cy={NODE_CY}
+                  r="22"
                   className={`${styles.socket} ${isLive ? styles.socketOn : ''}`}
                 />
                 <rect
-                  x={outlet.cx - 9}
-                  y={outlet.cy - 9}
-                  width="5"
-                  height="13"
-                  rx="2.5"
+                  x={outlet.cx - 8}
+                  y={NODE_CY - 8}
+                  width="4.5"
+                  height="11"
+                  rx="2.25"
                   className={`${styles.prong} ${isLive ? styles.prongOn : ''}`}
                 />
                 <rect
-                  x={outlet.cx + 4}
-                  y={outlet.cy - 9}
-                  width="5"
-                  height="13"
-                  rx="2.5"
+                  x={outlet.cx + 3.5}
+                  y={NODE_CY - 8}
+                  width="4.5"
+                  height="11"
+                  rx="2.25"
                   className={`${styles.prong} ${isLive ? styles.prongOn : ''}`}
                 />
                 <circle
                   cx={outlet.cx}
-                  cy={outlet.cy + 11}
-                  r="2.5"
+                  cy={NODE_CY + 9}
+                  r="2.2"
                   className={`${styles.prong} ${isLive ? styles.prongOn : ''}`}
                 />
               </g>
 
-              <text
-                x={outlet.cx}
-                y={outlet.cy + 50}
-                textAnchor="middle"
-                className={styles.nodeLabel}
-              >
+              <text x={outlet.cx} y="106" textAnchor="middle" className={styles.nodeLabel}>
                 {outlet.label}
               </text>
               <text
                 x={outlet.cx}
-                y={outlet.cy + 66}
+                y="119"
                 textAnchor="middle"
                 className={`${styles.nodeState} ${isLive ? styles.nodeStateOn : ''}`}
               >
