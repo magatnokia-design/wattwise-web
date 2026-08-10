@@ -1,55 +1,39 @@
-/* Deliberately louder than the rest of the form furniture: for a visitor
-   without an account this is the only thing they can usefully do. */
+/* Compact by design: loud enough to be the obvious next step for a visitor
+   without an account, small enough not to outweigh the sign-in form above it. */
 .card {
-  padding: 16px;
-  border-radius: var(--ww-radius);
+  position: relative;
+  padding: 12px 14px;
+  border-radius: var(--ww-radius-sm);
   border: 1px solid #a7f3d0;
   background: linear-gradient(150deg, #f0fdf9, #ecfdf5);
-  position: relative;
   overflow: hidden;
 }
 
 .card::after {
   content: '';
   position: absolute;
-  top: -40px;
-  right: -40px;
-  width: 120px;
-  height: 120px;
+  top: -30px;
+  right: -30px;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(16, 185, 129, 0.16), transparent);
+  background: radial-gradient(closest-side, rgba(16, 185, 129, 0.14), transparent);
   pointer-events: none;
 }
 
-.head {
+.lead {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #065f46;
 }
 
 .icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--ww-radius-sm);
-  background: var(--ww-white);
-  border: 1px solid #a7f3d0;
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.title {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #064e3b;
-}
-
-.body {
-  margin-top: 1px;
-  font-size: 12.5px;
-  color: #047857;
+  font-size: 13px;
+  line-height: 1;
 }
 
 .button {
@@ -57,22 +41,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 7px;
   width: 100%;
-  height: 42px;
-  border-radius: var(--ww-radius-sm);
+  height: 36px;
+  border-radius: 7px;
   background: var(--ww-primary-dark);
   color: var(--ww-white);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   text-decoration: none;
-  box-shadow: 0 2px 6px rgba(4, 120, 87, 0.3);
+  box-shadow: 0 1px 3px rgba(4, 120, 87, 0.28);
   transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .button:hover {
   background: #036249;
-  box-shadow: 0 6px 18px rgba(4, 120, 87, 0.35);
+  box-shadow: 0 5px 14px rgba(4, 120, 87, 0.32);
   transform: translateY(-1px);
 }
 
@@ -81,13 +65,13 @@
 }
 
 .buttonIcon {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .note {
-  margin-top: 8px;
-  font-size: 11.5px;
-  line-height: 1.45;
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.4;
   color: #059669;
   text-align: center;
 }

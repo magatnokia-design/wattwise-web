@@ -6,21 +6,18 @@ export const ANDROID_BUILD_URL =
   'https://expo.dev/accounts/magat_nokia/projects/WiseWatt/builds/dd16460c-5af8-4318-a3eb-7ab9e541e824';
 
 /**
- * The only route to a new account. Registration does not exist on the web,
- * because the ESP32 is paired from the app — so this is the primary action for
- * anyone who is not already a user, and it is styled to read that way.
+ * The only route to a new account, since registration does not exist on the
+ * web. Kept to three lines: a reason, the action, and the one caveat that
+ * actually trips people up when installing an Expo build.
  */
 export const DownloadApp = () => (
   <div className={styles.card}>
-    <div className={styles.head}>
+    <p className={styles.lead}>
       <span className={styles.icon} aria-hidden="true">
         📱
       </span>
-      <div>
-        <p className={styles.title}>No account yet?</p>
-        <p className={styles.body}>Set one up in the app, then sign in here.</p>
-      </div>
-    </div>
+      No account yet? Create one in the app.
+    </p>
 
     <a
       className={styles.button}
@@ -34,9 +31,7 @@ export const DownloadApp = () => (
       Download for Android
     </a>
 
-    <p className={styles.note}>
-      Android only · installs from Expo. You may need to allow installs from unknown sources.
-    </p>
+    <p className={styles.note}>Android only · you may need to allow unknown sources</p>
   </div>
 );
 
