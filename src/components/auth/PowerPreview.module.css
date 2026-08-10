@@ -6,9 +6,11 @@
   gap: var(--ww-space-3);
 }
 
+/* Kept deliberately small — the showcase above it is the hero, this is the
+   supporting "here is the interaction" beat. */
 .svg {
   width: 100%;
-  max-width: 340px;
+  max-width: 292px;
   height: auto;
   overflow: visible;
 }

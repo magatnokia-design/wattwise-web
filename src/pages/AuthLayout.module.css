@@ -62,25 +62,19 @@
 }
 
 .footer {
-  margin-top: var(--ww-space-5);
+  margin-top: var(--ww-space-4);
   padding-top: var(--ww-space-4);
   border-top: 1px solid var(--ww-grid);
   font-size: 13px;
   color: var(--ww-text-light);
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--ww-space-3);
-  align-items: baseline;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--ww-space-4);
 }
 
-/* Sign-up lives in the mobile app only, so this reads as an explanation
-   rather than a dead link. */
-.footerNote {
-  flex: 1;
-  min-width: 220px;
-  max-width: 42ch;
-  line-height: 1.5;
+.footerLink {
+  align-self: flex-end;
+  font-size: 13px;
 }
 
 /* Right-hand panel */
@@ -89,10 +83,24 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: var(--ww-space-6);
+  padding: var(--ww-space-6) var(--ww-space-5);
   background: linear-gradient(160deg, #f0fdf9 0%, #d1fae5 55%, #a7f3d0 100%);
   border-left: 1px solid var(--ww-border);
   overflow: hidden;
+}
+
+/* The panel now holds a showcase, the outlet diagram and three feature rows.
+   On a short viewport that overflows, so let it scroll rather than clip. */
+@media (max-height: 860px) {
+  .aside {
+    overflow-y: auto;
+    justify-content: flex-start;
+  }
+
+  .asideInner {
+    margin: 0 auto;
+    padding: var(--ww-space-4) 0;
+  }
 }
 
 /* Slow drifting wash, so the panel is not a flat block of green. */
@@ -113,14 +121,23 @@
   }
 }
 
+/* `margin: auto` on all four sides, not just the block axis — the earlier
+   `auto 0` centred vertically only, leaving the column pinned to the left edge
+   of a much wider panel. */
 .asideInner {
   position: relative;
-  margin: auto 0;
+  margin: auto;
   width: 100%;
   max-width: 440px;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--ww-space-5);
+}
+
+.asideHead {
+  width: 100%;
+  text-align: center;
 }
 
 .asideEyebrow {
@@ -132,8 +149,8 @@
 }
 
 .asideTitle {
-  margin-top: calc(var(--ww-space-3) * -1 + 2px);
-  font-size: 25px;
+  margin-top: 8px;
+  font-size: 24px;
   line-height: 1.25;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -147,6 +164,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--ww-space-2);
+  width: 100%;
 }
 
 .feature {

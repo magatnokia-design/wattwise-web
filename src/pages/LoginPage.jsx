@@ -6,6 +6,7 @@ import { TextField } from '../components/ui/Field';
 import { Button } from '../components/ui/Button';
 import { Banner } from '../components/ui/Feedback';
 import { describeAuthError } from './authErrors';
+import DownloadApp from '../components/auth/DownloadApp';
 import styles from './AuthLayout.module.css';
 
 export const LoginPage = () => {
@@ -39,10 +40,10 @@ export const LoginPage = () => {
       subtitle="Use the same account as the WattWise app on your phone."
       footer={
         <>
-          <span className={styles.footerNote}>
-            New to WattWise? Accounts are created in the mobile app, where the ESP32 is paired.
-          </span>
-          <Link to="/forgot-password">Forgot password?</Link>
+          <Link to="/forgot-password" className={styles.footerLink}>
+            Forgot password?
+          </Link>
+          <DownloadApp />
         </>
       }
     >

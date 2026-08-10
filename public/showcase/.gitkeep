@@ -1,0 +1,11 @@
+# Product shots for the sign-in page showcase.
+#
+# Drop two files in this folder and they appear automatically — no code change:
+#
+#   web.png     the dashboard in a browser   (16:10 works best, e.g. 1440x900)
+#   phone.png   the app on Android           (tall/portrait, e.g. 1080x2160)
+#
+# Until they exist, AppShowcase renders a styled empty device frame instead,
+# so the page never shows a broken image.
+#
+# Rendered by: src/components/auth/AppShowcase.jsx

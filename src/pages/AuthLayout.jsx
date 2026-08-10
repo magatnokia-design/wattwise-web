@@ -1,3 +1,4 @@
+import AppShowcase from '../components/auth/AppShowcase';
 import PowerPreview from '../components/auth/PowerPreview';
 import styles from './AuthLayout.module.css';
 
@@ -39,10 +40,14 @@ export const AuthLayout = ({ title, subtitle, children, footer }) => (
 
     <aside className={styles.aside}>
       <div className={styles.asideInner}>
-        <p className={styles.asideEyebrow}>Same account · same hardware</p>
-        <h2 className={styles.asideTitle}>
-          Everything the phone app does — with room to actually read it.
-        </h2>
+        <header className={styles.asideHead}>
+          <p className={styles.asideEyebrow}>Same account · same hardware</p>
+          <h2 className={styles.asideTitle}>
+            Everything the phone app does — with room to actually read it.
+          </h2>
+        </header>
+
+        <AppShowcase />
 
         <PowerPreview />
 

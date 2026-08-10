@@ -62,6 +62,25 @@ not 404.
 Password reset **is** available on the web (`/forgot-password`) — it recovers an
 existing account rather than creating one.
 
+The sign-in page instead offers a **Download for Android** button pointing at the
+current Expo build. That URL lives in exactly one place —
+`ANDROID_BUILD_URL` in `src/components/auth/DownloadApp.jsx` — so publishing a
+new build is a one-line change.
+
+### Adding product shots to the sign-in page
+
+Drop two images into `public/showcase/` and they appear automatically, no code
+change:
+
+| File | What | Suggested size |
+|---|---|---|
+| `web.png` | The dashboard in a browser | 16:10, e.g. 1440×900 |
+| `phone.png` | The app on Android | portrait, e.g. 1080×2160 |
+
+Until they exist, `AppShowcase` renders a styled empty device frame — a visitor
+sees an intentional mock-up rather than a broken image, so shipping without them
+is safe.
+
 ---
 
 ## Stack
