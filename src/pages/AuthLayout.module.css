@@ -2,24 +2,56 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
   min-height: 100vh;
-  background: var(--ww-white);
+  background: var(--ww-bg);
 }
 
+/* Tinted, lightly textured ground so the white card above it reads as a
+   distinct surface rather than dissolving into the page. */
 .panel {
+  position: relative;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  padding: var(--ww-space-6);
-  max-width: 460px;
+  padding: clamp(16px, 3vh, 40px) var(--ww-space-5);
+  overflow: hidden;
+  background:
+    radial-gradient(60% 55% at 12% 8%, rgba(16, 185, 129, 0.14), transparent 70%),
+    radial-gradient(55% 50% at 92% 96%, rgba(4, 120, 87, 0.12), transparent 70%),
+    linear-gradient(180deg, #ffffff 0%, var(--ww-bg) 100%);
+}
+
+/* Dot grid, faded out toward the edges so it never competes with the form. */
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(4, 120, 87, 0.14) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 10%, transparent 78%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 10%, transparent 78%);
+  pointer-events: none;
+}
+
+.panelInner {
+  position: relative;
   width: 100%;
-  margin: 0 auto;
+  max-width: 404px;
+}
+
+.card {
+  background: var(--ww-white);
+  border: 1px solid var(--ww-border);
+  border-radius: var(--ww-radius-lg);
+  padding: clamp(20px, 3.2vh, 30px);
+  box-shadow: 0 14px 36px rgba(6, 78, 59, 0.09), 0 2px 8px rgba(17, 24, 39, 0.04);
 }
 
 .brand {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 9px;
-  margin-bottom: var(--ww-space-6);
+  margin-bottom: clamp(14px, 2.4vh, 22px);
 }
 
 .brandMark {
@@ -39,37 +71,37 @@
 }
 
 .title {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.03em;
   color: var(--ww-text-dark);
 }
 
 .subtitle {
-  margin-top: 6px;
-  font-size: 14px;
+  margin-top: 5px;
+  font-size: 13.5px;
   color: var(--ww-text-light);
 }
 
 .form,
 .formStack {
   display: grid;
-  gap: var(--ww-space-4);
+  gap: 14px;
 }
 
 .form {
-  margin-top: var(--ww-space-5);
+  margin-top: var(--ww-space-4);
 }
 
 .footer {
   margin-top: var(--ww-space-4);
-  padding-top: var(--ww-space-4);
+  padding-top: var(--ww-space-3);
   border-top: 1px solid var(--ww-grid);
   font-size: 13px;
   color: var(--ww-text-light);
   display: flex;
   flex-direction: column;
-  gap: var(--ww-space-4);
+  gap: var(--ww-space-3);
 }
 
 .footerLink {
@@ -214,6 +246,17 @@
 
   .panel {
     padding: var(--ww-space-5) var(--ww-space-4);
+  }
+}
+
+/* On a phone the card border and shadow just eat horizontal space — let the
+   form use the full width against the tinted ground instead. */
+@media (max-width: 480px) {
+  .card {
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    padding: 0;
   }
 }
 

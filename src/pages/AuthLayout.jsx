@@ -25,19 +25,25 @@ const FEATURES = [
 export const AuthLayout = ({ title, subtitle, children, footer }) => (
   <div className={styles.page}>
     <div className={styles.panel}>
-      <div className={styles.brand}>
-        <span className={styles.brandMark} aria-hidden="true">
-          ⚡
-        </span>
-        <span className={styles.brandName}>WattWise</span>
+      <div className={styles.panelInner}>
+        <div className={styles.brand}>
+          <span className={styles.brandMark} aria-hidden="true">
+            ⚡
+          </span>
+          <span className={styles.brandName}>WattWise</span>
+        </div>
+
+        {/* The form sits on a raised card. On a plain white page a white form
+            has no edges — nothing tells you where the sign-in box begins. */}
+        <div className={styles.card}>
+          <h1 className={styles.title}>{title}</h1>
+          {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
+
+          <div className={styles.form}>{children}</div>
+
+          {footer ? <div className={styles.footer}>{footer}</div> : null}
+        </div>
       </div>
-
-      <h1 className={styles.title}>{title}</h1>
-      {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
-
-      <div className={styles.form}>{children}</div>
-
-      {footer ? <div className={styles.footer}>{footer}</div> : null}
     </div>
 
     <aside className={styles.aside}>
