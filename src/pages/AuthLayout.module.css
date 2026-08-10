@@ -78,20 +78,35 @@
 }
 
 /* Right-hand panel */
-/* Sized to fit one viewport without scrolling. The three sections inside all
-   scale on viewport height (the showcase stage, the column gaps, the title),
-   so the panel compresses rather than overflowing. `overflow-y: auto` stays
-   only as a last resort for extremely short windows — at normal desktop and
-   laptop heights it never engages. */
+/* Scrolls on purpose: it now carries the showcase, the outlet diagram, the
+   feature rows, an FAQ and contact links.
+   `justify-content: flex-start` rather than `center` — centring a flex column
+   that overflows its scroll container makes the top of the content
+   unreachable, because overflow above the start edge cannot be scrolled to. */
 .aside {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   padding: clamp(20px, 3.5vh, 40px) var(--ww-space-5);
   background: linear-gradient(160deg, #f0fdf9 0%, #d1fae5 55%, #a7f3d0 100%);
   border-left: 1px solid var(--ww-border);
   overflow: hidden auto;
+  scrollbar-width: thin;
+  scrollbar-color: #6ee7b7 transparent;
+}
+
+.aside::-webkit-scrollbar {
+  width: 8px;
+}
+
+.aside::-webkit-scrollbar-thumb {
+  background: #6ee7b7;
+  border-radius: 999px;
+}
+
+.aside::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* Slow drifting wash, so the panel is not a flat block of green. */
@@ -117,7 +132,7 @@
    of a much wider panel. */
 .asideInner {
   position: relative;
-  margin: auto;
+  margin: 0 auto;
   width: 100%;
   max-width: 420px;
   display: flex;

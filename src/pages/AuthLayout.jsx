@@ -1,5 +1,6 @@
 import AppShowcase from '../components/auth/AppShowcase';
 import PowerPreview from '../components/auth/PowerPreview';
+import HelpPanel from '../components/auth/HelpPanel';
 import styles from './AuthLayout.module.css';
 
 // Bodies are kept to one line at this column width on purpose — three
@@ -66,6 +67,8 @@ export const AuthLayout = ({ title, subtitle, children, footer }) => (
             </li>
           ))}
         </ul>
+
+        <HelpPanel />
       </div>
     </aside>
   </div>
