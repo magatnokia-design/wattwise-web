@@ -5,7 +5,6 @@ import AppShell from './components/layout/AppShell';
 import { Spinner } from './components/ui/Feedback';
 
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import HistoryPage from './pages/HistoryPage';
@@ -63,14 +62,11 @@ export const App = () => (
         </AuthGate>
       }
     />
-    <Route
-      path="/register"
-      element={
-        <AuthGate requireAuth={false}>
-          <RegisterPage />
-        </AuthGate>
-      }
-    />
+    {/* No /register route by design. An account has to be created on the phone
+        app first: that is where the ESP32 is paired to the account, and a
+        web-only account would have no hardware to talk to. Anyone landing on
+        the old path gets sent to sign-in rather than a 404. */}
+    <Route path="/register" element={<Navigate to="/login" replace />} />
     <Route
       path="/forgot-password"
       element={

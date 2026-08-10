@@ -22,7 +22,20 @@
   position: relative;
   background: var(--ww-track);
   border-radius: 999px;
-  transition: background-color 0.18s ease;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.wrap:hover .track {
+  background: #d1d5db;
+}
+
+.wrap:hover .input:checked + .track {
+  background: var(--ww-primary-dark);
+}
+
+.disabled:hover .track,
+.disabled:hover .input:checked + .track {
+  background: var(--ww-track);
 }
 
 .knob {

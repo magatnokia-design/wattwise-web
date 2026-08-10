@@ -6,6 +6,7 @@ import { TextField } from '../components/ui/Field';
 import { Button } from '../components/ui/Button';
 import { Banner } from '../components/ui/Feedback';
 import { describeAuthError } from './authErrors';
+import styles from './AuthLayout.module.css';
 
 export const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -43,7 +44,7 @@ export const ForgotPasswordPage = () => {
           Check the inbox for {email.trim().toLowerCase()} and follow the link.
         </Banner>
       ) : (
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 16 }}>
+        <form onSubmit={handleSubmit} className={styles.formStack}>
           {error ? <Banner tone="alert">{error}</Banner> : null}
 
           <TextField

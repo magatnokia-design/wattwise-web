@@ -20,15 +20,35 @@
   border-radius: var(--ww-radius-sm);
   padding: 0 12px;
   height: 40px;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+/* Hover is a quiet border darkening — enough to read as interactive without
+   competing with the focus state. */
+.control:hover:not(:focus-within) {
+  border-color: var(--ww-border-hover);
+}
+
+/* One ring, not two. The green border plus a soft outer glow, both hugging the
+   same rounded rectangle. */
 .control:focus-within {
   border-color: var(--ww-primary);
+  box-shadow: var(--ww-ring);
 }
 
 .controlError {
   border-color: var(--ww-error);
+}
+
+.controlError:focus-within {
+  border-color: var(--ww-error);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
+}
+
+.control:has(input:disabled),
+.control:has(select:disabled) {
+  background: var(--ww-bg);
+  color: var(--ww-text-light);
 }
 
 .input,

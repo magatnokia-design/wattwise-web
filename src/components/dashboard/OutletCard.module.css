@@ -1,6 +1,12 @@
 .card {
   display: flex;
   flex-direction: column;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  border-color: #d1d5db;
+  box-shadow: var(--ww-shadow);
 }
 
 .head {

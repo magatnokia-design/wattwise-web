@@ -7,13 +7,22 @@
   border: 1px solid transparent;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease, transform 0.1s ease;
   white-space: nowrap;
+}
+
+/* Presses register physically. Paired with the hover lift below so the button
+   travels down to its resting position rather than below it. */
+.button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+  box-shadow: none;
+  transform: none;
 }
 
 .md {
@@ -31,10 +40,13 @@
 .primary {
   background: var(--ww-primary);
   color: var(--ww-white);
+  box-shadow: 0 1px 2px rgba(4, 120, 87, 0.2);
 }
 
 .primary:hover:not(:disabled) {
   background: var(--ww-primary-dark);
+  box-shadow: 0 4px 12px rgba(4, 120, 87, 0.26);
+  transform: translateY(-1px);
 }
 
 .secondary {
@@ -46,6 +58,7 @@
 .secondary:hover:not(:disabled) {
   border-color: var(--ww-primary);
   color: var(--ww-primary-dark);
+  background: var(--ww-tint-success);
 }
 
 .ghost {
@@ -67,6 +80,13 @@
 .danger:hover:not(:disabled) {
   background: var(--ww-tint-error);
   border-color: var(--ww-error);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary:hover:not(:disabled),
+  .button:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 .spinner {

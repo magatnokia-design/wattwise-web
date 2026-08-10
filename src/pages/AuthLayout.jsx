@@ -1,5 +1,23 @@
-import { Link } from 'react-router-dom';
+import PowerPreview from '../components/auth/PowerPreview';
 import styles from './AuthLayout.module.css';
+
+const FEATURES = [
+  {
+    icon: '🔌',
+    title: 'Both outlets, side by side',
+    body: 'Live wattage for each, above the fold — no scrolling between them.',
+  },
+  {
+    icon: '⚡',
+    title: 'Switch a real relay',
+    body: 'Toggle here and the hardware follows; your phone reflects it in a second.',
+  },
+  {
+    icon: '🧾',
+    title: 'PELCO III, itemised',
+    body: 'Every block of the tariff, so the total is explainable rather than asserted.',
+  },
+];
 
 export const AuthLayout = ({ title, subtitle, children, footer }) => (
   <div className={styles.page}>
@@ -21,20 +39,27 @@ export const AuthLayout = ({ title, subtitle, children, footer }) => (
 
     <aside className={styles.aside}>
       <div className={styles.asideInner}>
-        <p className={styles.asideEyebrow}>Same account, same hardware</p>
+        <p className={styles.asideEyebrow}>Same account · same hardware</p>
         <h2 className={styles.asideTitle}>
           Everything the phone app does — with room to actually read it.
         </h2>
-        <ul className={styles.asideList}>
-          <li>Both outlets side by side, with live wattage</li>
-          <li>Toggle a relay from the browser; the phone sees it in a second</li>
-          <li>PELCO III billing broken down block by block</li>
+
+        <PowerPreview />
+
+        <ul className={styles.featureList}>
+          {FEATURES.map((feature) => (
+            <li key={feature.title} className={styles.feature}>
+              <span className={styles.featureIcon} aria-hidden="true">
+                {feature.icon}
+              </span>
+              <div>
+                <p className={styles.featureTitle}>{feature.title}</p>
+                <p className={styles.featureBody}>{feature.body}</p>
+              </div>
+            </li>
+          ))}
         </ul>
       </div>
-      <p className={styles.asideFoot}>
-        Signing in here uses the same WattWise account as the Android app.{' '}
-        <Link to="/register">Create one</Link> if you do not have it yet.
-      </p>
     </aside>
   </div>
 );

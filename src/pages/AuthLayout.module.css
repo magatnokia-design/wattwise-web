@@ -1,6 +1,6 @@
 .page {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
   min-height: 100vh;
   background: var(--ww-white);
 }
@@ -51,36 +51,76 @@
   color: var(--ww-text-light);
 }
 
-.form {
-  display: flex;
-  flex-direction: column;
+.form,
+.formStack {
+  display: grid;
   gap: var(--ww-space-4);
+}
+
+.form {
   margin-top: var(--ww-space-5);
 }
 
 .footer {
   margin-top: var(--ww-space-5);
+  padding-top: var(--ww-space-4);
+  border-top: 1px solid var(--ww-grid);
   font-size: 13px;
   color: var(--ww-text-light);
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--ww-space-3);
+  align-items: baseline;
   justify-content: space-between;
 }
 
+/* Sign-up lives in the mobile app only, so this reads as an explanation
+   rather than a dead link. */
+.footerNote {
+  flex: 1;
+  min-width: 220px;
+  max-width: 42ch;
+  line-height: 1.5;
+}
+
+/* Right-hand panel */
 .aside {
+  position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: var(--ww-space-6);
+  justify-content: center;
   padding: var(--ww-space-6);
-  background: linear-gradient(160deg, #ecfdf5 0%, #d1fae5 55%, #a7f3d0 100%);
+  background: linear-gradient(160deg, #f0fdf9 0%, #d1fae5 55%, #a7f3d0 100%);
   border-left: 1px solid var(--ww-border);
+  overflow: hidden;
+}
+
+/* Slow drifting wash, so the panel is not a flat block of green. */
+.aside::before {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  background:
+    radial-gradient(closest-side, rgba(255, 255, 255, 0.85), transparent) 22% 28% / 55% 55% no-repeat,
+    radial-gradient(closest-side, rgba(16, 185, 129, 0.28), transparent) 78% 72% / 60% 60% no-repeat;
+  animation: drift 22s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes drift {
+  to {
+    transform: translate3d(4%, -3%, 0) scale(1.08);
+  }
 }
 
 .asideInner {
+  position: relative;
   margin: auto 0;
-  max-width: 420px;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ww-space-5);
 }
 
 .asideEyebrow {
@@ -92,45 +132,62 @@
 }
 
 .asideTitle {
-  margin-top: var(--ww-space-3);
-  font-size: 26px;
+  margin-top: calc(var(--ww-space-3) * -1 + 2px);
+  font-size: 25px;
   line-height: 1.25;
   font-weight: 700;
   letter-spacing: -0.03em;
   color: #064e3b;
 }
 
-.asideList {
-  margin: var(--ww-space-5) 0 0;
+.featureList {
+  margin: 0;
   padding: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  font-size: 14px;
-  color: #065f46;
+  gap: var(--ww-space-2);
 }
 
-.asideList li {
-  position: relative;
-  padding-left: 22px;
+.feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--ww-radius-sm);
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.55);
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.asideList li::before {
-  content: '✓';
-  position: absolute;
-  left: 0;
+.feature:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #6ee7b7;
+  transform: translateX(3px);
+  box-shadow: 0 6px 18px rgba(4, 120, 87, 0.1);
+}
+
+.featureIcon {
+  font-size: 15px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.featureTitle {
+  font-size: 13.5px;
   font-weight: 700;
-  color: var(--ww-primary-dark);
+  color: #064e3b;
 }
 
-.asideFoot {
+.featureBody {
+  margin-top: 2px;
   font-size: 12.5px;
-  color: #065f46;
-  max-width: 420px;
+  line-height: 1.5;
+  color: #047857;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 980px) {
   .page {
     grid-template-columns: 1fr;
   }
@@ -141,5 +198,15 @@
 
   .panel {
     padding: var(--ww-space-5) var(--ww-space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aside::before {
+    animation: none;
+  }
+
+  .feature:hover {
+    transform: none;
   }
 }

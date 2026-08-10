@@ -18,11 +18,3 @@ const MESSAGES = {
 
 export const describeAuthError = (code, fallback = 'Something went wrong. Try again.') =>
   MESSAGES[code] || fallback;
-
-/** Same rule set the phone app's RegisterScreen enforces. */
-export const validatePassword = (password) => ({
-  minLength: password.length >= 8,
-  hasUpperCase: /[A-Z]/.test(password),
-  hasLowerCase: /[a-z]/.test(password),
-  hasNumber: /[0-9]/.test(password),
-});

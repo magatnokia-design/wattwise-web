@@ -51,6 +51,17 @@ Everything that imported `react-native`: all screens and components. Plus
 `useDismissibleNotice` (AsyncStorage → localStorage). New UI lives in
 `src/components/` and `src/pages/`.
 
+### Sign-in only — no registration on the web
+
+There is **no `/register` route**, deliberately. An account must be created in
+the mobile app first, because that is where the ESP32 is paired to it; a
+web-created account would have no hardware to talk to and would show a
+permanently empty dashboard. `/register` redirects to `/login` so old links do
+not 404.
+
+Password reset **is** available on the web (`/forgot-password`) — it recovers an
+existing account rather than creating one.
+
 ---
 
 ## Stack

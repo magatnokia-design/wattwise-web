@@ -59,6 +59,11 @@
   --ww-shadow: 0 1px 3px rgba(17, 24, 39, 0.08), 0 1px 2px rgba(17, 24, 39, 0.04);
   --ww-shadow-lg: 0 10px 30px rgba(17, 24, 39, 0.12);
 
+  /* Soft focus ring. Used as a box-shadow so it sits flush against a control's
+     own border instead of stacking a second detached outline around it. */
+  --ww-ring: 0 0 0 3px rgba(16, 185, 129, 0.18);
+  --ww-border-hover: #d1d5db;
+
   --ww-sidebar-width: 248px;
 
   --ww-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
@@ -126,9 +131,14 @@ a {
   border-radius: var(--ww-radius-sm);
 }
 
-:where(button, a, input, select, textarea):focus-visible {
+/* Buttons and links only. Text inputs and selects are deliberately excluded:
+   they sit inside a bordered wrapper that already turns green on focus, and
+   adding this outline on top produced a doubled ring. Their focus treatment
+   lives on `.control` in Field.module.css instead. */
+:where(button, a, [role='button']):focus-visible {
   outline: 2px solid var(--ww-primary);
   outline-offset: 2px;
+  border-radius: var(--ww-radius-sm);
 }
 
 @media (prefers-reduced-motion: reduce) {

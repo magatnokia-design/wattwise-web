@@ -1,0 +1,195 @@
+.figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ww-space-3);
+}
+
+.svg {
+  width: 100%;
+  max-width: 340px;
+  height: auto;
+  overflow: visible;
+}
+
+/* Hub */
+.hubBody {
+  fill: var(--ww-white);
+  stroke: #6ee7b7;
+  stroke-width: 2;
+  transition: stroke 0.3s ease, filter 0.3s ease;
+}
+
+.hubLive .hubBody {
+  stroke: var(--ww-primary-dark);
+  filter: drop-shadow(0 3px 10px rgba(4, 120, 87, 0.25));
+}
+
+.hubBolt {
+  fill: #a7f3d0;
+  transition: fill 0.3s ease;
+}
+
+.hubLive .hubBolt {
+  fill: var(--ww-primary);
+}
+
+/* Wires */
+.wireTrack {
+  fill: none;
+  stroke: #a7f3d0;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.wireLive {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 7 9;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.wireOn {
+  opacity: 1;
+  animation: flow 1.1s linear infinite;
+}
+
+@keyframes flow {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+/* Outlet nodes */
+.node {
+  cursor: pointer;
+  outline: none;
+}
+
+.halo {
+  fill: none;
+  stroke: var(--ww-primary);
+  stroke-width: 2;
+  opacity: 0;
+  transform-origin: center;
+  transition: opacity 0.3s ease;
+}
+
+.haloOn {
+  opacity: 0.35;
+  animation: pulse 2.2s ease-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.4;
+    r: 28;
+  }
+  70% {
+    opacity: 0;
+    r: 38;
+  }
+  100% {
+    opacity: 0;
+    r: 38;
+  }
+}
+
+.socket {
+  fill: var(--ww-white);
+  stroke: #6ee7b7;
+  stroke-width: 2;
+  transition: fill 0.25s ease, stroke 0.25s ease, filter 0.25s ease;
+}
+
+.socketOn {
+  fill: var(--ww-primary);
+  stroke: var(--ww-primary-dark);
+  filter: drop-shadow(0 4px 12px rgba(4, 120, 87, 0.35));
+}
+
+/* Hover and keyboard focus both read on the socket itself, so the whole
+   node responds rather than only the exact shape under the pointer. */
+.node:hover .socket {
+  stroke: var(--ww-primary-dark);
+  transform: translateY(-1px);
+}
+
+.node:focus-visible .socket {
+  stroke: var(--ww-primary-dark);
+  stroke-width: 3;
+}
+
+.node:focus-visible .halo {
+  opacity: 0.5;
+}
+
+.node:active .socket {
+  transform: translateY(1px);
+}
+
+.socket,
+.node:hover .socket,
+.node:active .socket {
+  transition: fill 0.25s ease, stroke 0.25s ease, transform 0.12s ease, filter 0.25s ease;
+}
+
+.prong {
+  fill: #a7f3d0;
+  transition: fill 0.25s ease;
+}
+
+.prongOn {
+  fill: var(--ww-white);
+}
+
+.nodeLabel {
+  font-size: 12px;
+  font-weight: 600;
+  fill: #065f46;
+}
+
+.nodeState {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  fill: #6b7280;
+  transition: fill 0.25s ease;
+}
+
+.nodeStateOn {
+  fill: var(--ww-primary-dark);
+}
+
+.caption {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: #047857;
+}
+
+.captionDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ww-primary);
+  animation: blink 1.8s ease-in-out infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wireOn,
+  .haloOn,
+  .captionDot {
+    animation: none;
+  }
+}
