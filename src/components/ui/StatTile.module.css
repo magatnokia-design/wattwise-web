@@ -1,0 +1,67 @@
+.grid {
+  display: grid;
+  gap: var(--ww-space-3);
+}
+
+.tile {
+  background: var(--ww-white);
+  border: 1px solid var(--ww-border);
+  border-radius: var(--ww-radius);
+  padding: var(--ww-space-4);
+  min-width: 0;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ww-text-light);
+}
+
+.value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ww-text-dark);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.unit {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ww-text-light);
+}
+
+.caption {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ww-text-light);
+}
+
+.primary .value {
+  color: var(--ww-primary-dark);
+}
+
+.warning .value {
+  color: var(--ww-warning);
+}
+
+.danger .value {
+  color: var(--ww-error);
+}

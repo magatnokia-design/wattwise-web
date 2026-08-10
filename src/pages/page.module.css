@@ -1,0 +1,120 @@
+/* Layout primitives shared by every page. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ww-space-5);
+  min-width: 0;
+}
+
+.pageIntro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ww-space-3);
+}
+
+.lede {
+  font-size: 13.5px;
+  color: var(--ww-text-light);
+  max-width: 70ch;
+}
+
+/* Two equal columns — the outlet pair, and any side-by-side comparison. */
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ww-space-4);
+}
+
+/* Wide main column with a narrower rail. */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: var(--ww-space-4);
+  align-items: start;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ww-space-4);
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ww-space-2);
+}
+
+.rowEnd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ww-space-2);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--ww-space-4);
+}
+
+/* Segmented control — the tab strip on Analytics and History. */
+.tabs {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--ww-grid);
+  border-radius: var(--ww-radius-sm);
+}
+
+.tab {
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ww-text-light);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--ww-text-dark);
+}
+
+.tabActive {
+  background: var(--ww-white);
+  color: var(--ww-primary-dark);
+  box-shadow: var(--ww-shadow-sm);
+}
+
+.muted {
+  font-size: 13px;
+  color: var(--ww-text-light);
+}
+
+.divider {
+  height: 1px;
+  background: var(--ww-grid);
+  border: none;
+  margin: 0;
+}
+
+@media (max-width: 1180px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

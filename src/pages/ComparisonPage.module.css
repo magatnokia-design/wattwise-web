@@ -1,0 +1,93 @@
+.verdict {
+  padding: var(--ww-space-4) var(--ww-space-5);
+  border-radius: var(--ww-radius);
+  border: 1px solid var(--ww-border);
+  background: var(--ww-white);
+}
+
+.verdict[data-tone='good'] {
+  background: var(--ww-tint-success);
+  border-color: #a7f3d0;
+}
+
+.verdict[data-tone='alert'] {
+  background: var(--ww-tint-error);
+  border-color: #fecaca;
+}
+
+.verdictHeadline {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ww-text-dark);
+}
+
+.verdictDetail {
+  margin-top: 4px;
+  font-size: 13.5px;
+  color: var(--ww-text-light);
+  max-width: 80ch;
+}
+
+.deltaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--ww-space-3);
+}
+
+.delta {
+  padding: var(--ww-space-4);
+  border: 1px solid var(--ww-border);
+  border-radius: var(--ww-radius-sm);
+}
+
+.deltaLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ww-text-light);
+}
+
+.deltaValue {
+  margin: 4px 0 8px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ww-text-dark);
+}
+
+.deltaBaseline {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ww-text-light);
+}
+
+.accuracy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.accuracyRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ww-space-4);
+  width: 100%;
+  font-size: 13.5px;
+  color: var(--ww-text-light);
+  padding: 4px 0;
+}
+
+.accuracyRow strong {
+  color: var(--ww-text-dark);
+}
+
+.accuracyTotal {
+  padding-top: 8px;
+  margin-top: 2px;
+  border-top: 1px solid var(--ww-grid);
+  margin-bottom: 6px;
+}

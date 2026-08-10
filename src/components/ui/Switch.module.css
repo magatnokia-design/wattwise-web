@@ -1,0 +1,74 @@
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.track {
+  display: block;
+  position: relative;
+  background: var(--ww-track);
+  border-radius: 999px;
+  transition: background-color 0.18s ease;
+}
+
+.knob {
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  transform: translateY(-50%);
+  background: var(--ww-white);
+  border-radius: 50%;
+  box-shadow: var(--ww-shadow);
+  transition: transform 0.18s ease;
+}
+
+.md .track {
+  width: 52px;
+  height: 30px;
+}
+
+.md .knob {
+  width: 24px;
+  height: 24px;
+}
+
+.md .input:checked + .track .knob {
+  transform: translate(22px, -50%);
+}
+
+.sm .track {
+  width: 40px;
+  height: 24px;
+}
+
+.sm .knob {
+  width: 18px;
+  height: 18px;
+}
+
+.sm .input:checked + .track .knob {
+  transform: translate(16px, -50%);
+}
+
+.input:checked + .track {
+  background: var(--ww-primary);
+}
+
+.input:focus-visible + .track {
+  outline: 2px solid var(--ww-primary);
+  outline-offset: 2px;
+}

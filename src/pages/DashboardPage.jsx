@@ -1,0 +1,178 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useOutletControl } from '../screens/Dashboard/hooks/useOutletControl';
+import { useLiveOutlets } from '../hooks/useLiveOutlets';
+import { useDismissibleNotice } from '../hooks/useDismissibleNotice';
+import { formatCurrency } from '../screens/BudgetTracking/utils/budgetHelpers';
+import OutletCard from '../components/dashboard/OutletCard';
+import { StatGrid, StatTile } from '../components/ui/StatTile';
+import { Banner, Spinner, Badge } from '../components/ui/Feedback';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import styles from './page.module.css';
+
+const relativeAge = (timestampMs) => {
+  if (!timestampMs) return 'never';
+  const seconds = Math.max(0, Math.floor((Date.now() - timestampMs) / 1000));
+  if (seconds < 5) return 'just now';
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+};
+
+export const DashboardPage = () => {
+  const {
+    outlet1Status,
+    outlet2Status,
+    outlet1ApplianceName,
+    outlet2ApplianceName,
+    outlet1Metrics,
+    outlet2Metrics,
+    outlet1Suggestion,
+    outlet2Suggestion,
+    outlet1HasLoad,
+    outlet2HasLoad,
+    isLoadingOutlets,
+    totalEnergyKwh,
+    totalPowerW,
+    estimatedCost,
+    estimatedCostPerHour,
+    effectiveRate,
+    hasSupplyRates,
+    isToggling,
+    toggleOutlet,
+    updateApplianceName,
+  } = useOutletControl();
+
+  const { telemetryFresh, lastTelemetryMs } = useLiveOutlets();
+  const rateNotice = useDismissibleNotice('rate-notice');
+  const [toggleError, setToggleError] = useState('');
+
+  const handleToggle = (outletNumber) => async (nextStatus) => {
+    setToggleError('');
+    // useOutletControl moves the switch before awaiting, and puts it back if
+    // this fails. Do not gate the UI on the result.
+    const result = await toggleOutlet(outletNumber, nextStatus);
+    if (!result.success) {
+      setToggleError(result.error || 'Could not reach the outlet. Try again.');
+    }
+  };
+
+  const handleRename = (outletNumber) => async (name, options) => {
+    const result = await updateApplianceName(outletNumber, name, options);
+    if (!result.success) {
+      setToggleError(result.error || 'Could not save the appliance name.');
+    }
+    return result;
+  };
+
+  if (isLoadingOutlets) {
+    return <Spinner label="Loading outlets" />;
+  }
+
+  return (
+    <div className={styles.page}>
+      {!hasSupplyRates && rateNotice.visible ? (
+        <Banner
+          tone="warn"
+          title="Using default PELCO III rates."
+          action={
+            <Button size="sm" variant="secondary" onClick={rateNotice.dismiss}>
+              Dismiss
+            </Button>
+          }
+        >
+          Every peso figure below is an estimate until you enter your own
+          generation and transmission rates. <Link to="/settings">Set them in Settings →</Link>
+        </Banner>
+      ) : null}
+
+      {toggleError ? <Banner tone="alert">{toggleError}</Banner> : null}
+
+      <div className={styles.pageIntro}>
+        <p className={styles.lede}>
+          Live readings from your ESP32. Both outlets update without refreshing, and a toggle here
+          switches the physical relay.
+        </p>
+        <Badge tone={telemetryFresh ? 'good' : 'neutral'}>
+          {telemetryFresh
+            ? `Hardware reporting · ${relativeAge(lastTelemetryMs)}`
+            : `No telemetry · last seen ${relativeAge(lastTelemetryMs)}`}
+        </Badge>
+      </div>
+
+      <StatGrid>
+        <StatTile
+          label="Drawing now"
+          value={totalPowerW.toFixed(1)}
+          unit="W"
+          tone="primary"
+          icon="⚡"
+          caption="Both outlets combined"
+        />
+        <StatTile
+          label="Energy today"
+          value={totalEnergyKwh.toFixed(3)}
+          unit="kWh"
+          icon="🔋"
+          caption="Since midnight, Manila time"
+        />
+        <StatTile
+          label="Cost today"
+          value={formatCurrency(estimatedCost)}
+          icon="💰"
+          caption={`PELCO III · ${formatCurrency(effectiveRate)}/kWh effective`}
+        />
+        <StatTile
+          label="Running cost"
+          value={formatCurrency(estimatedCostPerHour)}
+          unit="/hr"
+          icon="⏱️"
+          caption="At the current draw"
+        />
+      </StatGrid>
+
+      {/* Both outlets side by side, above the fold. */}
+      <div className={styles.pair}>
+        <OutletCard
+          outletNumber={1}
+          isOn={outlet1Status}
+          applianceName={outlet1ApplianceName}
+          metrics={outlet1Metrics}
+          suggestion={outlet1Suggestion}
+          hasLoad={outlet1HasLoad}
+          disabled={isToggling}
+          onToggle={handleToggle(1)}
+          onRename={handleRename(1)}
+        />
+        <OutletCard
+          outletNumber={2}
+          isOn={outlet2Status}
+          applianceName={outlet2ApplianceName}
+          metrics={outlet2Metrics}
+          suggestion={outlet2Suggestion}
+          hasLoad={outlet2HasLoad}
+          disabled={isToggling}
+          onToggle={handleToggle(2)}
+          onRename={handleRename(2)}
+        />
+      </div>
+
+      {!telemetryFresh ? (
+        <Card>
+          <p style={{ fontSize: 13, color: 'var(--ww-text-light)' }}>
+            <strong style={{ color: 'var(--ww-text-dark)' }}>Nothing is reporting.</strong> The
+            readings above stay at zero until the ESP32 posts telemetry. Check that the device is
+            powered and linked under <Link to="/settings">Settings</Link>. Toggles queued here are
+            still picked up whenever it comes back online.
+          </p>
+        </Card>
+      ) : null}
+    </div>
+  );
+};
+
+export default DashboardPage;

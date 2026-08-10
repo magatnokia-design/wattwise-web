@@ -1,0 +1,142 @@
+/*
+ * Theme tokens.
+ *
+ * Every colour here is mirrored from src/constants/colors.js, which is copied
+ * verbatim from the phone app. JS reads COLORS/CHART_COLORS; CSS reads these.
+ * If one changes, change the other — colors.js is the source.
+ *
+ * Green and white only. No dark mode: the parent project is a light green/white
+ * app and a second palette would be a new design, not a port.
+ */
+
+:root {
+  /* COLORS */
+  --ww-primary: #10b981;
+  --ww-primary-dark: #059669;
+  --ww-primary-light: #34d399;
+
+  --ww-white: #ffffff;
+  --ww-bg: #f9fafb;
+
+  --ww-text: #111827;
+  --ww-text-light: #6b7280;
+  --ww-text-dark: #1f2937;
+
+  --ww-border: #e5e7eb;
+  --ww-error: #ef4444;
+  --ww-success: #10b981;
+  --ww-warning: #f59e0b;
+
+  --ww-overlay: rgba(0, 0, 0, 0.5);
+
+  /* CHART_COLORS */
+  --ww-series-1: #047857;
+  --ww-series-2: #10b981;
+  --ww-track: #e5e7eb;
+  --ww-grid: #f3f4f6;
+
+  /* Tints, used only for status backgrounds. Same values the phone app's
+     helpers return, so a "warning" chip reads the same on both clients. */
+  --ww-tint-success: #ecfdf5;
+  --ww-tint-warning: #fffbeb;
+  --ww-tint-limit: #fff7ed;
+  --ww-tint-error: #fef2f2;
+  --ww-orange: #f97316;
+
+  /* Geometry */
+  --ww-radius-sm: 8px;
+  --ww-radius: 12px;
+  --ww-radius-lg: 16px;
+
+  --ww-space-1: 4px;
+  --ww-space-2: 8px;
+  --ww-space-3: 12px;
+  --ww-space-4: 16px;
+  --ww-space-5: 24px;
+  --ww-space-6: 32px;
+
+  --ww-shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.05);
+  --ww-shadow: 0 1px 3px rgba(17, 24, 39, 0.08), 0 1px 2px rgba(17, 24, 39, 0.04);
+  --ww-shadow-lg: 0 10px 30px rgba(17, 24, 39, 0.12);
+
+  --ww-sidebar-width: 248px;
+
+  --ww-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+  --ww-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--ww-font);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ww-text);
+  background: var(--ww-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: var(--ww-primary-dark);
+}
+
+/* Numeric columns line up only if the digits are the same width. Applied to
+   every live wattage, kWh and peso figure in the app. */
+.ww-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A bordered row inside a card — the live per-appliance strips. */
+.ww-live-row {
+  padding: 10px 12px;
+  border: 1px solid var(--ww-border);
+  border-radius: var(--ww-radius-sm);
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--ww-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

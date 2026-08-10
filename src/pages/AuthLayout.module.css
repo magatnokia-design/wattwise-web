@@ -1,0 +1,145 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--ww-white);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--ww-space-6);
+  max-width: 460px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: var(--ww-space-6);
+}
+
+.brandMark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ww-radius-sm);
+  background: var(--ww-tint-success);
+  font-size: 16px;
+}
+
+.brandName {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ww-text-dark);
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ww-text-dark);
+}
+
+.subtitle {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--ww-text-light);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ww-space-4);
+  margin-top: var(--ww-space-5);
+}
+
+.footer {
+  margin-top: var(--ww-space-5);
+  font-size: 13px;
+  color: var(--ww-text-light);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: space-between;
+}
+
+.aside {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--ww-space-6);
+  padding: var(--ww-space-6);
+  background: linear-gradient(160deg, #ecfdf5 0%, #d1fae5 55%, #a7f3d0 100%);
+  border-left: 1px solid var(--ww-border);
+}
+
+.asideInner {
+  margin: auto 0;
+  max-width: 420px;
+}
+
+.asideEyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ww-primary-dark);
+}
+
+.asideTitle {
+  margin-top: var(--ww-space-3);
+  font-size: 26px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #064e3b;
+}
+
+.asideList {
+  margin: var(--ww-space-5) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+  color: #065f46;
+}
+
+.asideList li {
+  position: relative;
+  padding-left: 22px;
+}
+
+.asideList li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+  color: var(--ww-primary-dark);
+}
+
+.asideFoot {
+  font-size: 12.5px;
+  color: #065f46;
+  max-width: 420px;
+}
+
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .aside {
+    display: none;
+  }
+
+  .panel {
+    padding: var(--ww-space-5) var(--ww-space-4);
+  }
+}

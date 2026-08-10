@@ -1,0 +1,320 @@
+import { useEffect, useMemo, useState } from 'react';
+import { budgetService, historyService } from '../services/firebase';
+import { useAuth } from './useAuth';
+import { calculatePelcoIIIBill } from '../utils/billing';
+import { buildLiveAppliances, buildLiveTodayEntry, withLiveToday } from '../utils/liveUsage';
+
+/**
+ * Analytics for the selected period.
+ *
+ * The arithmetic here is lifted from the phone app's AnalyticsScreen so both
+ * clients report the same totals: same tab ranges, same live-today splice, same
+ * single call to calculatePelcoIIIBill over the period's kWh. What is new is
+ * the per-day, per-outlet series — the phone app charts one bar per day because
+ * React Native has no charting primitive; here that constraint is gone.
+ */
+
+export const ANALYTICS_TABS = ['Daily', 'Weekly', 'Monthly'];
+
+const toNumber = (value) => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : 0;
+};
+
+const toDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const addDays = (date, days) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+};
+
+const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+
+const buildDateRange = (startDate, endDate) => {
+  const days = [];
+  const cursor = new Date(startDate);
+  while (cursor <= endDate) {
+    days.push(new Date(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return days;
+};
+
+// Shared by the fetch effect and the compute memo so the queried window and the
+// charted window can never drift apart.
+const getTabRange = (tab) => {
+  const endDate = new Date();
+  endDate.setHours(0, 0, 0, 0);
+
+  const startDate =
+    tab === 'Weekly' ? addDays(endDate, -6) : new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+
+  return { startDate, endDate };
+};
+
+const formatShortDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const formatWeekday = (date) => date.toLocaleDateString('en-US', { weekday: 'short' });
+
+const formatPeakHour = (hourValue) => {
+  const hour = Number(hourValue);
+  if (!Number.isFinite(hour)) return 'N/A';
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:00 ${period}`;
+};
+
+/**
+ * Rolls the per-day applianceBreakdown written by processDailyRollup into one
+ * list for the selected range, largest consumer first.
+ */
+const aggregateApplianceUsage = (entries) => {
+  const totals = new Map();
+
+  (Array.isArray(entries) ? entries : []).forEach((entry) => {
+    const breakdown = Array.isArray(entry?.applianceBreakdown) ? entry.applianceBreakdown : [];
+
+    breakdown.forEach((item) => {
+      const name = String(item?.applianceName || '').trim();
+      const energyKwh = toNumber(item?.energyKwh);
+      if (!name || energyKwh <= 0) return;
+
+      const existing = totals.get(name) || { applianceName: name, energyKwh: 0, cost: 0 };
+      existing.energyKwh += energyKwh;
+      existing.cost += toNumber(item?.cost);
+      totals.set(name, existing);
+    });
+  });
+
+  return Array.from(totals.values()).sort((a, b) => b.energyKwh - a.energyKwh);
+};
+
+export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
+  const { user, loading: authLoading } = useAuth();
+  const [rangeEntries, setRangeEntries] = useState([]);
+  const [fallbackDaily, setFallbackDaily] = useState(null);
+  const [budget, setBudget] = useState({ monthlyBudget: 0, currentSpending: 0 });
+  const [loading, setLoading] = useState(false);
+
+  const liveTodayEntry = useMemo(
+    () => buildLiveTodayEntry(outlets, { rateProfileId, supplyRates }),
+    [outlets, rateProfileId, supplyRates]
+  );
+
+  const liveAppliances = useMemo(
+    () => buildLiveAppliances(outlets, { rateProfileId, supplyRates }),
+    [outlets, rateProfileId, supplyRates]
+  );
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setBudget({ monthlyBudget: 0, currentSpending: 0 });
+      return undefined;
+    }
+
+    let active = true;
+
+    budgetService.getCurrentMonthBudget(user.uid).then((result) => {
+      if (!active || !result.success) return;
+      setBudget({
+        monthlyBudget: toNumber(result.data.monthlyBudget),
+        currentSpending: toNumber(result.data.currentSpending),
+      });
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [user?.uid]);
+
+  // Fetch only. Kept off the live telemetry path on purpose: recomputing is
+  // cheap, but re-querying Firestore on every sensor reading is not.
+  useEffect(() => {
+    if (authLoading) return undefined;
+
+    if (!user?.uid) {
+      setRangeEntries([]);
+      setFallbackDaily(null);
+      return undefined;
+    }
+
+    let active = true;
+
+    const fetchAnalytics = async () => {
+      setLoading(true);
+
+      try {
+        if (tab === 'Daily') {
+          // Only needed as a fallback for when nothing has been measured today.
+          const dailyResult = await historyService.getDailyUsage(user.uid, {}, null, 1);
+          if (!active) return;
+
+          setFallbackDaily(dailyResult.success && dailyResult.data.length ? dailyResult.data[0] : null);
+          setRangeEntries([]);
+          return;
+        }
+
+        const { startDate, endDate } = getTabRange(tab);
+        const rangeResult = await historyService.getUsageByDateRange(
+          user.uid,
+          toDateKey(startDate),
+          toDateKey(endDate)
+        );
+        if (!active) return;
+
+        setRangeEntries(rangeResult.success ? rangeResult.data : []);
+      } catch (error) {
+        console.error('Error loading analytics:', error);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+
+    return () => {
+      active = false;
+    };
+  }, [authLoading, tab, user?.uid]);
+
+  const analytics = useMemo(() => {
+    if (tab === 'Daily') {
+      // Today first. Only when nothing has been measured yet does this fall
+      // back to the last rolled-up day.
+      const dailyEntry = liveTodayEntry || fallbackDaily;
+
+      const totalEnergy = toNumber(dailyEntry?.totalEnergy);
+      const outlet1Total = toNumber(dailyEntry?.outlet1Energy);
+      const outlet2Total = toNumber(dailyEntry?.outlet2Energy);
+      const entryDate = dailyEntry?.date ? new Date(`${dailyEntry.date}T00:00:00`) : new Date();
+
+      const bill = calculatePelcoIIIBill(totalEnergy, {
+        date: entryDate,
+        supplyRates,
+        profileId: rateProfileId || null,
+        daysInPeriod: dailyEntry ? 1 : 0,
+        billingDays: getDaysInMonth(entryDate),
+      });
+
+      const outlet1Name = String(dailyEntry?.outlet1Name || '').trim() || 'Outlet 1';
+      const outlet2Name = String(dailyEntry?.outlet2Name || '').trim() || 'Outlet 2';
+
+      return {
+        isLive: !!liveTodayEntry,
+        summary: {
+          totalEnergy,
+          totalCost: bill.totals.total,
+          averageUsage: totalEnergy,
+          peakUsage: totalEnergy,
+          peakHour: formatPeakHour(dailyEntry?.peakHour),
+          bestDay: dailyEntry?.date ? formatShortDate(entryDate) : 'N/A',
+          outlet1Total,
+          outlet2Total,
+          effectiveRate: bill.effectiveRate,
+          applianceUsage: aggregateApplianceUsage(dailyEntry ? [dailyEntry] : []),
+          outlet1Name,
+          outlet2Name,
+        },
+        // One point: today, split by outlet. The chart reads the same shape for
+        // every tab so the component does not branch.
+        series: dailyEntry
+          ? [
+              {
+                key: dailyEntry.date,
+                label: 'Today',
+                outlet1: outlet1Total,
+                outlet2: outlet2Total,
+                total: totalEnergy,
+              },
+            ]
+          : [],
+        billDetails: bill,
+      };
+    }
+
+    const { startDate, endDate } = getTabRange(tab);
+
+    // Today has no rolled-up document until midnight, so splice in the live
+    // figure — otherwise the current day always charted as zero.
+    const entries = withLiveToday(rangeEntries, liveTodayEntry);
+    const entriesByDate = new Map();
+    entries.forEach((entry) => entriesByDate.set(entry.date, entry));
+
+    const days = buildDateRange(startDate, endDate);
+    const dailyValues = days.map((day) => toNumber(entriesByDate.get(toDateKey(day))?.totalEnergy));
+
+    const totalEnergy = dailyValues.reduce((sum, value) => sum + value, 0);
+    const outlet1Total = days.reduce(
+      (sum, day) => sum + toNumber(entriesByDate.get(toDateKey(day))?.outlet1Energy),
+      0
+    );
+    const outlet2Total = days.reduce(
+      (sum, day) => sum + toNumber(entriesByDate.get(toDateKey(day))?.outlet2Energy),
+      0
+    );
+
+    const peakUsage = dailyValues.length ? Math.max(...dailyValues) : 0;
+    const bestDayData = dailyValues
+      .map((value, index) => ({ value, date: days[index] }))
+      .filter((item) => item.value > 0)
+      .sort((a, b) => a.value - b.value)[0];
+
+    // One rate, applied once, over the whole period's kWh — never per-day and
+    // summed. PELCO III averages monthly and applies uniformly.
+    const bill = calculatePelcoIIIBill(totalEnergy, {
+      date: endDate,
+      supplyRates,
+      profileId: rateProfileId || null,
+      daysInPeriod: entries.length > 0 ? days.length : 0,
+      billingDays: getDaysInMonth(endDate),
+    });
+
+    const latestEntry = entries[entries.length - 1];
+    const outlet1Name = String(latestEntry?.outlet1Name || '').trim() || 'Outlet 1';
+    const outlet2Name = String(latestEntry?.outlet2Name || '').trim() || 'Outlet 2';
+
+    const series = days.map((day) => {
+      const key = toDateKey(day);
+      const entry = entriesByDate.get(key);
+
+      return {
+        key,
+        label: tab === 'Weekly' ? formatWeekday(day) : String(day.getDate()),
+        fullLabel: formatShortDate(day),
+        outlet1: toNumber(entry?.outlet1Energy),
+        outlet2: toNumber(entry?.outlet2Energy),
+        total: toNumber(entry?.totalEnergy),
+        isLive: entry?.isLive === true,
+      };
+    });
+
+    return {
+      isLive: !!liveTodayEntry,
+      summary: {
+        totalEnergy,
+        totalCost: bill.totals.total,
+        averageUsage: days.length ? totalEnergy / days.length : 0,
+        peakUsage,
+        peakHour: 'N/A',
+        bestDay: bestDayData ? formatShortDate(bestDayData.date) : 'N/A',
+        outlet1Total,
+        outlet2Total,
+        effectiveRate: bill.effectiveRate,
+        applianceUsage: aggregateApplianceUsage(entries),
+        outlet1Name,
+        outlet2Name,
+      },
+      series,
+      billDetails: bill,
+    };
+  }, [tab, rangeEntries, fallbackDaily, liveTodayEntry, rateProfileId, supplyRates]);
+
+  return { ...analytics, liveAppliances, budget, loading };
+};
+
+export default useAnalytics;

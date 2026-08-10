@@ -1,0 +1,91 @@
+.viewToggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--ww-grid);
+  border-radius: var(--ww-radius-sm);
+  margin-bottom: var(--ww-space-3);
+}
+
+.viewButton {
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ww-text-light);
+  cursor: pointer;
+}
+
+.viewActive {
+  background: var(--ww-white);
+  color: var(--ww-primary-dark);
+  box-shadow: var(--ww-shadow-sm);
+}
+
+.chartWrap {
+  width: 100%;
+  min-width: 0;
+}
+
+.tooltip {
+  background: var(--ww-white);
+  border: 1px solid var(--ww-border);
+  border-radius: var(--ww-radius-sm);
+  box-shadow: var(--ww-shadow);
+  padding: 10px 12px;
+  min-width: 180px;
+}
+
+.tooltipTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ww-text-dark);
+  margin-bottom: 6px;
+}
+
+.tooltipList {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 12px;
+}
+
+.tooltipRow dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ww-text-light);
+}
+
+.tooltipRow dd {
+  margin: 0;
+  color: var(--ww-text-dark);
+  font-weight: 600;
+}
+
+.tooltipTotal {
+  padding-top: 4px;
+  border-top: 1px solid var(--ww-grid);
+}
+
+.tooltipNote {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--ww-primary-dark);
+}
+
+.swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

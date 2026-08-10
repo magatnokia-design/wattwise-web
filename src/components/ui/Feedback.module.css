@@ -1,0 +1,140 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.neutral {
+  background: var(--ww-grid);
+  color: var(--ww-text-light);
+}
+
+.good {
+  background: var(--ww-tint-success);
+  color: var(--ww-primary-dark);
+}
+
+.warn {
+  background: var(--ww-tint-warning);
+  color: #b45309;
+}
+
+.alert {
+  background: var(--ww-tint-error);
+  color: #b91c1c;
+}
+
+.info {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ww-space-4);
+  padding: 12px 16px;
+  border-radius: var(--ww-radius-sm);
+  border: 1px solid transparent;
+  font-size: 13px;
+}
+
+.banner.warn {
+  background: var(--ww-tint-warning);
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.banner.alert {
+  background: var(--ww-tint-error);
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.banner.good {
+  background: var(--ww-tint-success);
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.banner.info {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.bannerBody {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bannerTitle {
+  font-weight: 700;
+}
+
+.bannerAction {
+  flex-shrink: 0;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--ww-space-6) var(--ww-space-4);
+  gap: 6px;
+}
+
+.emptyIcon {
+  font-size: 28px;
+  opacity: 0.5;
+}
+
+.emptyTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ww-text-dark);
+}
+
+.emptyBody {
+  font-size: 13px;
+  color: var(--ww-text-light);
+  max-width: 46ch;
+}
+
+.spinnerWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ww-space-6);
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--ww-border);
+  border-top-color: var(--ww-primary);
+  animation: spin 0.7s linear infinite;
+}
+
+.errorText {
+  font-size: 13px;
+  color: var(--ww-error);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

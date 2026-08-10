@@ -1,0 +1,157 @@
+import { useState } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { authService } from '../../services/firebase';
+import { useAuth } from '../../hooks/useAuth';
+import { useNotifications } from '../../screens/Notifications/hooks/useNotifications';
+import { Button } from '../ui/Button';
+import styles from './AppShell.module.css';
+
+// Persistent left nav rather than the phone app's bottom tab bar. Grouped
+// because a desktop sidebar can hold every destination at once — on the phone
+// half of these live behind the Settings tab.
+const NAV_GROUPS = [
+  {
+    label: 'Monitor',
+    items: [
+      { to: '/', label: 'Dashboard', icon: '🏠', end: true },
+      { to: '/analytics', label: 'Analytics', icon: '📊' },
+      { to: '/history', label: 'History', icon: '📋' },
+    ],
+  },
+  {
+    label: 'Control',
+    items: [
+      { to: '/schedule', label: 'Schedule', icon: '⏱️' },
+      { to: '/safety', label: 'Power Safety', icon: '🛡️' },
+    ],
+  },
+  {
+    label: 'Cost',
+    items: [
+      { to: '/budget', label: 'Budget', icon: '💰' },
+      { to: '/comparison', label: 'Compare Months', icon: '⚖️' },
+    ],
+  },
+  {
+    label: 'Account',
+    items: [
+      { to: '/notifications', label: 'Notifications', icon: '🔔', badge: 'unread' },
+      { to: '/settings', label: 'Settings', icon: '⚙️' },
+    ],
+  },
+];
+
+const PAGE_TITLES = {
+  '/': 'Dashboard',
+  '/analytics': 'Analytics',
+  '/history': 'History',
+  '/schedule': 'Schedule',
+  '/safety': 'Power Safety',
+  '/budget': 'Budget',
+  '/comparison': 'Compare Months',
+  '/notifications': 'Notifications',
+  '/settings': 'Settings',
+};
+
+export const AppShell = () => {
+  const { user } = useAuth();
+  const { unreadCount } = useNotifications();
+  const location = useLocation();
+  const [navOpen, setNavOpen] = useState(false);
+
+  const displayName = user?.displayName || user?.email || 'Signed in';
+  const initial = String(displayName).trim().charAt(0).toUpperCase() || '?';
+
+  const handleSignOut = async () => {
+    await authService.logout();
+  };
+
+  return (
+    <div className={styles.shell}>
+      <a className={styles.skipLink} href="#main">
+        Skip to content
+      </a>
+
+      <aside className={`${styles.sidebar} ${navOpen ? styles.sidebarOpen : ''}`}>
+        <div className={styles.brand}>
+          <span className={styles.brandMark} aria-hidden="true">
+            ⚡
+          </span>
+          <div>
+            <p className={styles.brandName}>WattWise</p>
+            <p className={styles.brandSub}>Energy monitor</p>
+          </div>
+        </div>
+
+        <nav className={styles.nav} aria-label="Main">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label} className={styles.navGroup}>
+              <p className={styles.navGroupLabel}>{group.label}</p>
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  onClick={() => setNavOpen(false)}
+                  className={({ isActive }) =>
+                    `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`
+                  }
+                >
+                  <span className={styles.navIcon} aria-hidden="true">
+                    {item.icon}
+                  </span>
+                  <span className={styles.navLabel}>{item.label}</span>
+                  {item.badge === 'unread' && unreadCount > 0 ? (
+                    <span className={styles.navBadge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
+                  ) : null}
+                </NavLink>
+              ))}
+            </div>
+          ))}
+        </nav>
+
+        <div className={styles.account}>
+          <span className={styles.avatar} aria-hidden="true">
+            {initial}
+          </span>
+          <span className={styles.accountName} title={displayName}>
+            {displayName}
+          </span>
+        </div>
+      </aside>
+
+      {navOpen ? (
+        <button
+          type="button"
+          className={styles.scrim}
+          aria-label="Close navigation"
+          onClick={() => setNavOpen(false)}
+        />
+      ) : null}
+
+      <div className={styles.body}>
+        <header className={styles.topbar}>
+          <button
+            type="button"
+            className={styles.menuButton}
+            onClick={() => setNavOpen((open) => !open)}
+            aria-label="Toggle navigation"
+            aria-expanded={navOpen}
+          >
+            ☰
+          </button>
+          <h1 className={styles.pageTitle}>{PAGE_TITLES[location.pathname] || 'WattWise'}</h1>
+          <Button variant="secondary" size="sm" onClick={handleSignOut}>
+            Sign out
+          </Button>
+        </header>
+
+        <main id="main" className={styles.main}>
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default AppShell;

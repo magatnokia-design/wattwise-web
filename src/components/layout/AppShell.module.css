@@ -1,0 +1,253 @@
+.shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--ww-bg);
+}
+
+.skipLink {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  background: var(--ww-white);
+  padding: 10px 16px;
+  border-radius: 0 0 var(--ww-radius-sm) 0;
+}
+
+.skipLink:focus {
+  left: 0;
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--ww-sidebar-width);
+  display: flex;
+  flex-direction: column;
+  background: var(--ww-white);
+  border-right: 1px solid var(--ww-border);
+  z-index: 50;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px var(--ww-space-5);
+  border-bottom: 1px solid var(--ww-border);
+}
+
+.brandMark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--ww-radius-sm);
+  background: var(--ww-tint-success);
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.brandName {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ww-text-dark);
+  letter-spacing: -0.01em;
+}
+
+.brandSub {
+  font-size: 11px;
+  color: var(--ww-text-light);
+}
+
+.nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--ww-space-4) var(--ww-space-3);
+}
+
+.navGroup + .navGroup {
+  margin-top: var(--ww-space-4);
+}
+
+.navGroupLabel {
+  padding: 0 12px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ww-text-light);
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--ww-radius-sm);
+  color: var(--ww-text-light);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.navLink:hover {
+  background: var(--ww-bg);
+  color: var(--ww-text-dark);
+}
+
+.navLinkActive {
+  background: var(--ww-tint-success);
+  color: var(--ww-primary-dark);
+  font-weight: 600;
+}
+
+.navIcon {
+  font-size: 14px;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.navLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.navBadge {
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--ww-error);
+  color: var(--ww-white);
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--ww-space-4) var(--ww-space-5);
+  border-top: 1px solid var(--ww-border);
+  min-width: 0;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ww-primary);
+  color: var(--ww-white);
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.accountName {
+  font-size: 12.5px;
+  color: var(--ww-text-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Body */
+.body {
+  flex: 1;
+  min-width: 0;
+  margin-left: var(--ww-sidebar-width);
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: var(--ww-space-3);
+  padding: 0 var(--ww-space-6);
+  height: 60px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--ww-border);
+}
+
+.menuButton {
+  display: none;
+  border: 1px solid var(--ww-border);
+  background: var(--ww-white);
+  border-radius: var(--ww-radius-sm);
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.pageTitle {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ww-text-dark);
+  letter-spacing: -0.02em;
+}
+
+.main {
+  flex: 1;
+  padding: var(--ww-space-5) var(--ww-space-6) var(--ww-space-6);
+  max-width: 1400px;
+  width: 100%;
+}
+
+.scrim {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--ww-overlay);
+  border: none;
+  z-index: 45;
+}
+
+/* Tablet and below: the sidebar becomes a drawer. Phone web is a nice-to-have
+   here — users on phones have the Android app. */
+@media (max-width: 1024px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+    box-shadow: var(--ww-shadow-lg);
+  }
+
+  .body {
+    margin-left: 0;
+  }
+
+  .menuButton {
+    display: grid;
+    place-items: center;
+  }
+
+  .scrim {
+    display: block;
+  }
+
+  .topbar {
+    padding: 0 var(--ww-space-4);
+  }
+
+  .main {
+    padding: var(--ww-space-4);
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "wattwise-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Browser client for WattWise — 2-outlet ESP32 energy monitoring, against the same Firebase project as the Android app.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "firebase": "^12.11.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.1.1",
+    "recharts": "^3.2.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.7"
+  }
+}
