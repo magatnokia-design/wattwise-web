@@ -7,10 +7,12 @@
 }
 
 /* Kept deliberately small — the showcase above it is the hero, this is the
-   supporting "here is the interaction" beat. */
+   supporting "here is the interaction" beat. Width is clamped against viewport
+   height because the height follows from it via the viewBox ratio, so this is
+   how the diagram shrinks on a short window. */
 .svg {
   width: 100%;
-  max-width: 268px;
+  max-width: clamp(196px, 30vh, 268px);
   height: auto;
   overflow: visible;
 }

@@ -78,35 +78,19 @@
 }
 
 /* Right-hand panel */
-/* Scrolls on purpose: it now carries the showcase, the outlet diagram, the
-   feature rows, an FAQ and contact links.
-   `justify-content: flex-start` rather than `center` — centring a flex column
-   that overflows its scroll container makes the top of the content
-   unreachable, because overflow above the start edge cannot be scrolled to. */
+/* Never scrolls. Every section inside is sized against viewport height — the
+   padding, the column gaps, the showcase stage and the outlet diagram — so the
+   panel shrinks to fit rather than overflowing. `overflow: hidden` makes that a
+   guarantee rather than an intention. */
 .aside {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  padding: clamp(20px, 3.5vh, 40px) var(--ww-space-5);
+  justify-content: center;
+  padding: clamp(16px, 3vh, 36px) var(--ww-space-5);
   background: linear-gradient(160deg, #f0fdf9 0%, #d1fae5 55%, #a7f3d0 100%);
   border-left: 1px solid var(--ww-border);
-  overflow: hidden auto;
-  scrollbar-width: thin;
-  scrollbar-color: #6ee7b7 transparent;
-}
-
-.aside::-webkit-scrollbar {
-  width: 8px;
-}
-
-.aside::-webkit-scrollbar-thumb {
-  background: #6ee7b7;
-  border-radius: 999px;
-}
-
-.aside::-webkit-scrollbar-track {
-  background: transparent;
+  overflow: hidden;
 }
 
 /* Slow drifting wash, so the panel is not a flat block of green. */
@@ -132,13 +116,13 @@
    of a much wider panel. */
 .asideInner {
   position: relative;
-  margin: 0 auto;
+  margin: auto;
   width: 100%;
   max-width: 420px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(12px, 2.2vh, 20px);
+  gap: clamp(8px, 1.8vh, 18px);
 }
 
 .asideHead {
@@ -171,6 +155,14 @@
   flex-direction: column;
   gap: 6px;
   width: 100%;
+}
+
+/* Last resort on a genuinely short window. The showcase and the outlet
+   diagram carry the message; three prose rows are what goes. */
+@media (max-height: 660px) {
+  .featureList {
+    display: none;
+  }
 }
 
 .feature {

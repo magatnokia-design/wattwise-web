@@ -45,7 +45,7 @@
   display: grid;
   place-items: center;
   width: 100%;
-  height: clamp(168px, 23vh, 206px);
+  height: clamp(122px, 19vh, 200px);
   padding: 4px 0;
 }
 
