@@ -4,6 +4,8 @@ import { authService } from '../../services/firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotifications } from '../../screens/Notifications/hooks/useNotifications';
 import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
+import { Banner } from '../ui/Feedback';
 import styles from './AppShell.module.css';
 
 // Persistent left nav rather than the phone app's bottom tab bar. Grouped
@@ -58,12 +60,38 @@ export const AppShell = () => {
   const { unreadCount } = useNotifications();
   const location = useLocation();
   const [navOpen, setNavOpen] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState('');
 
   const displayName = user?.displayName || user?.email || 'Signed in';
   const initial = String(displayName).trim().charAt(0).toUpperCase() || '?';
 
+  /**
+   * Confirmed rather than immediate. Signing out is one click away from every
+   * screen, and `authService.logout` unregisters this browser's push token
+   * before it signs out — so an accidental click is not free to undo.
+   *
+   * No redirect on success: onAuthStateChanged fires, AuthGate sees no user and
+   * routes to /login.
+   */
   const handleSignOut = async () => {
-    await authService.logout();
+    setSignOutError('');
+    setSigningOut(true);
+
+    const result = await authService.logout();
+
+    if (!result.success) {
+      setSigningOut(false);
+      setSignOutError(result.error || 'Could not sign out. Check your connection and try again.');
+      return;
+    }
+  };
+
+  const closeSignOut = () => {
+    if (signingOut) return;
+    setConfirmSignOut(false);
+    setSignOutError('');
   };
 
   return (
@@ -141,7 +169,7 @@ export const AppShell = () => {
             ☰
           </button>
           <h1 className={styles.pageTitle}>{PAGE_TITLES[location.pathname] || 'WattWise'}</h1>
-          <Button variant="secondary" size="sm" onClick={handleSignOut}>
+          <Button variant="secondary" size="sm" onClick={() => setConfirmSignOut(true)}>
             Sign out
           </Button>
         </header>
@@ -150,6 +178,35 @@ export const AppShell = () => {
           <Outlet />
         </main>
       </div>
+
+      <Modal
+        open={confirmSignOut}
+        onClose={closeSignOut}
+        title="Sign out?"
+        width={400}
+        footer={
+          <>
+            <Button variant="secondary" onClick={closeSignOut} disabled={signingOut}>
+              Stay signed in
+            </Button>
+            <Button variant="danger" onClick={handleSignOut} loading={signingOut}>
+              Sign out
+            </Button>
+          </>
+        }
+      >
+        <div style={{ display: 'grid', gap: 12 }}>
+          {signOutError ? <Banner tone="alert">{signOutError}</Banner> : null}
+
+          <p style={{ fontSize: 13.5, color: 'var(--ww-text)' }}>
+            You are signed in as <strong>{displayName}</strong>.
+          </p>
+          <p style={{ fontSize: 13, color: 'var(--ww-text-light)' }}>
+            Your outlets keep running exactly as they are — schedules and safety cut-offs run on
+            the server, not in this browser. You will need your password to sign back in.
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 };
