@@ -126,7 +126,82 @@ None require action here, but they explain behaviour you may see:
   four successful reads had returned. Now degrades per-read, and a failed refresh
   keeps what is on screen. **This repo's Settings may have the same pattern.**
 
-## 7. Not bugs — confirmed, do not "fix"
+## 7. TASK — the reset form rejects a password it says is valid
+
+Observed on `/auth/action` during a real reset: **"Pick a stronger password."**
+displayed while **all four requirement ticks were green**. The form says the
+password qualifies and then refuses it.
+
+The client check passed — that is why the ticks were green and why it submitted
+at all — so this is Firebase's `confirmPasswordReset` returning
+`auth/weak-password`, which `describeAuthError` renders as that sentence.
+
+**Most likely cause: a password policy configured in the Firebase console**
+(Authentication → Settings → Password policy) requiring something
+`validatePassword` in `src/services/firebase/authActions.js` does not check —
+typically a non-alphanumeric character. Check that page first; it decides whether
+this is a two-line fix or nothing at all.
+
+If a policy is set, mirror it in `validatePassword` so the ticks tell the truth.
+Right now a user hits a wall with no indication of what is missing. **The phone's
+`RegisterScreen` has the same four rules and would have the same gap** — that fix
+belongs in the phone repo and should land in the same change.
+
+## 8. Auth email now comes from WattWise, and lands here
+
+Since `73b0fa1` / `0c77fa0`, password reset and address confirmation are
+generated and sent by our own Cloud Functions rather than Firebase.
+
+`sendPasswordResetEmail` and `sendVerificationEmail` callables ask the Admin SDK
+for the link, keep only the `oobCode`, rebuild it against
+`https://www.wattwise.site/auth/action`, and send through Brevo. **Verified end to
+end 2026-08-11**: branded email from `WattWise <support@wattwise.site>`, green
+button, link opened this page, password saved.
+
+This is the workaround for the permanently locked action URL described in
+`AUTH-AND-EMAIL.md` — that file's "the only real fix" section is now **done**, not
+pending.
+
+`authService.js` moved in the same change and is **byte-identical across both
+repos again**. The drift noted in `FOR-THE-PHONE-REPO.md` §5 is closed. Keep it
+that way.
+
+Rate limiting: one message per address per minute, raised as
+`resource-exhausted`. `authErrors.js` phrases it.
+
+## 9. What the system emails — seven types, all through Brevo
+
+| Tag | What | Notes |
+|---|---|---|
+| `invoice` | Monthly statement | **PDF attachment**, base64, 700 KB cap |
+| `receipt` | Daily usage summary | |
+| `budget` | Threshold alerts | |
+| `safety` | Auto-cutoff / threshold breach | Red accent |
+| `device` | Command failure or timeout | Amber accent |
+| `auth` ×2 | Password reset, address confirmation | Button, no footer link |
+
+Each non-auth email now carries a short **advisory note** and a link to this web
+client. Auth mail deliberately carries neither: a security email that also
+markets is the shape of a phishing message.
+
+**Untested:** the invoice PDF has never gone out through Brevo. `processMonthlyInvoice`
+runs 00:20 Manila on the 1st, so the next real send is **1 September 2026**.
+
+## 10. Project context — this is a capstone, not a product
+
+Stated directly by the owner, and it changes what "good" means here:
+
+- **One account, one ESP32.** The hardware is expensive; there is exactly one
+  device. Do not build multi-device flows, device pickers, or account switching.
+- **Apartment scale.** Two outlets, one room. Not a house, not a building.
+- **Brevo's 300 emails/day is not a constraint** worth designing around. Do not
+  add batching, digest modes, or send-rate cleverness to save quota. The
+  per-address throttle on auth mail stays, but it is there to stop abuse of an
+  unauthenticated endpoint, not to conserve quota.
+- The goal is **reliable and good**, not scalable. Prefer the clear
+  implementation over the one that would survive ten thousand users.
+
+## 11. Not bugs — confirmed, do not "fix"
 
 - **The PZEM reads voltage while the relay is off.** It sits on the mains side of
   the relay; the relay switches the load, not the sensor's supply. 240 V with
