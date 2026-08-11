@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import useBudgetTracking from '../screens/BudgetTracking/hooks/useBudgetTracking';
 import {
   formatCurrency,
@@ -6,9 +5,6 @@ import {
   getBudgetStatusColor,
 } from '../screens/BudgetTracking/utils/budgetHelpers';
 import { Card, CardHeader } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Modal } from '../components/ui/Modal';
-import { TextField } from '../components/ui/Field';
 import { StatGrid, StatTile } from '../components/ui/StatTile';
 import { DataTable } from '../components/ui/DataTable';
 import { Banner, EmptyState, Spinner } from '../components/ui/Feedback';
@@ -27,43 +23,15 @@ export const BudgetPage = () => {
     currentDay,
     budgetHistory,
     loading,
-    handleSetBudget,
+    // handleSetBudget is deliberately not pulled in — see the banner below.
+    // Leaving it unbound is what makes setMonthlyBudget unreachable from the
+    // web, rather than merely un-clicked.
   } = useBudgetTracking();
-
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
 
   const percentUsed = monthlyBudget > 0 ? (currentSpending / monthlyBudget) * 100 : 0;
   const status = getBudgetStatus(currentSpending, monthlyBudget);
   const statusColor = getBudgetStatusColor(percentUsed);
   const remaining = monthlyBudget - currentSpending;
-
-  const openEditor = () => {
-    setDraft(monthlyBudget > 0 ? String(monthlyBudget) : '');
-    setError('');
-    setOpen(true);
-  };
-
-  const save = async () => {
-    const amount = parseFloat(draft);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setError('Enter a budget above zero.');
-      return;
-    }
-
-    setSaving(true);
-    const result = await handleSetBudget(amount);
-    setSaving(false);
-
-    if (!result.success) {
-      setError(result.error || 'Could not save the budget.');
-      return;
-    }
-
-    setOpen(false);
-  };
 
   if (loading && monthlyBudget === 0 && currentSpending === 0) {
     return <Spinner label="Loading budget" />;
@@ -76,14 +44,31 @@ export const BudgetPage = () => {
           Spending is recomputed from the daily rollups each night, so it never double-counts a
           re-run.
         </p>
-        <Button onClick={openEditor}>{monthlyBudget > 0 ? 'Change budget' : 'Set budget'}</Button>
       </div>
 
+      {/*
+        The amount is set on the phone only — one writer, deliberately.
+        `setMonthlyBudget` clears the 50/75/90/100% alert flags when the figure
+        changes, because those flags record crossings against a budget that no
+        longer exists. Writing from here left them set, and handleBudgetAlerts
+        skips any threshold already marked true, so changing the budget on the
+        web silenced alerts for the rest of the month while doing it on the
+        phone worked. Same account, same action, different outcome.
+
+        Per §12 this is a pointer, not a gate: everything the page shows still
+        works here, and nothing about the budget is hidden behind the app.
+      */}
       {monthlyBudget <= 0 ? (
-        <Banner tone="info">
-          No monthly budget set yet. Setting one turns on the 50 / 75 / 90 / 100% alerts.
+        <Banner tone="info" title="No monthly budget set yet.">
+          Set one in the WattWise app to turn on the 50 / 75 / 90 / 100% alerts. It appears here as
+          soon as you do.
         </Banner>
-      ) : null}
+      ) : (
+        <Banner tone="info">
+          Change your monthly budget in the WattWise app. Everything on this page stays live either
+          way.
+        </Banner>
+      )}
 
       <StatGrid>
         <StatTile label="Monthly budget" value={formatCurrency(monthlyBudget)} icon="🎯" />
@@ -251,36 +236,6 @@ export const BudgetPage = () => {
         </Card>
       </div>
 
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        title="Monthly budget"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button loading={saving} onClick={save}>
-              Save
-            </Button>
-          </>
-        }
-      >
-        <div className={styles.stack}>
-          {error ? <Banner tone="alert">{error}</Banner> : null}
-          <TextField
-            label="Budget for this month"
-            type="number"
-            min="0"
-            step="1"
-            prefix="₱"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            hint="Carried forward to future months until you change it."
-            autoFocus
-          />
-        </div>
-      </Modal>
     </div>
   );
 };

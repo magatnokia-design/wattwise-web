@@ -136,16 +136,30 @@ The client check passed — that is why the ticks were green and why it submitte
 at all — so this is Firebase's `confirmPasswordReset` returning
 `auth/weak-password`, which `describeAuthError` renders as that sentence.
 
-**Most likely cause: a password policy configured in the Firebase console**
-(Authentication → Settings → Password policy) requiring something
-`validatePassword` in `src/services/firebase/authActions.js` does not check —
-typically a non-alphanumeric character. Check that page first; it decides whether
-this is a two-line fix or nothing at all.
+**UPDATE 2026-08-11 — the console policy theory is dead.** Checked directly:
 
-If a policy is set, mirror it in `validatePassword` so the ticks tell the truth.
-Right now a user hits a wall with no indication of what is missing. **The phone's
-`RegisterScreen` has the same four rules and would have the same gap** — that fix
-belongs in the phone repo and should land in the same change.
+| Setting | Value |
+|---|---|
+| Enforcement mode | **Notify** (not Require) |
+| Uppercase / lowercase / numeric / special | **all unchecked** |
+| Minimum length | **6** |
+
+No policy is enforced, and nothing `validatePassword` checks is stricter than
+what Firebase asks for. A password passing all four ticks is comfortably over 6
+characters, so `confirmPasswordReset` should never have returned
+`auth/weak-password`.
+
+**So the message was almost certainly not `auth/weak-password` at all.** Look at
+`describeAuthError` and the catch block in `AuthActionPage` / `authActions.js`
+instead: the likely bug is a different failure — an expired or already-used
+`oobCode` being the obvious candidate — falling through to the wrong entry in the
+`MESSAGES` map, or a stale error left on screen from a previous submit.
+
+**Reproduce before fixing**, and log the raw `error.code`. The visible sentence
+is not trustworthy evidence of which code fired.
+
+No mirroring is needed in the phone's `RegisterScreen` — there is no policy to
+mirror.
 
 ## 8. Auth email now comes from WattWise, and lands here
 
@@ -211,3 +225,116 @@ Stated directly by the owner, and it changes what "good" means here:
   238–244 V, so the fix is to raise the stored maximum, not to change the rule.
 - **No email is sent when an outlet is switched off.** Only command failures and
   timeouts email. A successful toggle is silent, deliberately.
+- **Password reset is not duplicated between the two clients.** See §12.4.
+
+---
+
+# Added 2026-08-11 (second pass)
+
+## 12. Division of labour — the app and the site are one system
+
+Decided by the owner this session. The phone and the website are two views of one
+Firebase account, and each is better at different work. This settles who owns
+what, and it is now the reason behind several of the tasks above.
+
+### The governing rule
+
+> **Redirect for convenience, never for capability.**
+
+Anything urgent must keep working completely on the phone — somebody standing in
+their apartment with no laptop still has to toggle an outlet, read safety state
+and check usage. A pointer at the other client says *"easier on a bigger
+screen"*, never *"go there to see this"*.
+
+This matters for the capstone demo specifically: if a panel opens only the app
+and half of it defers to a website, that reads as unfinished rather than
+deliberate.
+
+### Ownership
+
+| Area | Owner | Reasoning |
+|---|---|---|
+| Device pairing / token | **Phone only** | QR scanner exists only there — this is §4 |
+| Monthly budget | **Phone only** | One writer, see §12.1 |
+| Outlet toggle, safety cutoff | **Phone-first**, web keeps it | You are in the room. **Do not remove the web toggle** — it is the headline proof the poll-based flow is client-agnostic |
+| Rates, previous bills | **Web-first**, phone keeps it | Decimal figures copied off paper want a keyboard |
+| Analytics, history | **Web-first**, phone keeps it | Charts want width |
+| Password reset | **Already split correctly** | See §12.4 |
+| Push notifications | **Phone only** | Web push was never built |
+
+### 12.1 TASK — make the monthly budget read-only here
+
+Keep the budget page and everything it displays. Remove only the ability to
+*change* the amount, and point at the app instead: *"Change your monthly budget
+in the WattWise app."*
+
+**Why, concretely.** `budgetService.js` is the one shared file that has drifted
+between the repos. The phone gained this in `64b85ed` and this repo never did:
+
+```js
+const budgetChanged = nextBudget !== previousBudget;
+// ...
+...(budgetChanged ? { thresholds: {
+  fifty: false, seventyFive: false, ninety: false, hundred: false,
+} } : {}),
+```
+
+Without it, changing the budget **on the web** leaves the old alert flags set,
+and `handleBudgetAlerts` skips every threshold already marked true — silencing
+budget alerts for the rest of the month. Change it on the phone and alerts work.
+Same account, same action, different outcome. That is the bug.
+
+**Do both things, not one:**
+
+1. Make the amount read-only in the UI, so `setMonthlyBudget` is unreachable here.
+2. **Still sync `budgetService.js` byte-for-byte with the phone's copy.**
+
+Point 2 matters even though point 1 makes the code unreachable. The byte-identical
+rule exists so nobody has to work out *which* copy they are reading. Leaving a
+known-drifted file in place because "that path is dead now" sets a trap for
+whoever reads it next.
+
+### 12.2 The phone now deep-links into this app — keep these routes
+
+Three tappable pointers ship in the app, via a new
+`src/constants/webApp.js` + `src/components/common/WebAppNotice.js`:
+
+| From | Opens |
+|---|---|
+| Analytics screen banner | `/analytics` |
+| Compare Usage banner | `/comparison` |
+| Rate entry, advanced fields | `/settings` |
+
+Verified against `src/App.jsx` — all three are top-level routes today. **If one is
+renamed, the app lands users on `NotFoundPage`** with no way to know it broke.
+Tell the phone repo before changing any of them.
+
+The banners are dismissible for good and styled in the theme green rather than
+amber, because nothing is wrong — they are an offer, not a warning.
+
+### 12.3 Worth mirroring here
+
+Optional, but the same idea in reverse: this client could point at the app for
+the things the phone owns — a line on the device card (already §4) and on the
+budget page (§12.1). Same rule applies: never gate, only suggest.
+
+### 12.4 Password reset — correct as it stands, do not "consolidate"
+
+This was examined and deliberately left alone. The flow today:
+
+> phone taps *Change Password* → email arrives → link opens **this site** →
+> password is set **here**
+
+The web already owns setting the password; `confirmPasswordReset` runs nowhere
+else. The phone only *requests* the email, which is the one-tap part.
+
+Moving the request to the web as well would make the user open a browser and
+type their address by hand to trigger the identical email. Same destination,
+more steps. **The split already exists** — it just is not visible in the wording,
+which the phone side is free to improve.
+
+## 13. Project context recap
+
+Nothing changed in §10, but it bears on §12: **one account, one ESP32, one
+apartment.** Ownership decisions here are about making two clients feel like one
+product, not about scaling to many users or devices.

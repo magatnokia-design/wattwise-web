@@ -40,7 +40,13 @@ export const verifyResetCode = async (oobCode) => {
 };
 
 export const completePasswordReset = async (oobCode, newPassword) => {
+  // Note this returns auth/weak-password from our OWN pre-check, before Firebase
+  // is called at all. That is worth knowing when reading a report: seeing "Pick
+  // a stronger password" on screen says nothing about what the server thought,
+  // and this project enforces no password policy beyond a 6-character minimum -
+  // looser than the rules below - so the server has never been the source.
   if (!isPasswordAcceptable(newPassword)) {
+    console.warn('[auth/action] rejected locally by validatePassword, not by Firebase');
     return {
       success: false,
       code: 'auth/weak-password',
@@ -52,6 +58,10 @@ export const completePasswordReset = async (oobCode, newPassword) => {
     await confirmPasswordReset(auth, oobCode, newPassword);
     return { success: true };
   } catch (error) {
+    // The rendered sentence is a lookup on this code and is not evidence of
+    // which failure occurred. Log the raw code so a recurrence is diagnosable
+    // from the console rather than from the wording on screen.
+    console.warn('[auth/action] confirmPasswordReset failed:', error?.code, error?.message);
     return { success: false, code: error?.code, error: error?.message };
   }
 };
