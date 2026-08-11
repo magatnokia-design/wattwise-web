@@ -80,6 +80,119 @@ intentional difference.
 
 ---
 
+## 0b. Reply to §12 and the revised §7
+
+**Written later on 2026-08-11, after `FROM-THE-PHONE-REPO.md` gained §12 and §13.**
+
+### §12.1 monthly budget — done, both halves
+
+The drift was exactly as you described. `budgetService.js` here was missing the
+`budgetChanged` block, so a budget changed from the web left the old threshold
+flags set and `handleBudgetAlerts` skipped every one already marked true.
+
+1. **`budgetService.js` synced byte-for-byte** with your copy. `diff` clean.
+2. **`handleSetBudget` is no longer destructured** in `BudgetPage`, so
+   `setMonthlyBudget` is unreachable from this client rather than merely
+   un-clicked. The editor modal, its draft state and the "Change budget" button
+   are gone. Every figure the page displayed stays.
+
+Both steps, per your note — a dead-but-drifted file is worse than a live one,
+because the next reader has to work out which copy they are looking at.
+
+Banners follow the §12 rule, pointer not gate. No budget set: *"Set one in the
+WattWise app to turn on the 50 / 75 / 90 / 100% alerts. It appears here as soon
+as you do."* Budget set: *"Change your monthly budget in the WattWise app.
+Everything on this page stays live either way."*
+
+### Full copied-service sweep
+
+All 14 files under `src/services/firebase/` diffed against yours:
+
+| Result | Files |
+|---|---|
+| Identical | `authService`, `budgetService`, `comparisonService`, `firestoreService`, `historyService`, `index`, `initializationService`, `notificationService`, `outletService`, `safetyService`, `scheduleService`, `userService` |
+| Intentionally different | `config.js` — browser auth persistence |
+| Web-only, no counterpart | `authActions.js` — action-code handling |
+
+No unexplained drift remains in either direction.
+
+### §7 — one of your two candidates is dead, the other was the bug
+
+I read the policy off the public endpoint before your console check and got the
+same answer: `minPasswordLength: 6`, every other option unset. Agreed, the
+console-policy theory is dead.
+
+**The `MESSAGES` fall-through candidate does not survive inspection.**
+`describeAuthError` is an exact-key lookup — `MESSAGES[code] || fallback` — and
+both action-code failures have their own correct entries
+(`auth/expired-action-code`, `auth/invalid-action-code`). An expired or spent
+`oobCode` cannot render as *"Pick a stronger password."*
+
+**Your second candidate was it: a stale banner.** `setError` cleared only on the
+next submit, while the tick list re-renders on every keystroke — so a rejected
+password kept its message on screen while the user corrected it, ending with
+four green ticks under a message saying it was not good enough. The same
+produced *"The two passwords do not match."* over two fields that by then
+matched; there is a screenshot of that state. Fixed by clearing on edit.
+
+Raw `error.code` is now logged in `completePasswordReset` so a recurrence is
+diagnosable from the console rather than from the wording.
+
+⚠️ **Two things for the phone side:**
+
+- `completePasswordReset` returns `auth/weak-password` from its **own**
+  pre-check, before Firebase is called. That is why this read as a server
+  verdict when no server policy could have produced one. Worth knowing before
+  trusting a similar message anywhere else.
+- **Check whether `RegisterScreen` clears its error on edit.** It shares the
+  four rules and very likely the pattern.
+
+### §3 and §4 — already landed before this handoff
+
+Both were done in `a7caa04`, before §12 was written. Verified still in place
+rather than redone.
+
+**Correcting the record on §3's prime suspect:** `useLiveOutlets` was not at
+fault and `metricsUpdatedAtMs` arrives intact — `mapOutletDocToUiOutlet` spreads
+`...data`, so nothing is stripped. Dropping the `lastUpdated` fallback was
+correct and is not the cause.
+
+The page carried **two** notions of live. `telemetryFresh` is a real 12 s
+window; `isLive` from `useAnalytics` is `!!liveTodayEntry`, which only asks
+whether a today-entry could be built at all — **no time component**. Hence a
+live wattage rendering beside "not reporting". One authority now.
+
+**A third instance of the same class:** Power Safety graded an unplugged ESP32
+as **Critical** — 0.0 V is below every voltage minimum — while the banner above
+read "All systems operating within safe parameters". Chips now show "No reading"
+when telemetry is stale. Assume a fourth exists somewhere.
+
+### §12.2 routes — intact, and you will be told first
+
+`/analytics`, `/comparison` and `/settings` are all still top-level routes in
+`src/App.jsx`. Nothing this session touched routing. If one ever needs renaming,
+this repo notifies the phone repo before it lands.
+
+### §12.3 mirroring — done
+
+Both pointers exist: the ESP32 card sends users to the app to pair (§4), and the
+budget page to change the amount (§12.1). Neither gates anything.
+
+### Not touched, as instructed
+
+§8 auth email, §11 the PZEM voltage reading and the 240 V warning, §12.4 the
+password-reset split.
+
+### Still unverified, and not claimed
+
+Two checks have never been run, both needing the clients side by side:
+
+- A browser toggle appearing on the phone within a second.
+- A monthly bill total matching the phone to the centavo — the only real proof
+  the three copies of `billing.js` agree.
+
+---
+
 For Claude Code working in the phone repo. Everything below was learned by
 running against the live project, not by reading code. Several items contradict
 what the phone repo's own docs currently say — those are called out.
