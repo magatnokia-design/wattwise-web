@@ -14,6 +14,16 @@ const MESSAGES = {
   'auth/operation-not-allowed': 'Email sign-in is not enabled for this project.',
   'auth/unauthorized-domain':
     'This site is not an authorised domain for the WattWise Firebase project. Add it under Authentication → Settings → Authorized domains.',
+
+  // Action-code failures, from the links in Firebase's emails. Both of the
+  // first two present identically to a user, and both mean "ask for a new
+  // link" - Firebase invalidates earlier codes when a newer one is issued, so
+  // an old email in the inbox is dead even well inside the hour.
+  'auth/expired-action-code':
+    'This link has expired. Reset links last one hour — request a new one below.',
+  'auth/invalid-action-code':
+    'This link is no longer valid. It may have been used already, or replaced by a newer one — request a fresh link below.',
+  'auth/user-disabled': 'This account has been disabled. Contact support@wattwise.site.',
 };
 
 export const describeAuthError = (code, fallback = 'Something went wrong. Try again.') =>

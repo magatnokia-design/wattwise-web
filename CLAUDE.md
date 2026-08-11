@@ -23,6 +23,17 @@ it picks up. That is why this works at all.
 
 ---
 
+## Read first
+
+- **`docs/AUTH-AND-EMAIL.md`** before touching anything auth or email related.
+  Outbound mail moved to **Brevo SMTP** on 2026-08-11, and several obvious-looking
+  routes (Gmail aliases, Cloudflare, Resend) are documented dead ends. That file
+  also explains why there is no login OTP, and why `AuthActionPage` sits outside
+  `AuthGate`.
+- **`C:\App\WattWise\docs\email-senders.md`** is the authoritative record for the
+  mail pipeline as a whole — the backend, the extension, and the SMTP config all
+  live in the phone repo.
+
 ## THE GOLDEN RULE
 
 > **Copy the data layer verbatim. Rewrite only the UI.**
@@ -51,6 +62,14 @@ certainly does.
 Anything importing from `react-native`. That is every screen and component.
 A desktop layout is the entire reason this repo exists — do not port
 `StyleSheet.create` blocks over.
+
+### Web-only additions with no phone counterpart
+
+Not everything here is a port. `src/pages/AuthActionPage.jsx` and
+`src/services/firebase/authActions.js` handle the one-time codes in Firebase's
+emails — something the phone app never does, because its emails open a browser.
+Keep such code **out of** the copied files: adding action-code handling to
+`authService.js` would break its byte-for-byte match with the phone app.
 
 ### The single edit to a copied file
 

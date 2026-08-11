@@ -6,6 +6,7 @@ import { Spinner } from './components/ui/Feedback';
 
 import LoginPage from './pages/LoginPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import AuthActionPage from './pages/AuthActionPage';
 import DashboardPage from './pages/DashboardPage';
 import HistoryPage from './pages/HistoryPage';
 
@@ -81,6 +82,13 @@ export const App = () => (
         </AuthGate>
       }
     />
+
+    {/* Firebase's email links land here once "Customise action URL" points at
+        this domain. Deliberately outside AuthGate in both directions: a signed
+        -out user resetting a password has no session, and a signed-in user
+        confirming their address would otherwise be bounced to the dashboard by
+        the !requireAuth branch before the code was ever spent. */}
+    <Route path="/auth/action" element={<AuthActionPage />} />
 
     <Route
       element={
