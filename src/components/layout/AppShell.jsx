@@ -6,6 +6,7 @@ import { useUnreadCount } from '../../hooks/useUnreadCount';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { Banner } from '../ui/Feedback';
+import { ErrorBoundary } from './ErrorBoundary';
 import styles from './AppShell.module.css';
 
 // Persistent left nav rather than the phone app's bottom tab bar. Grouped
@@ -176,8 +177,14 @@ export const AppShell = () => {
           </Button>
         </header>
 
+        {/* Inside the shell, not around it: a crashed page leaves the sidebar
+            standing, which is what the user needs to get out of it. Keyed on the
+            path so navigating elsewhere remounts the boundary and clears the
+            error, instead of stranding them on the fallback. */}
         <main id="main" className={styles.main}>
-          <Outlet />
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
 

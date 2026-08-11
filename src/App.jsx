@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import AppShell from './components/layout/AppShell';
+import { ErrorBoundary } from './components/layout/ErrorBoundary';
 import { Spinner } from './components/ui/Feedback';
 
 import LoginPage from './pages/LoginPage';
@@ -59,63 +60,72 @@ const AuthGate = ({ children, requireAuth }) => {
   return children;
 };
 
+/*
+ * Catch-all for everything outside AppShell — /login, /forgot-password and
+ * /auth/action. Those have no sidebar to escape with, so this one is not keyed
+ * on the path: reloading is the only useful move there anyway, and the fallback
+ * offers it. Pages inside the shell get their own keyed boundary, which lets
+ * the user simply navigate away.
+ */
 export const App = () => (
-  <Routes>
-    <Route
-      path="/login"
-      element={
-        <AuthGate requireAuth={false}>
-          <LoginPage />
-        </AuthGate>
-      }
-    />
-    {/* No /register route by design. An account has to be created on the phone
-        app first: that is where the ESP32 is paired to the account, and a
-        web-only account would have no hardware to talk to. Anyone landing on
-        the old path gets sent to sign-in rather than a 404. */}
-    <Route path="/register" element={<Navigate to="/login" replace />} />
-    <Route
-      path="/forgot-password"
-      element={
-        <AuthGate requireAuth={false}>
-          <ForgotPasswordPage />
-        </AuthGate>
-      }
-    />
-
-    {/* Firebase's email links land here once "Customise action URL" points at
-        this domain. Deliberately outside AuthGate in both directions: a signed
-        -out user resetting a password has no session, and a signed-in user
-        confirming their address would otherwise be bounced to the dashboard by
-        the !requireAuth branch before the code was ever spent. */}
-    <Route path="/auth/action" element={<AuthActionPage />} />
-
-    <Route
-      element={
-        <AuthGate requireAuth>
-          <AppShell />
-        </AuthGate>
-      }
-    >
-      <Route index element={<DashboardPage />} />
+  <ErrorBoundary>
+    <Routes>
       <Route
-        path="analytics"
+        path="/login"
         element={
-          <Suspense fallback={<Spinner label="Loading analytics" />}>
-            <AnalyticsPage />
-          </Suspense>
+          <AuthGate requireAuth={false}>
+            <LoginPage />
+          </AuthGate>
         }
       />
-      <Route path="history" element={<HistoryPage />} />
-      <Route path="schedule" element={<SchedulePage />} />
-      <Route path="safety" element={<SafetyPage />} />
-      <Route path="budget" element={<BudgetPage />} />
-      <Route path="comparison" element={<ComparisonPage />} />
-      <Route path="notifications" element={<NotificationsPage />} />
-      <Route path="settings" element={<SettingsPage />} />
-      <Route path="*" element={<NotFoundPage />} />
-    </Route>
-  </Routes>
+      {/* No /register route by design. An account has to be created on the phone
+          app first: that is where the ESP32 is paired to the account, and a
+          web-only account would have no hardware to talk to. Anyone landing on
+          the old path gets sent to sign-in rather than a 404. */}
+      <Route path="/register" element={<Navigate to="/login" replace />} />
+      <Route
+        path="/forgot-password"
+        element={
+          <AuthGate requireAuth={false}>
+            <ForgotPasswordPage />
+          </AuthGate>
+        }
+      />
+
+      {/* Firebase's email links land here once "Customise action URL" points at
+          this domain. Deliberately outside AuthGate in both directions: a signed
+          -out user resetting a password has no session, and a signed-in user
+          confirming their address would otherwise be bounced to the dashboard by
+          the !requireAuth branch before the code was ever spent. */}
+      <Route path="/auth/action" element={<AuthActionPage />} />
+
+      <Route
+        element={
+          <AuthGate requireAuth>
+            <AppShell />
+          </AuthGate>
+        }
+      >
+        <Route index element={<DashboardPage />} />
+        <Route
+          path="analytics"
+          element={
+            <Suspense fallback={<Spinner label="Loading analytics" />}>
+              <AnalyticsPage />
+            </Suspense>
+          }
+        />
+        <Route path="history" element={<HistoryPage />} />
+        <Route path="schedule" element={<SchedulePage />} />
+        <Route path="safety" element={<SafetyPage />} />
+        <Route path="budget" element={<BudgetPage />} />
+        <Route path="comparison" element={<ComparisonPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+    </Routes>
+  </ErrorBoundary>
 );
 
 export default App;

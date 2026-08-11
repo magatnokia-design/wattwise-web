@@ -338,3 +338,189 @@ which the phone side is free to improve.
 Nothing changed in §10, but it bears on §12: **one account, one ESP32, one
 apartment.** Ownership decisions here are about making two clients feel like one
 product, not about scaling to many users or devices.
+
+## 14. Answering your §0b — your flag found a real one
+
+**Verified your work first.** `budgetService.js` now diffs clean against the
+phone's, and a sweep of all 13 shared files under `src/services/firebase/`
+confirms `config.js` is the only difference in either direction. Your sweep is
+accurate.
+
+**Both of your corrections are accepted.** The `MESSAGES` fall-through candidate
+was wrong for exactly the reason you give — `MESSAGES[code] || fallback` is an
+exact-key lookup and both action-code failures have their own entries, so an
+expired `oobCode` could never render as a strength message. And your §3
+diagnosis explains the self-contradiction the original note flagged but could
+not account for: a live wattage rendering beside "not reporting" is precisely
+what two notions of live, one without a time component, would produce.
+
+### `RegisterScreen` is clean — but `LoginScreen` was not
+
+You asked us to check whether `RegisterScreen` clears its error on edit. It
+does: `updateFormData` clears `errors[field]` on every keystroke, and submit
+failures go through `Alert.alert`, which is a modal the user dismisses rather
+than a banner that can linger. No fix needed there.
+
+**Checking the class rather than the instance turned up `LoginScreen`**, which
+had your exact bug:
+
+- `errors.email` / `errors.password` render inline under each field
+- `onChangeText={setEmail}` / `onChangeText={setPassword}` never cleared them
+
+So "Password must be at least 6 characters" stayed on screen while the user
+typed a longer one — the form contradicting its own contents, same as your four
+green ticks under "Pick a stronger password."
+
+Fixed with a `clearFieldError` helper matching `RegisterScreen`'s existing idiom.
+`ForgotPasswordScreen` already handled it correctly, which made `LoginScreen` an
+oversight rather than a decision.
+
+**Your "assume a fourth exists" instinct was right, and it generalises past the
+stale-data class.** Both repos now have one screen fixed and its siblings
+checked.
+
+## 15. Your `billing.js` is now under test from the phone repo
+
+**This is the one item here that can fail because of a change made in this
+repo, so it is worth knowing about.**
+
+`functions/test/billingParity.test.js` loads **this repo's**
+`src/utils/billing.js`, alongside the phone's, and asserts both produce output
+identical to the Functions copy across nine input cases — the four real PELCO
+III sample bills plus edges (0 kWh, lifeline, 1200 kWh, fractional kWh).
+
+How it works: the client copies are ES modules and the test suite is CommonJS,
+so the file's bytes are copied to a `.mjs` temp file and imported. The source is
+never transformed — only reclassified. Both copies are self-contained with no
+imports, so nothing resolves differently.
+
+**It is proven to fail.** A single constant was altered in the phone's copy and
+the suite reported `phone: DISTRIBUTION_RATES differs from the Functions copy`,
+while correctly still passing the web copy. It discriminates per-file.
+
+**If this repo's copy is absent, the test skips rather than passes** — it is a
+sibling repository and will not exist on every machine. It never quietly passes
+when the file is there.
+
+### What this means for you
+
+- **Changing tariff logic in `src/utils/billing.js` alone will now break the
+  phone repo's test suite.** That is the intent. Change all three copies in one
+  go, as §7 of your own doc already says.
+- The three-copy rule is no longer honour-based.
+- **The arithmetic claim is now covered.** What is still unproven is whether
+  both clients *feed* those functions the same input — same kWh, same rates,
+  same month boundary. That is the remaining manual check, and it is a
+  data-plumbing test rather than a maths one.
+
+## 16. Also landed in the phone repo this session
+
+None of these need action here; they are listed so the two repos do not
+diverge in what they believe is true.
+
+| Change | Note |
+|---|---|
+| `ErrorBoundary` wrapping the navigator | A render error showed a blank screen or closed the app outright on release builds. **Worth checking whether this repo has one** — you flagged the white-screen equivalent yourself |
+| `sendInvoiceEmail` callable | Re-sends a statement, and rehearses the PDF-attachment path that otherwise runs unattended at 00:20 on the 1st. Runs the same `processInvoiceForUser` the scheduled job calls, at the same memory ceiling |
+| `LoginScreen` error clearing | §14 |
+| `docs/cross-client-verification.md` | Step-by-step for the two side-by-side checks, including the diagnostic branches when one fails |
+
+The verification doc names what to look at when a cross-client check fails —
+`device_commands` for a toggle that does not reach the relay, and which of kWh
+or stored rate diverged for a bill mismatch. Worth reading before running the
+comparison from your side.
+
+## 17. Two data bugs found by rehearsing the invoice — both affect this client
+
+Neither is fixable here, and neither is your code. Both change what your pages
+have been displaying, so they are worth knowing before anyone investigates a
+symptom of them.
+
+### 17.1 The `invoices` composite index never existed — fixed
+
+`loadLastFinalized` queries `where('status','==','FINALIZED')` +
+`orderBy('billingMonth','desc')`. That composite index was never declared, so
+**the query has failed every time it has ever run.**
+
+It is not confined to the monthly job. `processDailyRollup` calls `upsertInvoice`
+every night inside a try/catch that logs a warning and continues:
+
+```
+Daily rollup completed but invoice refresh failed
+```
+
+So every night the rollup wrote its daily document, silently failed to refresh
+the invoice, and reported success. **If invoice or billing data has looked
+empty or stale in this client, that is why** — the documents were never being
+written.
+
+Fixed by adding the index to `firestore.indexes.json` and deploying. It is
+project-wide, so this client gets it automatically — no change needed here.
+
+Worth noting for 1 September: `processMonthlyInvoice` catches per-user the same
+way, so the monthly run would have completed, logged `sent: 0`, and returned
+`success: true`. No statements, no alarm.
+
+### 17.2 Budget spending double-counts the metering charge — fix pending
+
+**This one is still live and your Budget page shows the inflated figure.**
+
+`METERING_FLAT` is ₱5.00, documented in `billing.js` as *"Charged once per
+billing period. Never per-kWh, never prorated by days"*. `calculatePelcoIIIBill`
+accepts `daysInPeriod` and `billingDays` and **deliberately ignores both**.
+
+`processDailyRollup` calls it once per day with `includePeriodFlats` left at its
+default of `true`, so every daily `cost` carries the full ₱5.00 plus 12% VAT —
+₱5.60. Those daily costs are then summed into `budget/{month}.currentSpending`.
+
+**A 31-day month reports ₱173.60 of metering charge where the correct figure is
+₱5.60.**
+
+Consequences you may have seen:
+
+- **The Budget page and the Billing page disagree.** `buildInvoice` sums
+  `totalEnergy` and prices it *once*, so invoices are correct. Only
+  `currentSpending` inflates.
+- **Budget alerts fire far too early**, and the threshold flags burn on the
+  first rolled-up day. This is a second cause of the alert silence, sitting
+  underneath the `setMonthlyBudget` one already fixed in §12.1.
+
+The planned fix is in the phone repo: make `currentSpending` mirror the invoice
+by summing the month's `totalEnergy` and pricing it once, rather than adding up
+daily costs. That reuses logic already proven correct instead of adding a second
+path.
+
+**Do not work around this here.** A client-side correction would put a third
+opinion on the same number. Wait for `currentSpending` to be written correctly.
+
+### 17.3 The invoice path is now verified end to end
+
+Reached on the third attempt, after 17.1 was fixed. Delivered to the inbox on
+2026-08-11:
+
+| | |
+|---|---|
+| PDF | `WattWise-2026-08.pdf`, **5.0 KB** |
+| Delivery | `SUCCESS`, 1 attempt, no rejections |
+| SMTP | `250 2.0.0 OK: queued as <…@wattwise.site>` |
+| Sender | `WattWise <support@wattwise.site>` |
+| Folder | **Inbox**, not spam |
+
+**The 700 KB attachment cap is not a real constraint.** At 5 KB for a one-day
+period, a full month of rows leaves it orders of magnitude clear.
+
+One methodological note worth carrying into any similar test here: the first
+attempt sent from `magatnokia@gmail.com`, because `functions/.env` is loaded by
+the Firebase CLI at deploy time and **not** by a plain `node` process, so the
+run fell through to `DEFAULT_FROM` in `mailQueue.js`. It reported `SUCCESS` and
+went to spam — Brevo is not authorised to send as `@gmail.com`, so it failed
+DMARC. **A local script that touches the mail path must load `.env` itself**, or
+it is testing a sender production never uses.
+
+### What this says about the ranking in §16
+
+The PDF attachment was ranked the top risk. It turned out to be fine — but two
+unrelated failures were sitting in front of it, and neither would have been
+found without trying to reach it. **The untested path was hiding bugs that had
+nothing to do with the thing being tested.** Worth remembering when the two
+cross-client checks in §16 finally get run.

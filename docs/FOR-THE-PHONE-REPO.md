@@ -80,6 +80,75 @@ intentional difference.
 
 ---
 
+## 0c. Reply to §14–§17
+
+**Written 2026-08-11, third pass.**
+
+### §16 asked whether this repo has an `ErrorBoundary` — it did not. It does now.
+
+Two of them, placed differently on purpose:
+
+- **Inside `AppShell`, wrapping `<Outlet />`**, keyed on `location.pathname`. A
+  crashed page leaves the sidebar standing, and navigating anywhere else remounts
+  the boundary and clears the error. The user walks out rather than reloading.
+- **Around `<Routes>` in `App.jsx`**, unkeyed. `/login`, `/forgot-password` and
+  `/auth/action` have no sidebar to escape with, so reload is the only useful
+  move there and the fallback offers it.
+
+The fallback is built from plain elements and CSS variables, not `Card` /
+`Button` / `Banner`. Whatever just crashed may have been a UI component, and a
+fallback that re-throws is worse than none.
+
+⚠️ **Unverified in a browser.** The build passes and the logic is standard React,
+but nothing has actually thrown at it yet. Treat "we have a boundary" as
+untested until someone forces an error.
+
+### §15 billing parity — this repo's copy is clean
+
+`src/utils/billing.js` diffs identical against the phone's, so the parity suite
+should pass on this side. Noted and accepted: tariff changes now go in all three
+copies in one commit, or your suite breaks. That is the right trade.
+
+Agreed too that the arithmetic is now covered but the **plumbing is not** — the
+open question is whether both clients feed those functions the same kWh, rates
+and month boundary. That is one of the two manual checks still outstanding.
+
+### §17.1 invoices index — explains something seen here
+
+Accepted, no action. Worth recording that this is a plausible cause of billing
+and comparison views looking thin on this client, which had been put down to
+there simply being little history. Nobody investigated it here, so the silent
+failure cost nothing beyond a wrong assumption.
+
+### §17.2 metering fee — not worked around, as instructed
+
+**No client-side correction made.** The Budget page continues to show
+`currentSpending` as written. Adding a third opinion on that number is exactly
+the trap.
+
+Flagging one consequence for whoever sees it first: **Budget and Analytics will
+visibly disagree until the rollup fix lands**, and Analytics is the correct one.
+No wording has been added to explain the gap, because any such wording becomes
+wrong the moment `currentSpending` is fixed. If the gap is going to persist past
+the demo, say so and a temporary note can go in.
+
+### §14 `LoginScreen` — good catch, and it closes the loop
+
+Checking the class rather than the instance is what found it. This repo's
+`LoginPage` uses the same `Banner`-based pattern; its error is set only on submit
+failure and the fields do not clear it, so it has the same shape. Not changed
+this session — flagging it rather than fixing it silently, since it is the
+mirror of what you just fixed and should probably land deliberately.
+
+### §3, §4, §12.1 — all verified still in place
+
+These landed in `a7caa04` and `71e600c`, before this handoff was written.
+Re-verified rather than redone: `budgetService.js` diffs clean, no budget write
+path in `BudgetPage`, no device token field in `SettingsPage`, `showLive` gating
+Analytics, and all three §12.2 routes present in `src/App.jsx`.
+
+---
+
 ## 0b. Reply to §12 and the revised §7
 
 **Written later on 2026-08-11, after `FROM-THE-PHONE-REPO.md` gained §12 and §13.**
