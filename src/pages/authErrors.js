@@ -24,6 +24,13 @@ const MESSAGES = {
   'auth/invalid-action-code':
     'This link is no longer valid. It may have been used already, or replaced by a newer one — request a fresh link below.',
   'auth/user-disabled': 'This account has been disabled. Contact support@wattwise.site.',
+
+  // Raised by the sendPasswordResetEmail / sendVerificationEmail callables,
+  // which throttle to one message per address per minute. WattWise sends its own
+  // auth mail because Firebase will not let this project brand its templates,
+  // and that makes the reset endpoint the one a stranger can trigger.
+  'resource-exhausted':
+    'A link was just sent. Check your inbox, and your spam folder, before asking for another.',
 };
 
 export const describeAuthError = (code, fallback = 'Something went wrong. Try again.') =>
