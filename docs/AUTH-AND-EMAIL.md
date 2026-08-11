@@ -15,8 +15,8 @@ do not re-suggest them.
 | Authorized domains | ✅ Done — `wattwise.site`, `www.wattwise.site`, `wattwise-black.vercel.app` all added alongside the three defaults |
 | App emails (bills, receipts, alerts) | Configured and deployed; end-to-end send not yet confirmed |
 | Email verification at registration | ✅ Built in the **phone** repo; needs an EAS build to ship |
-| Branded action page (`/auth/action`) | ✅ Built **and verified end-to-end** on 2026-08-11 with a real `oobCode` — form rendered, password saved, "Password updated". **Not yet reached by Firebase's emails** — see "Remaining step" |
-| Auth email template wording | 🔒 Blocked — Firebase shows *"Email template updates are currently unavailable for this project"*, and the ✏️ dialog errors on Save |
+| Branded action page (`/auth/action`) | ✅ Built **and verified end-to-end** on 2026-08-11 with a real `oobCode` — form rendered, password saved, "Password updated". **Firebase's emails still do not point at it** — see below |
+| Auth email templates *and* the action URL | 🔒 **Permanently blocked on this project.** The API returns `EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED`; the whole `notification.sendEmail` path is read-only. Firebase policy on newer projects, not an outage — see "The action URL cannot be set" |
 
 The authoritative record lives in the phone repo at
 `C:\App\WattWise\docs\email-senders.md`. Read it before touching anything email
@@ -40,76 +40,75 @@ directions. A signed-out user resetting a password has no session, and a
 signed-in user confirming their address would be bounced to the dashboard by
 `AuthGate`'s `!requireAuth` branch before the code was ever spent.
 
-## Remaining step to make it live
+## The action URL cannot be set on this project
 
-Two console changes, in this order:
+🔒 **Settled on 2026-08-11. Do not retry any of it.**
 
-1. ~~**Authentication → Settings → Authorized domains** → add `wattwise.site` and
-   `www.wattwise.site`.~~ ✅ Done.
-2. **Authentication → Templates → ✏️ → Customise action URL** →
-   `https://www.wattwise.site/auth/action` ← **the only thing still outstanding.**
+`https://www.wattwise.site/auth/action` works — verified end to end with a real
+`oobCode`. Firebase's emails just never point at it, because
+`notification.sendEmail.callbackUri` is frozen at
+`https://wattwise-fe394.firebaseapp.com/__/auth/action`.
 
-Until step 2 is set, every reset and verification email points at
-`https://wattwise-fe394.firebaseapp.com/__/auth/action?...` and the branded page
-built here is simply never reached. Two costs, not just cosmetics:
+### What was tried, and the exact failure
 
-- Firebase's hosted page takes a new password behind **one field with no
-  confirmation and no strength rules**, so a user can set a password there that
-  `RegisterScreen` and `/auth/action` would both have rejected.
-- The journey leaves `wattwise.site` at the moment a user is being asked to
-  trust it with a password.
+The console dialog (**Authentication → Templates → ✏️ → Customise action URL**)
+errors on Save. The first theory was that the console posts the whole template
+blob — sender, subject, body, action URL together — and was being rejected over
+the body. It was worth testing because the console's own state is visibly wrong:
+the dialog shows **From: `noreply@wattwise-fe394.firebaseapp.com`** greyed out,
+while real mail comes from `support@wattwise.site`.
 
-⚠️ Order mattered: setting the action URL before the page was live would have
-404'd every link in flight. The page is deployed now, so that risk is gone.
-Rollback is just clearing the field.
-
-### The console cannot save this — use the API
-
-The ✏️ → **Customise action URL** dialog errors on Save. Two things say the
-console's own state is wrong rather than the setting being unwritable:
-
-- The dialog shows **From: `noreply@wattwise-fe394.firebaseapp.com`**, greyed
-  out, while real mail arrives from `support@wattwise.site`. It is not
-  reflecting the Brevo SMTP config.
-- Save posts the **whole** template blob — sender, subject, body, action URL
-  together. The body is under the lock above, so the write is rejected as a
-  unit even though only the URL was touched.
-
-The underlying field is `notification.sendEmail.callbackUri` on the Identity
-Platform config, and it takes a targeted write with an `updateMask` — which
-touches the URL and nothing else.
-
-Run this in **Google Cloud Shell** (console.cloud.google.com, the `>_` icon —
-`gcloud` is preinstalled and already authenticated, so nothing is installed
-locally and no token is copied anywhere):
+So the field was written directly, with an `updateMask` scoped to that one key:
 
 ```bash
-PROJECT=wattwise-fe394
-
-# 1. Read first. Check notification.sendEmail — method, smtp.senderEmail, callbackUri.
-curl -s "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT/config" \
-  -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-  -H "X-Goog-User-Project: $PROJECT"
-
-# 2. Write only the action URL.
 curl -s -X PATCH \
-  "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT/config?updateMask=notification.sendEmail.callbackUri" \
+  "https://identitytoolkit.googleapis.com/admin/v2/projects/wattwise-fe394/config?updateMask=notification.sendEmail.callbackUri" \
   -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-  -H "X-Goog-User-Project: $PROJECT" \
+  -H "X-Goog-User-Project: wattwise-fe394" \
   -H "Content-Type: application/json" \
   -d '{"notification":{"sendEmail":{"callbackUri":"https://www.wattwise.site/auth/action"}}}'
 ```
 
-Rollback is the same PATCH with `"callbackUri":""`.
+```json
+{ "code": 400, "message": "EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED", "status": "INVALID_ARGUMENT" }
+```
 
-Reading the failure, if it fails:
+A `GET` on the same config returns fine (`CUSTOM_SMTP`, `smtp-relay.brevo.com`,
+`support@wattwise.site`), so this is not permissions and not the console. **The
+whole `notification.sendEmail` path is read-only on this project.**
 
-| Response | Meaning |
-|---|---|
-| `200` echoing the new `callbackUri` | Done. Trigger a real reset and check the link host. |
-| `400 INVALID_ARGUMENT` naming the URI | The host is not an authorized domain. `www.wattwise.site` already is — check for a typo. |
-| `403 PERMISSION_DENIED` | Account is not Owner / lacks `firebaseauth.configs.update`. |
-| The same "currently unavailable" lock | The lock covers config writes too, not just the template body. Nothing left but Firebase Support — quote the project ID and the exact message. |
+That is Firebase policy, not an outage: template editing — the action URL
+included — is disabled on newer projects to curb phishing. Waiting will not
+clear it, and neither will a narrower `updateMask`. **Do not change the billing
+plan or "upgrade to Identity Platform" hoping to lift it** — nothing documents
+that it does, and those are far harder to undo than this problem is worth.
+
+### The only real fix: send the mail ourselves
+
+Firebase's documented answer to a locked template is to stop using its mail:
+
+1. A Cloud Function calls `admin.auth().generatePasswordResetLink(email)`.
+2. It parses `oobCode` out of the returned link and rebuilds it as
+   `https://www.wattwise.site/auth/action?mode=resetPassword&oobCode=<code>`.
+3. It sends that through the Brevo SMTP credentials the project already has,
+   with our own subject and body.
+
+Step 2 is proven: pasting a hand-extracted `oobCode` onto this domain is exactly
+how `/auth/action` was verified. The code is validated by Firebase, not by
+whichever page consumes it.
+
+⚠️ **This belongs in the phone repo** (`C:\App\WattWise\functions`) — no backend
+code lives here. And it changes `authService.resetPassword` on *both* clients, so
+it is a coordinated edit across the two repos, **not** a web-only change.
+Rewriting `authService.js` here alone would break the byte-identical rule.
+
+Until then the flow is unbranded, not broken. Two real costs, worth stating:
+
+- Firebase's hosted page takes a new password behind **one field with no
+  confirmation and no strength rules**, so a user can set a password there that
+  `RegisterScreen` and `/auth/action` would both have rejected.
+- The journey leaves `wattwise.site` at the moment a user is asked to trust it
+  with a password.
 
 **Not viable, so do not spend time on it:** redirecting
 `wattwise-fe394.firebaseapp.com/__/auth/action` from Firebase Hosting.
