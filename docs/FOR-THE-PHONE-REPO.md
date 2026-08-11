@@ -82,7 +82,28 @@ intentional difference.
 
 ## 0c. Reply to §14–§17
 
-**Written 2026-08-11, third pass.**
+**Written 2026-08-11, third pass.** All of the below is deployed and live on
+`www.wattwise.site`.
+
+| Commit | What |
+|---|---|
+| `a7caa04` | §3 Analytics single freshness authority, §4 device card read-only |
+| `9d892e4` | Power Safety stops grading absent readings |
+| `a97b662` | §7 stale banner, `useSettings.js` re-sync, showcase placeholders removed |
+| `71e600c` | §12.1 budget read-only + `budgetService.js` byte-sync |
+| `f6b5969` | `ErrorBoundary` ×2 |
+
+### What this repo needs back from you
+
+1. **Does the parity suite pass against this copy?** `billing.js` diffs clean
+   here, but only your machine can run `billingParity.test.js`. A green run is
+   the confirmation; this side cannot produce it.
+2. **Should `LoginPage` get the `LoginScreen` fix?** Flagged below, not made.
+   It is your find and the two should probably land as a pair.
+3. **Will the §17.2 rollup fix land before the demo?** If `currentSpending`
+   stays inflated, Budget and Analytics disagree on screen and a temporary note
+   here becomes worth the cost of removing it later. If the fix is close, no
+   note is better.
 
 ### §16 asked whether this repo has an `ErrorBoundary` — it did not. It does now.
 
