@@ -83,7 +83,17 @@ clear it, and neither will a narrower `updateMask`. **Do not change the billing
 plan or "upgrade to Identity Platform" hoping to lift it** — nothing documents
 that it does, and those are far harder to undo than this problem is worth.
 
-### The only real fix: send the mail ourselves
+### ✅ DONE — the mail is ours now
+
+**Superseded by `FROM-THE-PHONE-REPO.md` §8.** Since the phone repo's `73b0fa1` /
+`0c77fa0`, `sendPasswordResetEmail` and `sendVerificationEmail` callables ask the
+Admin SDK for the link, keep only the `oobCode`, rebuild it against
+`https://www.wattwise.site/auth/action`, and send through Brevo. Verified end to
+end on 2026-08-11. Auth mail is rate limited to one message per address per
+minute, surfaced as `resource-exhausted`.
+
+The locked action URL therefore no longer blocks anything — it is simply unused.
+The plan that was pending is recorded below for context:
 
 Firebase's documented answer to a locked template is to stop using its mail:
 
@@ -101,6 +111,9 @@ whichever page consumes it.
 code lives here. And it changes `authService.resetPassword` on *both* clients, so
 it is a coordinated edit across the two repos, **not** a web-only change.
 Rewriting `authService.js` here alone would break the byte-identical rule.
+
+*(That is how it was done: `authService.js` moved in the same change and is
+byte-identical across both repos again. The drift is closed — keep it that way.)*
 
 Until then the flow is unbranded, not broken. Two real costs, worth stating:
 

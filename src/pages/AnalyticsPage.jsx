@@ -27,8 +27,28 @@ export const AnalyticsPage = () => {
     supplyRates,
   });
 
-  const drawing = liveAppliances.filter((appliance) => appliance.isDrawing);
-  const idleOn = liveAppliances.filter((appliance) => appliance.isOn && !appliance.isDrawing);
+  /*
+   * `telemetryFresh` is the single authority for "is this reading current".
+   *
+   * This page used to carry two notions of live and they disagreed on screen:
+   * `isLive` from useAnalytics is `!!liveTodayEntry`, which only asks whether a
+   * today-entry could be built from the outlet documents — it has no time
+   * component at all. So the moment telemetry paused, the "Right now" panel
+   * (gated on telemetryFresh, 12 s) said the hardware was not reporting while
+   * the tile beside it still read "Drawing now 59.0 W" from the last values
+   * received. The numbers were real; presenting them as current was not.
+   *
+   * Note this page and Settings legitimately disagree now. Settings tracks
+   * device health, which getDeviceCommand refreshes on a command poll; this
+   * tracks telemetry, which only updateOutletMetrics writes. "Connected but
+   * not sending readings" is a real state, and both readings are true.
+   */
+  const showLive = isLive && telemetryFresh;
+
+  const drawing = telemetryFresh ? liveAppliances.filter((appliance) => appliance.isDrawing) : [];
+  const idleOn = telemetryFresh
+    ? liveAppliances.filter((appliance) => appliance.isOn && !appliance.isDrawing)
+    : [];
   const liveCostPerHour = drawing.reduce((sum, appliance) => sum + appliance.costPerHour, 0);
   const livePower = drawing.reduce((sum, appliance) => sum + appliance.powerW, 0);
 
@@ -68,7 +88,7 @@ export const AnalyticsPage = () => {
             </button>
           ))}
         </div>
-        {isLive ? <Badge tone="good">Includes today, live</Badge> : null}
+        {showLive ? <Badge tone="good">Includes today, live</Badge> : null}
       </div>
 
       <StatGrid>
@@ -87,7 +107,7 @@ export const AnalyticsPage = () => {
         {/* Daily shows watts, the other tabs kWh — so label, value and unit are
             set together rather than a shared unit that only fits one of them. */}
         <StatTile
-          label={tab === 'Daily' ? (isLive ? 'Drawing now' : 'Peak power') : 'Daily average'}
+          label={tab === 'Daily' ? (showLive ? 'Drawing now' : 'Peak power') : 'Daily average'}
           value={
             tab === 'Daily'
               ? summary.peakPowerW.toFixed(1)
@@ -186,8 +206,10 @@ export const AnalyticsPage = () => {
           <Card>
             <CardHeader title="Right now" subtitle="What is drawing power at this moment." />
             {!telemetryFresh ? (
-              <EmptyState icon="📡" title="Hardware is not reporting">
-                Live figures appear as soon as the ESP32 posts telemetry.
+              <EmptyState icon="📡" title="No readings in the last 12 seconds">
+                The ESP32 may still be connected — Settings tracks that separately, because
+                checking for commands is silent. This panel only fills in while readings are
+                actually arriving. Toggling an outlet usually starts them again.
               </EmptyState>
             ) : (
               <div className={styles.stack}>

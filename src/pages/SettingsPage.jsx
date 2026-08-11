@@ -47,8 +47,8 @@ export const SettingsPage = () => {
     fetchSettings,
     updateSupplyRates,
     updateNotifications,
-    updateDeviceSettings,
-    clearDeviceSettings,
+    // updateDeviceSettings / clearDeviceSettings are deliberately not pulled in.
+    // Pairing is the phone app's job — see the ESP32 card below.
     updateOutletName,
     clearOutletDetection,
     removeSavedAppliance,
@@ -65,22 +65,15 @@ export const SettingsPage = () => {
   const [outletDraft, setOutletDraft] = useState({ 1: '', 2: '' });
   const [outletStatus, setOutletStatus] = useState(null);
 
-  const [device, setDevice] = useState({ deviceId: '', deviceToken: '' });
-  const [deviceStatus, setDeviceStatus] = useState(null);
-  const [savingDevice, setSavingDevice] = useState(false);
-
   useEffect(() => {
     setName(settings.profileName === 'User' ? '' : settings.profileName);
     setRateDraft(ratesToDraft(settings.supplyRates));
     setOutletDraft({ 1: settings.outlet1Name, 2: settings.outlet2Name });
-    setDevice({ deviceId: settings.esp32DeviceId, deviceToken: settings.esp32DeviceToken });
   }, [
     settings.profileName,
     settings.supplyRates,
     settings.outlet1Name,
     settings.outlet2Name,
-    settings.esp32DeviceId,
-    settings.esp32DeviceToken,
   ]);
 
   const refresh = () => fetchSettings(auth.currentUser?.uid || null);
@@ -118,29 +111,6 @@ export const SettingsPage = () => {
       result.success
         ? { tone: 'good', message: `Outlet ${outletNumber} renamed.` }
         : { tone: 'alert', message: result.error || 'Could not rename the outlet.' }
-    );
-  };
-
-  const saveDevice = async () => {
-    setDeviceStatus(null);
-    setSavingDevice(true);
-    const result = await updateDeviceSettings(device);
-    setSavingDevice(false);
-
-    setDeviceStatus(
-      result.success
-        ? { tone: 'good', message: 'Device linked. Telemetry should appear within a second or two.' }
-        : { tone: 'alert', message: result.error || 'Could not link the device.' }
-    );
-  };
-
-  const unlinkDevice = async () => {
-    setDeviceStatus(null);
-    const result = await clearDeviceSettings();
-    setDeviceStatus(
-      result.success
-        ? { tone: 'warn', message: 'Device unlinked. It will stop reporting to this account.' }
-        : { tone: 'alert', message: result.error || 'Could not unlink the device.' }
     );
   };
 
@@ -391,43 +361,29 @@ export const SettingsPage = () => {
               }
             />
 
+            {/*
+              Read-only by design. Pairing lives in the phone app, which owns the
+              QR scanner and flashes the token to the firmware. A token typed
+              here has no such check: one wrong character silently unbinds a
+              working device, with a 15-minute grace window as the only warning
+              anyone gets. There is exactly one ESP32 on this account, so the
+              upside of editing it here is nil against that downside.
+            */}
             <div className={styles.stack}>
-              {deviceStatus ? <Banner tone={deviceStatus.tone}>{deviceStatus.message}</Banner> : null}
-
-              <TextField
-                label="Device ID"
-                value={device.deviceId}
-                onChange={(event) => setDevice({ ...device, deviceId: event.target.value })}
-                placeholder="wattwise-esp32-01"
-              />
-              <TextField
-                label="Device token"
-                type="password"
-                value={device.deviceToken}
-                onChange={(event) => setDevice({ ...device, deviceToken: event.target.value })}
-                placeholder="At least 8 characters"
-                hint="The same token flashed to the firmware. Changing it rotates with a 15-minute grace window."
-              />
+              <div className={settingsStyles.deviceMeta}>
+                <span>Device ID</span>
+                <strong>{settings.esp32DeviceId || 'Not paired'}</strong>
+              </div>
 
               <div className={settingsStyles.deviceMeta}>
                 <span>Last command ack</span>
                 <strong>{formatAckStatusValue(settings.esp32LastAckStatus)}</strong>
               </div>
 
-              <div className={styles.rowEnd}>
-                {settings.esp32Linked ? (
-                  <Button variant="danger" onClick={unlinkDevice}>
-                    Unlink
-                  </Button>
-                ) : null}
-                <Button loading={savingDevice} onClick={saveDevice}>
-                  {settings.esp32Linked ? 'Update link' : 'Link device'}
-                </Button>
-              </div>
-
               <p className={styles.muted}>
-                Linking hardware that is currently bound to another account transfers it, verified
-                server-side against the token.
+                {settings.esp32Linked
+                  ? 'Paired. To re-pair or move this device to another account, use the phone app — it scans the QR code and checks the token against the firmware.'
+                  : 'No device paired yet. Pair it in the phone app, which scans the QR code on the ESP32. It will appear here once it reports.'}
               </p>
             </div>
           </Card>
