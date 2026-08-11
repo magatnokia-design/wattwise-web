@@ -25,14 +25,23 @@
   color: #b45309;
 }
 
-.alert {
+/* `danger` is the tone historyHelpers returns for an auto-cutoff row. It is the
+   same treatment as `alert`, declared together so the two cannot drift. */
+.alert,
+.danger {
   background: var(--ww-tint-error);
   color: #b91c1c;
 }
 
-.info {
-  background: #eff6ff;
-  color: #1d4ed8;
+/* Informational, not a status: outlined rather than filled, so it reads as a
+   quiet label next to the filled good/warn/alert chips without introducing a
+   second hue. Green and white only — see theme.css.
+   Scoped to `.badge` because a Banner carries the tone class too, and the
+   outline is a chip treatment — the banner has its own border. */
+.badge.info {
+  background: var(--ww-white);
+  color: var(--ww-primary-dark);
+  box-shadow: inset 0 0 0 1px var(--ww-border);
 }
 
 .banner {
@@ -52,7 +61,8 @@
   color: #92400e;
 }
 
-.banner.alert {
+.banner.alert,
+.banner.danger {
   background: var(--ww-tint-error);
   border-color: #fecaca;
   color: #991b1b;
@@ -65,9 +75,9 @@
 }
 
 .banner.info {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1e40af;
+  background: var(--ww-bg);
+  border-color: var(--ww-border);
+  color: var(--ww-text-dark);
 }
 
 .bannerBody {

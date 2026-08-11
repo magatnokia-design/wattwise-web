@@ -17,6 +17,26 @@ const toEpochMs = (value) => {
 };
 
 /**
+ * When the hardware last posted telemetry — and only telemetry.
+ *
+ * Same field precedence the phone app's `deriveOutletRuntimeState` uses, minus
+ * its `lastUpdated` last resort. `lastUpdated` is also written by
+ * `ensureOutletsExist` when the documents are created and by
+ * `processOutletToggle` on every switch, so falling back to it reports
+ * "hardware reporting · just now" for an account whose ESP32 has never posted
+ * anything. `metricsUpdatedAtMs` and its siblings are written by
+ * `updateOutletMetrics` alone. No telemetry field means not reporting.
+ */
+const getTelemetryUpdatedAtMs = (outlet = {}) => {
+  const explicitMs = toEpochMs(
+    outlet?.metricsUpdatedAtMs || outlet?.lastMetricsAtMs || outlet?.lastTelemetryAtMs
+  );
+  if (explicitMs > 0) return explicitMs;
+
+  return toEpochMs(outlet?.metricsUpdatedAt || outlet?.lastMetricsAt || outlet?.lastTelemetryAt);
+};
+
+/**
  * Live outlet documents plus the billing preferences every peso figure needs.
  *
  * Mirrors the subscription AnalyticsScreen sets up in the phone app: telemetry
@@ -26,8 +46,13 @@ const toEpochMs = (value) => {
  * `telemetryFresh` is re-evaluated on a timer as well as on each snapshot —
  * a device that stops posting sends no snapshot to say so, and without the
  * timer the UI would sit on a stale "online" forever.
+ *
+ * `withRates: false` skips the `getUserPreferences` read for callers that only
+ * want the telemetry state. The Dashboard is one: it already has the rate
+ * profile from `useOutletControl`, and fetching it twice per mount is a second
+ * billed document read for a figure it already has.
  */
-export const useLiveOutlets = () => {
+export const useLiveOutlets = ({ withRates = true } = {}) => {
   const [outlets, setOutlets] = useState([]);
   const [rateProfileId, setRateProfileId] = useState(null);
   const [supplyRates, setSupplyRates] = useState(null);
@@ -52,15 +77,17 @@ export const useLiveOutlets = () => {
         return;
       }
 
-      userService
-        .getUserPreferences(user.uid)
-        .then((result) => {
-          if (!result?.success) return;
-          setRateProfileId(result.data?.rateProfileId || null);
-          setSupplyRates(result.data?.supplyRates || null);
-          setHasSupplyRates(result.data?.hasSupplyRates === true);
-        })
-        .catch((error) => console.warn('Could not load rate profile:', error?.message));
+      if (withRates) {
+        userService
+          .getUserPreferences(user.uid)
+          .then((result) => {
+            if (!result?.success) return;
+            setRateProfileId(result.data?.rateProfileId || null);
+            setSupplyRates(result.data?.supplyRates || null);
+            setHasSupplyRates(result.data?.hasSupplyRates === true);
+          })
+          .catch((error) => console.warn('Could not load rate profile:', error?.message));
+      }
 
       unsubscribeOutlets = outletService.subscribeToOutlets(
         user.uid,
@@ -79,7 +106,7 @@ export const useLiveOutlets = () => {
       if (unsubscribeOutlets) unsubscribeOutlets();
       unsubscribeAuth();
     };
-  }, []);
+  }, [withRates]);
 
   useEffect(() => {
     const interval = setInterval(() => setTick((value) => value + 1), 5000);
@@ -87,7 +114,7 @@ export const useLiveOutlets = () => {
   }, []);
 
   const lastTelemetryMs = outlets.reduce(
-    (latest, outlet) => Math.max(latest, toEpochMs(outlet?.metricsUpdatedAtMs || outlet?.lastUpdated)),
+    (latest, outlet) => Math.max(latest, getTelemetryUpdatedAtMs(outlet)),
     0
   );
 

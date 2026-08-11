@@ -201,7 +201,7 @@ export const BudgetPage = () => {
                         }}
                       >
                         {over ? '+' : '−'}
-                        {formatCurrency(Math.abs(row.spent - row.budget)).replace('₱', '₱')}
+                        {formatCurrency(Math.abs(row.spent - row.budget))}
                       </span>
                     );
                   },

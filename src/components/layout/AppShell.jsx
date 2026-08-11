@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { authService } from '../../services/firebase';
 import { useAuth } from '../../hooks/useAuth';
-import { useNotifications } from '../../screens/Notifications/hooks/useNotifications';
+import { useUnreadCount } from '../../hooks/useUnreadCount';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { Banner } from '../ui/Feedback';
@@ -57,7 +57,9 @@ const PAGE_TITLES = {
 
 export const AppShell = () => {
   const { user } = useAuth();
-  const { unreadCount } = useNotifications();
+  // Count only. The sidebar is mounted on every authenticated page, so it must
+  // not drag the full notifications list listener along with it.
+  const unreadCount = useUnreadCount(user?.uid);
   const location = useLocation();
   const [navOpen, setNavOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);

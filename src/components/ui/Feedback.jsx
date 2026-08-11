@@ -1,6 +1,6 @@
 import styles from './Feedback.module.css';
 
-/** tone: 'neutral' | 'good' | 'warn' | 'alert' | 'info' */
+/** tone: 'neutral' | 'good' | 'warn' | 'alert' | 'danger' | 'info' */
 export const Badge = ({ children, tone = 'neutral', className = '' }) => (
   <span className={`${styles.badge} ${styles[tone]} ${className}`}>{children}</span>
 );

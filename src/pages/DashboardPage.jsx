@@ -47,7 +47,11 @@ export const DashboardPage = () => {
     updateApplianceName,
   } = useOutletControl();
 
-  const { telemetryFresh, lastTelemetryMs } = useLiveOutlets();
+  // Telemetry state only. useOutletControl already supplies the rate profile
+  // and every priced figure on this page, so this must not read preferences a
+  // second time. The outlet snapshot itself is the same query useOutletControl
+  // listens to, which the Firestore SDK serves from one watch target.
+  const { telemetryFresh, lastTelemetryMs } = useLiveOutlets({ withRates: false });
   const rateNotice = useDismissibleNotice('rate-notice');
   const [toggleError, setToggleError] = useState('');
 

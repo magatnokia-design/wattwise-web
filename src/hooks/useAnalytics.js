@@ -61,9 +61,15 @@ const getTabRange = (tab) => {
 const formatShortDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 const formatWeekday = (date) => date.toLocaleDateString('en-US', { weekday: 'short' });
 
+// `peakHour` is absent on a live today entry and on any day whose rollup logged
+// no readings. Number(null) is 0 and 0 is finite, so the absence has to be
+// caught before the numeric check or "no peak hour" renders as midnight.
 const formatPeakHour = (hourValue) => {
+  if (hourValue === null || hourValue === undefined || hourValue === '') return 'N/A';
+
   const hour = Number(hourValue);
-  if (!Number.isFinite(hour)) return 'N/A';
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23) return 'N/A';
+
   const period = hour >= 12 ? 'PM' : 'AM';
   const hour12 = hour % 12 || 12;
   return `${hour12}:00 ${period}`;
@@ -211,8 +217,11 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
           totalCost: bill.totals.total,
           averageUsage: totalEnergy,
           peakUsage: totalEnergy,
+          // Watts, not kWh: the highest instantaneous draw the day recorded, or
+          // the current draw while the day is still live.
+          peakPowerW: toNumber(dailyEntry?.peakPower),
           peakHour: formatPeakHour(dailyEntry?.peakHour),
-          bestDay: dailyEntry?.date ? formatShortDate(entryDate) : 'N/A',
+          busiestDay: dailyEntry?.date ? formatShortDate(entryDate) : 'N/A',
           outlet1Total,
           outlet2Total,
           effectiveRate: bill.effectiveRate,
@@ -226,7 +235,9 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
           ? [
               {
                 key: dailyEntry.date,
-                label: 'Today',
+                // Only actually today when the live entry is what got charted;
+                // the fallback is the last rolled-up day, which can be older.
+                label: liveTodayEntry ? 'Today' : formatShortDate(entryDate),
                 outlet1: outlet1Total,
                 outlet2: outlet2Total,
                 total: totalEnergy,
@@ -259,10 +270,12 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
     );
 
     const peakUsage = dailyValues.length ? Math.max(...dailyValues) : 0;
-    const bestDayData = dailyValues
+    // The day that used the most — the same day `peakUsage` measures, so the
+    // tile and its caption describe one another.
+    const busiestDayData = dailyValues
       .map((value, index) => ({ value, date: days[index] }))
       .filter((item) => item.value > 0)
-      .sort((a, b) => a.value - b.value)[0];
+      .sort((a, b) => b.value - a.value)[0];
 
     // One rate, applied once, over the whole period's kWh — never per-day and
     // summed. PELCO III averages monthly and applies uniformly.
@@ -300,8 +313,9 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
         totalCost: bill.totals.total,
         averageUsage: days.length ? totalEnergy / days.length : 0,
         peakUsage,
+        peakPowerW: entries.reduce((highest, entry) => Math.max(highest, toNumber(entry?.peakPower)), 0),
         peakHour: 'N/A',
-        bestDay: bestDayData ? formatShortDate(bestDayData.date) : 'N/A',
+        busiestDay: busiestDayData ? formatShortDate(busiestDayData.date) : 'N/A',
         outlet1Total,
         outlet2Total,
         effectiveRate: bill.effectiveRate,

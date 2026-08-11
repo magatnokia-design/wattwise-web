@@ -46,7 +46,13 @@ const AuthGate = ({ children, requireAuth }) => {
   }
 
   if (!requireAuth && user) {
-    return <Navigate to={location.state?.from?.pathname || '/'} replace />;
+    // Rebuild the whole deep link, not just the path — a query string or hash
+    // on the route they were sent away from is part of where they were going.
+    const from = location.state?.from;
+    const target = from?.pathname
+      ? `${from.pathname}${from.search || ''}${from.hash || ''}`
+      : '/';
+    return <Navigate to={target} replace />;
   }
 
   return children;

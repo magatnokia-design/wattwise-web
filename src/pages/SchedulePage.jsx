@@ -39,6 +39,11 @@ export const SchedulePage = () => {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [now, setNow] = useState(Date.now());
+  // The timer being deleted, held while the confirmation is up. Deleting is not
+  // undoable and the button sits next to the enable switch, so it asks first.
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // Countdowns are stored as a start time plus a duration, so the remaining
   // figure is derived, not stored — it only moves if something re-renders.
@@ -93,6 +98,28 @@ export const SchedulePage = () => {
 
     setForm(EMPTY_FORM);
     setOpen(false);
+  };
+
+  const closeDelete = () => {
+    if (deleting) return;
+    setPendingDelete(null);
+    setDeleteError('');
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+
+    setDeleteError('');
+    setDeleting(true);
+    const result = await deleteSchedule(pendingDelete.id);
+    setDeleting(false);
+
+    if (!result?.success) {
+      setDeleteError(result?.error || 'Could not delete the timer. Try again.');
+      return;
+    }
+
+    setPendingDelete(null);
   };
 
   const describeNextRun = (schedule) => {
@@ -165,7 +192,10 @@ export const SchedulePage = () => {
                   <Button
                     size="sm"
                     variant="danger"
-                    onClick={() => deleteSchedule(schedule.id)}
+                    onClick={() => {
+                      setDeleteError('');
+                      setPendingDelete(schedule);
+                    }}
                   >
                     Delete
                   </Button>
@@ -175,6 +205,46 @@ export const SchedulePage = () => {
           </ul>
         )}
       </Card>
+
+      <Modal
+        open={!!pendingDelete}
+        onClose={closeDelete}
+        title="Delete this timer?"
+        width={420}
+        footer={
+          <>
+            <Button variant="secondary" onClick={closeDelete} disabled={deleting}>
+              Keep it
+            </Button>
+            <Button variant="danger" onClick={confirmDelete} loading={deleting}>
+              Delete timer
+            </Button>
+          </>
+        }
+      >
+        <div className={styles.stack}>
+          {deleteError ? <Banner tone="alert">{deleteError}</Banner> : null}
+
+          {pendingDelete ? (
+            <p style={{ fontSize: 13.5 }}>
+              <strong>
+                Turn {pendingDelete.action} {formatOutletName(pendingDelete.outlet)}
+              </strong>{' '}
+              {pendingDelete.type === 'countdown'
+                ? 'when the countdown finishes'
+                : `at ${formatScheduledTime(pendingDelete.scheduledTime)} on ${formatDays(
+                    pendingDelete.days
+                  )}`}
+              .
+            </p>
+          ) : null}
+
+          <p style={{ fontSize: 13, color: 'var(--ww-text-light)' }}>
+            This cannot be undone, and the outlet stays exactly as it is now. To stop the timer
+            without losing it, switch it off instead.
+          </p>
+        </div>
+      </Modal>
 
       <Modal
         open={open}

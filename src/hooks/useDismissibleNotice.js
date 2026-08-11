@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 /**
  * A banner the user can dismiss for good.
@@ -23,14 +23,6 @@ export const useDismissibleNotice = (key) => {
       return true;
     }
   });
-
-  useEffect(() => {
-    try {
-      setVisible(window.localStorage.getItem(storageKey) !== 'true');
-    } catch {
-      setVisible(true);
-    }
-  }, [storageKey]);
 
   const dismiss = useCallback(() => {
     setVisible(false);

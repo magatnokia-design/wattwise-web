@@ -47,11 +47,15 @@ export const HistoryPage = () => {
   }, [range, fetchUsageHistory]);
 
   // Activity logs stream live — a toggle from the phone shows up here without
-  // a refresh, which is the same listener the phone app uses.
+  // a refresh, which is the same listener the phone app uses. Only while the
+  // tab is actually showing, though: HistoryScreen.js guards it the same way,
+  // and without the guard the listener is opened on mount and never detached.
   useEffect(() => {
+    if (tab !== 'activity') return undefined;
+
     const unsubscribe = subscribeActivityLogs({ outlet }, 50);
     return () => unsubscribe();
-  }, [outlet, subscribeActivityLogs]);
+  }, [tab, outlet, subscribeActivityLogs]);
 
   const { startDate, endDate } = resolveDateRange(range);
   const visibleLogs = filterByDateRange(activityLogs, startDate, endDate);

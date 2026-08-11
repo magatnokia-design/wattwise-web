@@ -84,19 +84,27 @@ export const AnalyticsPage = () => {
           value={formatCurrency(summary.totalCost)}
           caption={`PELCO III · ${formatCurrency(summary.effectiveRate)}/kWh effective`}
         />
+        {/* Daily shows watts, the other tabs kWh — so label, value and unit are
+            set together rather than a shared unit that only fits one of them. */}
         <StatTile
-          label={tab === 'Daily' ? 'Peak power' : 'Daily average'}
+          label={tab === 'Daily' ? (isLive ? 'Drawing now' : 'Peak power') : 'Daily average'}
           value={
             tab === 'Daily'
-              ? summary.totalEnergy.toFixed(3)
+              ? summary.peakPowerW.toFixed(1)
               : summary.averageUsage.toFixed(3)
           }
-          unit="kWh"
-          caption={tab === 'Daily' ? `Peak hour ${summary.peakHour}` : 'Across the period'}
+          unit={tab === 'Daily' ? 'W' : 'kWh'}
+          caption={
+            tab === 'Daily'
+              ? summary.peakHour === 'N/A'
+                ? 'Highest of the two outlets'
+                : `Peak hour ${summary.peakHour}`
+              : 'Across the period'
+          }
         />
         <StatTile
           label="Busiest day"
-          value={summary.bestDay}
+          value={summary.busiestDay}
           caption={
             summary.peakUsage > 0 ? `${summary.peakUsage.toFixed(3)} kWh on that day` : 'No data yet'
           }

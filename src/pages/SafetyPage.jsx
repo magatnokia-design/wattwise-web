@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import usePowerSafety from '../screens/PowerSafetyManagement/hooks/usePowerSafety';
 import {
   formatAlertTime,
@@ -64,15 +64,24 @@ export const SafetyPage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!open) return;
+  /**
+   * Seeded once, when the editor is opened — never from the live document.
+   *
+   * `thresholds` arrives on a snapshot listener, and the backend rewrites the
+   * safety document on roughly every telemetry post. Re-seeding on each new
+   * `thresholds` object would wipe whatever the user had typed, seconds after
+   * they typed it.
+   */
+  const openEditor = () => {
+    setError('');
     setDraft({
       voltageMin: String(thresholds.voltage.min),
       voltageMax: String(thresholds.voltage.max),
       currentMax: String(thresholds.current.max),
       powerMax: String(thresholds.power.max),
     });
-  }, [open, thresholds]);
+    setOpen(true);
+  };
 
   const stage = getSafetyStageConfig(safetyStage);
 
@@ -82,7 +91,11 @@ export const SafetyPage = () => {
     const next = {
       voltage: { min: Number(draft.voltageMin), max: Number(draft.voltageMax) },
       current: { max: Number(draft.currentMax) },
-      power: { max: Number(draft.powerMax) },
+      // Clamped, not rejected. safetyService clamps to the same figure on write,
+      // and the thresholds this form is seeded from fall back to 2000 W when the
+      // safety document cannot be read — rejecting that would leave the editor
+      // permanently unsaveable. Math.min leaves NaN alone for the check below.
+      power: { max: Math.min(Number(draft.powerMax), MAX_POWER_W) },
     };
 
     const allFinite = [
@@ -99,11 +112,6 @@ export const SafetyPage = () => {
 
     if (next.voltage.min >= next.voltage.max) {
       setError('Minimum voltage must be below the maximum.');
-      return;
-    }
-
-    if (next.power.max > MAX_POWER_W) {
-      setError(`Power is capped at ${MAX_POWER_W} W per outlet by the hardware.`);
       return;
     }
 
@@ -226,7 +234,7 @@ export const SafetyPage = () => {
           <CardHeader
             title="Thresholds"
             action={
-              <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
+              <Button size="sm" variant="secondary" onClick={openEditor}>
                 Edit
               </Button>
             }
@@ -303,7 +311,7 @@ export const SafetyPage = () => {
                 suffix="W"
                 value={draft.powerMax}
                 onChange={(event) => setDraft({ ...draft, powerMax: event.target.value })}
-                hint={`Capped at ${MAX_POWER_W} W`}
+                hint={`Anything higher saves as ${MAX_POWER_W} W`}
               />
             </div>
           </div>
