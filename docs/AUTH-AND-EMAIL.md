@@ -11,6 +11,8 @@ do not re-suggest them.
 |---|---|
 | Outbound mail provider | **Brevo SMTP**, `wattwise.site` authenticated by DKIM + DMARC |
 | Firebase Auth emails (reset, verify) | ✅ Working — inbox, not spam |
+| Confirmed sender | `WattWise <support@wattwise.site>`, subject *"Reset your password for WattWise"*. Verified against a real reset on 2026-08-11. The phone repo's older `noreply@wattwise-fe394.firebaseapp.com` is stale — do not quote it to users |
+| Authorized domains | ✅ Done — `wattwise.site`, `www.wattwise.site`, `wattwise-black.vercel.app` all added alongside the three defaults |
 | App emails (bills, receipts, alerts) | Configured and deployed; end-to-end send not yet confirmed |
 | Email verification at registration | ✅ Built in the **phone** repo; needs an EAS build to ship |
 | Branded action page (`/auth/action`) | ✅ Built here; **not yet live** — see "Remaining step" |
@@ -42,23 +44,42 @@ signed-in user confirming their address would be bounced to the dashboard by
 
 Two console changes, in this order:
 
-1. **Authentication → Settings → Authorized domains** → add `wattwise.site` and
-   `www.wattwise.site`.
+1. ~~**Authentication → Settings → Authorized domains** → add `wattwise.site` and
+   `www.wattwise.site`.~~ ✅ Done.
 2. **Authentication → Templates → ✏️ → Customise action URL** →
-   `https://www.wattwise.site/auth/action`
+   `https://www.wattwise.site/auth/action` ← **the only thing still outstanding.**
 
-⚠️ **Order matters, and this is currently blocked.** The template screen is under
-the Firebase lock noted above, so step 2 cannot be done yet. That is fine — the
-page has to exist and be deployed first regardless. Setting the action URL
-before the page is live **404s every password reset and verification link in
-flight**.
+Until step 2 is set, every reset and verification email points at
+`https://wattwise-fe394.firebaseapp.com/__/auth/action?...` and the branded page
+built here is simply never reached. Two costs, not just cosmetics:
 
-To test before the URL is switched, paste a real link's query onto this domain
-by hand:
+- Firebase's hosted page takes a new password behind **one field with no
+  confirmation and no strength rules**, so a user can set a password there that
+  `RegisterScreen` and `/auth/action` would both have rejected.
+- The journey leaves `wattwise.site` at the moment a user is being asked to
+  trust it with a password.
+
+⚠️ Order mattered: setting the action URL before the page was live would have
+404'd every link in flight. The page is deployed now, so that risk is gone.
+Rollback is just clearing the field.
+
+**Try the action-URL dialog even though template *wording* is locked.** It saves
+through a different write (project config, not the template body), so the lock
+noted above may not cover it.
+
+### Testing before the URL is switched
+
+Paste a real link's query onto this domain by hand:
 
 ```
 https://www.wattwise.site/auth/action?mode=resetPassword&oobCode=<code-from-a-real-email>
 ```
+
+⚠️ **Do not click the link in the email first.** Opening Firebase's page spends
+the code; by the time it is pasted here it returns
+`auth/invalid-action-code`. Copy the `oobCode=` value straight out of the link
+without following it. The trailing `&apiKey=…&lang=en` are not needed — the page
+ignores every parameter except `mode` and `oobCode`.
 
 ## Routes that failed — do not retry
 

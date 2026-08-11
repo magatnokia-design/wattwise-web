@@ -53,6 +53,11 @@ export const ForgotPasswordPage = () => {
          * produces the same dead end — the handler reporting the link as
          * expired or already used, with no clue which. Kept in line with the
          * phone app's ForgotPasswordScreen, which states the same three on send.
+         *
+         * The sender is named rather than just saying "check spam": since Auth
+         * mail moved onto Brevo with wattwise.site authenticated by DKIM+DMARC
+         * it lands in the inbox, so an exact address to search for beats
+         * sending everyone to their spam folder first.
          */
         <div className={styles.formStack}>
           <Banner tone="good" title="Reset link sent.">
@@ -64,8 +69,8 @@ export const ForgotPasswordPage = () => {
               The link <strong>expires in 1 hour</strong>.
             </li>
             <li>
-              <strong>Check your spam folder.</strong> Reset mail often lands there, and that is
-              usually what starts the trouble.
+              It comes from <strong>WattWise &lt;support@wattwise.site&gt;</strong>. Search for that
+              address if it has not arrived, and check your spam folder.
             </li>
             <li>
               If you request another, <strong>only the newest link works</strong> — every earlier
