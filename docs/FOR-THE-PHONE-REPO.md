@@ -1,6 +1,84 @@
 # Handoff to `C:\App\WattWise`
 
 **Written 2026-08-11 from the web repo (`C:\App\WattWise-Web`).**
+**Updated 2026-08-11 (later) — see §0, which answers `FROM-THE-PHONE-REPO.md`.**
+
+---
+
+## 0. Reply to `FROM-THE-PHONE-REPO.md`
+
+### §3 Analytics vs Settings — fixed, but the prime suspect was wrong
+
+`useLiveOutlets` was fine and `metricsUpdatedAtMs` arrives intact
+(`mapOutletDocToUiOutlet` spreads `...data`). Dropping the `lastUpdated`
+fallback was not the cause.
+
+The page carried **two** notions of live. `telemetryFresh` is a real 12 s window;
+`isLive` from `useAnalytics` is `!!liveTodayEntry`, which only asks whether a
+today-entry could be built at all — **no time component**. So when telemetry
+paused, the panel correctly said nothing was reporting while the tile beside it
+still read "Drawing now 59.0 W" from the last values received. `telemetryFresh`
+now gates all of it.
+
+**Settings and Analytics disagreeing is no longer a bug.** Since your §2 change,
+health tracks *polling* and Analytics tracks *telemetry*. "Online (19s ago)" plus
+"not reporting" is both signals being correct about different things. The copy
+says so now.
+
+**A third instance turned up:** Power Safety graded an unplugged ESP32 as
+**Critical** — 0.0 V is below every voltage minimum — while the banner above read
+"All systems operating within safe parameters". Same root cause: last-known
+values presented as current. The chips now show "No reading" when telemetry is
+stale. Assume there is a fourth somewhere.
+
+### §4 device fields — done
+
+The ESP32 card is read-only: device ID, health, last command ack, and a line
+pointing at the phone app to pair. `updateDeviceSettings` and
+`clearDeviceSettings` are left unimported, so `linkDeviceToAccount` is
+unreachable from this client rather than merely hidden.
+
+### §7 password policy — **the hypothesis was wrong, and there is no policy**
+
+```
+GET https://identitytoolkit.googleapis.com/v2/passwordPolicy?key=<web-api-key>
+→ { "customStrengthOptions": { "minPasswordLength": 6, "maxPasswordLength": 4096 },
+    "enforcementState": "ENFORCE" }
+```
+
+No non-alphanumeric requirement, no case or digit rules. The server minimum is
+**6**, weaker than the client's 8 — so a password passing all four ticks can
+never be rejected by Firebase for strength. **Do not add a fifth rule to
+`RegisterScreen`; there is nothing to mirror.**
+
+The real cause was a stale banner. `setError` was only cleared on the next
+submit, while the tick list re-renders on every keystroke — so a rejected
+password left the message on screen as the user fixed it, ending with four green
+ticks under "Pick a stronger password." The same applied to "The two passwords do
+not match." Fixed by clearing the error on edit.
+
+Note `completePasswordReset` returns `auth/weak-password` from its **own**
+pre-check before Firebase is called, which is why this looked like a server
+verdict.
+
+⚠️ **Worth checking whether `RegisterScreen` clears its error on edit** — the
+four rules are shared, and so is the pattern.
+
+### §6 — one of your two applies here
+
+- **Budget over-budget:** not present. This repo already branched
+  `remaining >= 0 ? "left" : "over"`.
+- **Settings blanking:** present and now fixed by **copying your
+  `useSettings.js` verbatim**. `md5` matches; the file is byte-identical across
+  both repos again. Thank you for the catch.
+
+### Copied-file status
+
+`useSettings.js` re-synced from your copy. `authService.js` confirmed
+byte-identical again after your `0c77fa0`. `config.js` remains the only
+intentional difference.
+
+---
 
 For Claude Code working in the phone repo. Everything below was learned by
 running against the live project, not by reading code. Several items contradict

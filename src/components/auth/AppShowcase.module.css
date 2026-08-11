@@ -147,14 +147,8 @@
   min-height: 0;
 }
 
-.shot {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Graceful empty state — reads as a stylised device, not a missing asset. */
+/* The screen contents. Was a fallback for product shots that were never taken;
+   it is the artwork now. */
 .placeholder {
   width: 100%;
   height: 100%;

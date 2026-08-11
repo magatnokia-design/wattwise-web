@@ -2,34 +2,20 @@ import { useState } from 'react';
 import styles from './AppShowcase.module.css';
 
 /**
- * Design holder for the product shots.
+ * The device mock-ups beside the sign-in form.
  *
- * Drop images into `public/showcase/` named `web.png` and `phone.png` and they
- * appear here automatically — no code change. Until then each frame renders a
- * styled empty state, so a visitor sees an intentional-looking device mock-up
- * rather than a broken image or developer instructions.
+ * This used to load `public/showcase/web.png` and `phone.png` and fall back to a
+ * drawn illustration when they were missing. Those screenshots were never taken
+ * and are no longer planned, so the illustration is simply the content now —
+ * the fallback was what every visitor had been seeing regardless.
  */
 const VIEWS = [
-  {
-    id: 'web',
-    label: 'Web',
-    src: '/showcase/web.png',
-    alt: 'The WattWise dashboard in a browser',
-  },
-  {
-    id: 'phone',
-    label: 'Phone',
-    src: '/showcase/phone.png',
-    alt: 'The WattWise app on Android',
-  },
+  { id: 'web', label: 'Web' },
+  { id: 'phone', label: 'Phone' },
 ];
 
 export const AppShowcase = () => {
   const [active, setActive] = useState('web');
-  const [missing, setMissing] = useState({});
-
-  const view = VIEWS.find((entry) => entry.id === active) || VIEWS[0];
-  const hasImage = !missing[view.id];
 
   return (
     <div className={styles.showcase}>
@@ -58,34 +44,14 @@ export const AppShowcase = () => {
               <span className={styles.urlBar}>wattwise.site</span>
             </div>
             <div className={styles.screen}>
-              {hasImage ? (
-                <img
-                  src={view.src}
-                  alt={view.alt}
-                  className={styles.shot}
-                  loading="lazy"
-                  onError={() => setMissing((current) => ({ ...current, web: true }))}
-                />
-              ) : (
-                <Placeholder />
-              )}
+              <Illustration />
             </div>
           </div>
         ) : (
           <div className={styles.phone}>
             <span className={styles.notch} aria-hidden="true" />
             <div className={styles.screen}>
-              {hasImage ? (
-                <img
-                  src={view.src}
-                  alt={view.alt}
-                  className={styles.shot}
-                  loading="lazy"
-                  onError={() => setMissing((current) => ({ ...current, phone: true }))}
-                />
-              ) : (
-                <Placeholder compact />
-              )}
+              <Illustration compact />
             </div>
           </div>
         )}
@@ -94,12 +60,15 @@ export const AppShowcase = () => {
   );
 };
 
-const Placeholder = ({ compact = false }) => (
-  <div className={`${styles.placeholder} ${compact ? styles.placeholderCompact : ''}`}>
-    <span className={styles.placeholderMark} aria-hidden="true">
-      ⚡
-    </span>
-    <span className={styles.placeholderBars} aria-hidden="true">
+// Decorative only — the panel's meaning is carried by the headline and feature
+// rows beside it, so this is hidden from assistive tech rather than described.
+const Illustration = ({ compact = false }) => (
+  <div
+    className={`${styles.placeholder} ${compact ? styles.placeholderCompact : ''}`}
+    aria-hidden="true"
+  >
+    <span className={styles.placeholderMark}>⚡</span>
+    <span className={styles.placeholderBars}>
       <i />
       <i />
       <i />

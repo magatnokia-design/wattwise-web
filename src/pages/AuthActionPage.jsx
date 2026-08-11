@@ -119,6 +119,26 @@ export const AuthActionPage = () => {
     };
   }, [mode, oobCode]);
 
+  /*
+   * Clears the banner the moment either field is edited.
+   *
+   * Without this the banner only cleared on the next submit, while the tick
+   * list re-rendered on every keystroke — so a rejected password left
+   * "Pick a stronger password." on screen as the user fixed it, until all four
+   * ticks were green underneath a message saying it was not good enough. Same
+   * for "The two passwords do not match." once the second field was corrected.
+   *
+   * Not the server's doing: this project sets no custom password policy
+   * (minPasswordLength 6, nothing else), and `completePasswordReset` returns
+   * `auth/weak-password` from its own pre-check before Firebase is ever called.
+   * The rules the ticks describe are stricter than the ones being enforced, so
+   * a green tick list genuinely cannot be rejected for strength.
+   */
+  const editPassword = (setter) => (event) => {
+    setter(event.target.value);
+    setError('');
+  };
+
   const handleReset = useCallback(async (event) => {
     event.preventDefault();
     setError('');
@@ -227,7 +247,7 @@ export const AuthActionPage = () => {
           autoComplete="new-password"
           placeholder="••••••••"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={editPassword(setPassword)}
           hint={password ? undefined : RESET_HINT}
         />
 
@@ -239,7 +259,7 @@ export const AuthActionPage = () => {
           autoComplete="new-password"
           placeholder="••••••••"
           value={confirmPassword}
-          onChange={(event) => setConfirmPassword(event.target.value)}
+          onChange={editPassword(setConfirmPassword)}
         />
 
         <Button type="submit" loading={saving}>
