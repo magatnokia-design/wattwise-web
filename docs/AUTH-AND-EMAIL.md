@@ -15,8 +15,8 @@ do not re-suggest them.
 | Authorized domains | ✅ Done — `wattwise.site`, `www.wattwise.site`, `wattwise-black.vercel.app` all added alongside the three defaults |
 | App emails (bills, receipts, alerts) | Configured and deployed; end-to-end send not yet confirmed |
 | Email verification at registration | ✅ Built in the **phone** repo; needs an EAS build to ship |
-| Branded action page (`/auth/action`) | ✅ Built here; **not yet live** — see "Remaining step" |
-| Auth email template wording | 🔒 Blocked — Firebase shows *"Email template updates are currently unavailable for this project"*, a temporary lock |
+| Branded action page (`/auth/action`) | ✅ Built **and verified end-to-end** on 2026-08-11 with a real `oobCode` — form rendered, password saved, "Password updated". **Not yet reached by Firebase's emails** — see "Remaining step" |
+| Auth email template wording | 🔒 Blocked — Firebase shows *"Email template updates are currently unavailable for this project"*, and the ✏️ dialog errors on Save |
 
 The authoritative record lives in the phone repo at
 `C:\App\WattWise\docs\email-senders.md`. Read it before touching anything email
@@ -63,9 +63,59 @@ built here is simply never reached. Two costs, not just cosmetics:
 404'd every link in flight. The page is deployed now, so that risk is gone.
 Rollback is just clearing the field.
 
-**Try the action-URL dialog even though template *wording* is locked.** It saves
-through a different write (project config, not the template body), so the lock
-noted above may not cover it.
+### The console cannot save this — use the API
+
+The ✏️ → **Customise action URL** dialog errors on Save. Two things say the
+console's own state is wrong rather than the setting being unwritable:
+
+- The dialog shows **From: `noreply@wattwise-fe394.firebaseapp.com`**, greyed
+  out, while real mail arrives from `support@wattwise.site`. It is not
+  reflecting the Brevo SMTP config.
+- Save posts the **whole** template blob — sender, subject, body, action URL
+  together. The body is under the lock above, so the write is rejected as a
+  unit even though only the URL was touched.
+
+The underlying field is `notification.sendEmail.callbackUri` on the Identity
+Platform config, and it takes a targeted write with an `updateMask` — which
+touches the URL and nothing else.
+
+Run this in **Google Cloud Shell** (console.cloud.google.com, the `>_` icon —
+`gcloud` is preinstalled and already authenticated, so nothing is installed
+locally and no token is copied anywhere):
+
+```bash
+PROJECT=wattwise-fe394
+
+# 1. Read first. Check notification.sendEmail — method, smtp.senderEmail, callbackUri.
+curl -s "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT/config" \
+  -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+  -H "X-Goog-User-Project: $PROJECT"
+
+# 2. Write only the action URL.
+curl -s -X PATCH \
+  "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT/config?updateMask=notification.sendEmail.callbackUri" \
+  -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+  -H "X-Goog-User-Project: $PROJECT" \
+  -H "Content-Type: application/json" \
+  -d '{"notification":{"sendEmail":{"callbackUri":"https://www.wattwise.site/auth/action"}}}'
+```
+
+Rollback is the same PATCH with `"callbackUri":""`.
+
+Reading the failure, if it fails:
+
+| Response | Meaning |
+|---|---|
+| `200` echoing the new `callbackUri` | Done. Trigger a real reset and check the link host. |
+| `400 INVALID_ARGUMENT` naming the URI | The host is not an authorized domain. `www.wattwise.site` already is — check for a typo. |
+| `403 PERMISSION_DENIED` | Account is not Owner / lacks `firebaseauth.configs.update`. |
+| The same "currently unavailable" lock | The lock covers config writes too, not just the template body. Nothing left but Firebase Support — quote the project ID and the exact message. |
+
+**Not viable, so do not spend time on it:** redirecting
+`wattwise-fe394.firebaseapp.com/__/auth/action` from Firebase Hosting.
+`/__/*` is a reserved namespace that Hosting serves itself; rewrites and
+redirects there do not take effect. `actionCodeSettings.url` does not help
+either — it only appends `continueUrl`, it does not move where the link points.
 
 ### Testing before the URL is switched
 
