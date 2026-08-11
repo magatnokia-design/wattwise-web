@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import usePowerSafety from '../screens/PowerSafetyManagement/hooks/usePowerSafety';
+import { useLiveOutlets } from '../hooks/useLiveOutlets';
 import {
   formatAlertTime,
   getAlertIcon,
@@ -19,14 +20,30 @@ import safetyStyles from './SafetyPage.module.css';
 // per-outlet limit. Offering a higher number in the form would be a lie.
 const MAX_POWER_W = 500;
 
-const readingRow = (outletLabel, readings, thresholds) => [
+/*
+ * Shown instead of a threshold verdict when no telemetry has arrived recently.
+ *
+ * An unplugged ESP32 leaves 0.0 V on the outlet document, and 0 is below every
+ * voltage minimum, so the rule quite correctly called it Critical — while the
+ * banner above said "All systems operating within safe parameters", because the
+ * stage comes from the backend's safety document and that had not moved. Zero
+ * volts from a device that is not reporting is not a dangerous reading, it is
+ * the absence of one, and the page should not grade it.
+ *
+ * Distinct from the case §11 of the phone handoff calls out: 240 V with 0.00 A
+ * while the relay is off IS a real measurement — the PZEM sits on the mains side
+ * — and still gets graded normally, because telemetry is arriving.
+ */
+const NO_READING = { label: 'No reading', bg: 'var(--ww-grid)', color: 'var(--ww-text-light)' };
+
+const readingRow = (outletLabel, readings, thresholds, fresh) => [
   {
     key: `${outletLabel}-voltage`,
     label: 'Voltage',
     value: readings.voltage,
     unit: 'V',
     digits: 1,
-    status: getStatusColor(readings.voltage, thresholds.voltage),
+    status: fresh ? getStatusColor(readings.voltage, thresholds.voltage) : NO_READING,
   },
   {
     key: `${outletLabel}-current`,
@@ -34,7 +51,7 @@ const readingRow = (outletLabel, readings, thresholds) => [
     value: readings.current,
     unit: 'A',
     digits: 2,
-    status: getStatusColor(readings.current, thresholds.current),
+    status: fresh ? getStatusColor(readings.current, thresholds.current) : NO_READING,
   },
   {
     key: `${outletLabel}-power`,
@@ -42,11 +59,14 @@ const readingRow = (outletLabel, readings, thresholds) => [
     value: readings.power,
     unit: 'W',
     digits: 1,
-    status: getStatusColor(readings.power, thresholds.power),
+    status: fresh ? getStatusColor(readings.power, thresholds.power) : NO_READING,
   },
 ];
 
 export const SafetyPage = () => {
+  // Same outlet subscription usePowerSafety already listens to, so the Firestore
+  // SDK serves both from one watch target rather than opening a second.
+  const { telemetryFresh } = useLiveOutlets({ withRates: false });
   const {
     safetyStage,
     outlet1Status,
@@ -168,9 +188,16 @@ export const SafetyPage = () => {
               { label: 'Outlet 2', readings: outlet2Status },
             ].map((outlet) => (
               <Card key={outlet.label}>
-                <CardHeader title={outlet.label} subtitle="Live against your thresholds" />
+                <CardHeader
+                  title={outlet.label}
+                  subtitle={
+                    telemetryFresh
+                      ? 'Live against your thresholds'
+                      : 'Waiting for the ESP32 to report'
+                  }
+                />
                 <div className={styles.stack}>
-                  {readingRow(outlet.label, outlet.readings, thresholds).map((reading) => (
+                  {readingRow(outlet.label, outlet.readings, thresholds, telemetryFresh).map((reading) => (
                     <div key={reading.key} className={safetyStyles.reading}>
                       <div className={safetyStyles.readingHead}>
                         <span className={safetyStyles.readingLabel}>{reading.label}</span>
