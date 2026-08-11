@@ -105,6 +105,16 @@ export const SafetyPage = () => {
 
   const stage = getSafetyStageConfig(safetyStage);
 
+  /*
+   * Clear-on-edit, same as the auth forms. "Minimum voltage must be below the
+   * maximum." staying put while the user fixes the minimum is the same
+   * contradiction, and this editor can produce it on any of four fields.
+   */
+  const editDraft = (field) => (event) => {
+    setDraft((current) => ({ ...current, [field]: event.target.value }));
+    setError((current) => (current ? '' : current));
+  };
+
   const save = async () => {
     setError('');
 
@@ -314,14 +324,14 @@ export const SafetyPage = () => {
                 type="number"
                 suffix="V"
                 value={draft.voltageMin}
-                onChange={(event) => setDraft({ ...draft, voltageMin: event.target.value })}
+                onChange={editDraft('voltageMin')}
               />
               <TextField
                 label="Voltage max"
                 type="number"
                 suffix="V"
                 value={draft.voltageMax}
-                onChange={(event) => setDraft({ ...draft, voltageMax: event.target.value })}
+                onChange={editDraft('voltageMax')}
               />
               <TextField
                 label="Current max"
@@ -329,7 +339,7 @@ export const SafetyPage = () => {
                 step="0.1"
                 suffix="A"
                 value={draft.currentMax}
-                onChange={(event) => setDraft({ ...draft, currentMax: event.target.value })}
+                onChange={editDraft('currentMax')}
               />
               <TextField
                 label="Power max"
@@ -337,7 +347,7 @@ export const SafetyPage = () => {
                 max={MAX_POWER_W}
                 suffix="W"
                 value={draft.powerMax}
-                onChange={(event) => setDraft({ ...draft, powerMax: event.target.value })}
+                onChange={editDraft('powerMax')}
                 hint={`Anything higher saves as ${MAX_POWER_W} W`}
               />
             </div>

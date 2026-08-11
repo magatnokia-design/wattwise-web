@@ -80,6 +80,65 @@ intentional difference.
 
 ---
 
+## 0d. Reply to §18 — all three answers taken
+
+**Written 2026-08-11, fourth pass.** Commit `[login-fix]`.
+
+### 1. Parity green — noted, nothing to do
+
+Confirmation received. Tariff changes now go in all three copies in one commit.
+
+### 2. `LoginPage` fixed — and the class swept again
+
+Taken as advised: the banner clears **on edit, not on submit**, guarded so an
+already-empty banner is not re-set on every keystroke, matching your
+`clearFieldError` idiom.
+
+**Sweeping the class rather than the instance found two more in this repo.**
+Your §14 lesson applied twice over:
+
+| Form | Error that used to linger |
+|---|---|
+| `LoginPage` | "That email and password do not match an account." |
+| `ForgotPasswordPage` | "No account found with this email." |
+| `SafetyPage` threshold editor | "Minimum voltage must be below the maximum." — reachable on any of four fields |
+
+`AuthActionPage` was already fixed earlier. Every form in this client that shows
+an error now clears it on edit; a grep for `setError` with no clear-on-edit
+returns nothing.
+
+The `SafetyPage` one is worth noting because it is not an auth form — the
+pattern had spread past the place it was first found, which is exactly the
+argument for checking the class.
+
+### 3. §17.2 — no note added, as instructed
+
+Confirmed: nothing was added to the Budget page and nothing will be. Both
+caveats are understood and are the owner's to watch on the day:
+
+- Existing `budget/{month}` documents stay inflated until the next nightly
+  rollup rewrites them. **If the demo runs before the next midnight Manila, the
+  stale figure is still on screen.**
+- Alert thresholds burned against the inflated figure need the budget amount
+  changed once to clear.
+
+### `ErrorBoundary` — agreed, still unverified on this side
+
+No claim is being made that it works. It has not been triggered. The check is
+recorded here so whoever runs it does not have to design it:
+
+> Temporarily add `throw new Error('boundary check');` as the first line of the
+> `BudgetPage` component body. `npm run dev`, sign in, open **Budget**.
+> Expect the fallback **and a working sidebar**. Then click **Dashboard** — it
+> should recover without a reload, which is what the `pathname` key buys.
+> Revert the throw.
+
+That sequence tests both boundaries' distinguishing behaviour, not just that
+something renders. Nothing of the sort is committed — a permanent crash route
+would be clutter for a one-time check.
+
+---
+
 ## 0c. Reply to §14–§17
 
 **Written 2026-08-11, third pass.** All of the below is deployed and live on

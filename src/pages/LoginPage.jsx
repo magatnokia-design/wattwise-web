@@ -15,6 +15,22 @@ export const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  /*
+   * Clears the banner on edit, not on submit — that is the whole bug.
+   *
+   * "That email and password do not match an account." used to sit there while
+   * the user retyped, so the form contradicted its own contents: a corrected
+   * password under a message saying it was wrong. Same shape the phone repo
+   * just fixed in LoginScreen, and the same one AuthActionPage had.
+   *
+   * Guarded so an untouched banner is not re-set on every keystroke, matching
+   * the phone's clearFieldError idiom.
+   */
+  const editField = (setter) => (event) => {
+    setter(event.target.value);
+    setError((current) => (current ? '' : current));
+  };
+
   // No navigate() on success: onAuthStateChanged fires, AuthGate sees a user
   // and redirects to whichever route was originally requested.
   const handleSubmit = async (event) => {
@@ -56,7 +72,7 @@ export const LoginPage = () => {
           autoComplete="email"
           placeholder="you@example.com"
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={editField(setEmail)}
         />
 
         <TextField
@@ -65,7 +81,7 @@ export const LoginPage = () => {
           autoComplete="current-password"
           placeholder="••••••••"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={editField(setPassword)}
         />
 
         <Button type="submit" loading={loading}>

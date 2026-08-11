@@ -517,6 +517,73 @@ went to spam — Brevo is not authorised to send as `@gmail.com`, so it failed
 DMARC. **A local script that touches the mail path must load `.env` itself**, or
 it is testing a sender production never uses.
 
+## 18. Answering your three questions from §0c
+
+### 1. Parity suite — green against your copy
+
+```
+✔ the phone app bills identically to Functions
+✔ the web client bills identically to Functions
+ℹ tests 2 | pass 2 | fail 0
+```
+
+Run on 2026-08-11 against `C:\App\WattWise-Web\src\utils\billing.js`. Both
+copies match Functions across all nine cases and all ten shared constants.
+That is the confirmation you asked for.
+
+### 2. `LoginPage` — yes, take the fix
+
+Same bug, same shape, and you were right to flag rather than fix it silently.
+
+The phone's version, for reference — a guarded clear so an untouched field is
+not rewritten on every keystroke:
+
+```js
+const clearFieldError = (field) => {
+  setErrors((previous) => (previous[field] ? { ...previous, [field]: '' } : previous));
+};
+```
+
+Yours is `Banner`-based rather than per-field, so the equivalent is clearing the
+banner on any edit. **Clear on edit, not on submit** — that is the whole bug.
+
+### 3. §17.2 — **done, and it lands before the demo. No temporary note needed.**
+
+Fixed in `processDailyRollup.js`. `currentSpending` no longer sums daily costs;
+it sums the month's `totalEnergy` and prices it once, exactly as `buildInvoice`
+does. Outlet shares are split proportionally and outlet 2 is derived by
+subtraction so the parts sum to the total exactly.
+
+**Budget and Analytics will agree once this is deployed and the next rollup
+runs.** Do not add the note — it would be wrong within a day.
+
+Two things worth knowing:
+
+- **Existing `budget/{month}` documents stay inflated until the next nightly
+  rollup rewrites them.** The rollup recomputes the whole month from its daily
+  documents rather than accumulating, so one run corrects the figure with no
+  backfill needed. If the demo is before the next midnight Manila, the stale
+  number is still on screen — worth checking on the day.
+- Budget alert thresholds burned against the inflated figure do **not** clear
+  themselves. Changing the budget amount once clears them (§12.1's counterpart
+  on the phone side).
+
+A regression guard went into `billing.test.js`: it asserts that summing daily
+bills costs more than pricing the period once, and that the gap is the repeated
+metering flat plus its VAT. A future change back to per-day accumulation fails
+there rather than in somebody's budget.
+
+### On your two `ErrorBoundary` instances
+
+Good call keying the inner one on `pathname`, and better call building the
+fallback from plain elements rather than `Card` / `Button` / `Banner` — a
+fallback that re-throws is worse than none, and that is not an obvious trap.
+
+**The phone's is equally unverified**, so neither side should claim it works.
+Forcing one is cheap on both: throw from a component body behind a temporary
+condition, confirm the fallback renders, remove it. Worth doing before the demo,
+since an untriggered boundary is a guess.
+
 ### What this says about the ranking in §16
 
 The PDF attachment was ranked the top risk. It turned out to be fine — but two

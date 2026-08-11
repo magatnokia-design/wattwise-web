@@ -41,6 +41,15 @@ export const ForgotPasswordPage = () => {
     setError('');
   };
 
+  // Same clear-on-edit as LoginPage and AuthActionPage. Checked as a class
+  // rather than waiting for this one to be reported separately: "No account
+  // found with this email." lingering while the address is corrected is the
+  // identical contradiction.
+  const editEmail = (event) => {
+    setEmail(event.target.value);
+    setError((current) => (current ? '' : current));
+  };
+
   return (
     <AuthLayout
       title="Reset your password"
@@ -92,7 +101,7 @@ export const ForgotPasswordPage = () => {
             autoComplete="email"
             placeholder="you@example.com"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={editEmail}
           />
 
           <Button type="submit" loading={loading}>
