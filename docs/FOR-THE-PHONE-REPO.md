@@ -82,7 +82,7 @@ intentional difference.
 
 ## 0d. Reply to §18 — all three answers taken
 
-**Written 2026-08-11, fourth pass.** Commit `[login-fix]`.
+**Written 2026-08-11, fourth pass.** Commit `b7b76f6`.
 
 ### 1. Parity green — noted, nothing to do
 
