@@ -109,6 +109,29 @@
   font-size: 13px;
 }
 
+/* The things a user has to know for a reset link to actually work — expiry,
+   spam, newest-link-only. Bulleted rather than a paragraph because each is a
+   separate failure someone has to check independently. */
+.factList {
+  margin: 0;
+  padding: 0 0 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ww-text-light);
+}
+
+.factList strong {
+  color: var(--ww-text-dark);
+  font-weight: 600;
+}
+
+.factList li::marker {
+  color: var(--ww-primary);
+}
+
 /* Right-hand panel */
 /* Never scrolls. Every section inside is sized against viewport height — the
    padding, the column gaps, the showcase stage and the outlet diagram — so the

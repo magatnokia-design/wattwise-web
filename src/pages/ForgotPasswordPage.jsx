@@ -11,7 +11,9 @@ import styles from './AuthLayout.module.css';
 export const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
-  const [sent, setSent] = useState(false);
+  // The address the link actually went to, captured at send time rather than
+  // read back off the live field.
+  const [sentTo, setSentTo] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event) => {
@@ -22,7 +24,8 @@ export const ForgotPasswordPage = () => {
     // resetPassword checks the account exists via the checkUserExistsByEmail
     // callable before sending, so an unknown address reports as such rather
     // than silently succeeding.
-    const result = await authService.resetPassword(email);
+    const normalizedEmail = email.trim().toLowerCase();
+    const result = await authService.resetPassword(normalizedEmail);
     setLoading(false);
 
     if (!result.success) {
@@ -30,7 +33,12 @@ export const ForgotPasswordPage = () => {
       return;
     }
 
-    setSent(true);
+    setSentTo(normalizedEmail);
+  };
+
+  const startOver = () => {
+    setSentTo('');
+    setError('');
   };
 
   return (
@@ -39,10 +47,36 @@ export const ForgotPasswordPage = () => {
       subtitle="We will email you a link to set a new one."
       footer={<Link to="/login">← Back to sign in</Link>}
     >
-      {sent ? (
-        <Banner tone="good" title="Email sent.">
-          Check the inbox for {email.trim().toLowerCase()} and follow the link.
-        </Banner>
+      {sentTo ? (
+        /*
+         * Three facts the plain "check your inbox" message left out. Each one
+         * produces the same dead end — the handler reporting the link as
+         * expired or already used, with no clue which. Kept in line with the
+         * phone app's ForgotPasswordScreen, which states the same three on send.
+         */
+        <div className={styles.formStack}>
+          <Banner tone="good" title="Reset link sent.">
+            Sent to {sentTo}.
+          </Banner>
+
+          <ul className={styles.factList}>
+            <li>
+              The link <strong>expires in 1 hour</strong>.
+            </li>
+            <li>
+              <strong>Check your spam folder.</strong> Reset mail often lands there, and that is
+              usually what starts the trouble.
+            </li>
+            <li>
+              If you request another, <strong>only the newest link works</strong> — every earlier
+              one stops working the moment a new one is sent. Do not go back to an older email.
+            </li>
+          </ul>
+
+          <Button variant="secondary" onClick={startOver}>
+            Use a different email
+          </Button>
+        </div>
       ) : (
         <form onSubmit={handleSubmit} className={styles.formStack}>
           {error ? <Banner tone="alert">{error}</Banner> : null}
