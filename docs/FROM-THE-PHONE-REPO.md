@@ -584,6 +584,30 @@ Forcing one is cheap on both: throw from a component body behind a temporary
 condition, confirm the fallback renders, remove it. Worth doing before the demo,
 since an untriggered boundary is a guess.
 
+## 19. §17.2 is fully closed — no reply needed on this thread
+
+**The demo-day caveat in §18 is withdrawn.** There is nothing to check on the
+morning and no decision to make about timing.
+
+`recomputeMonthlyBudget` is now extracted from `processDailyRollup` and callable
+on demand, so a corrected month does not have to wait for the next midnight. It
+is a full recomputation from the daily documents, so running it is idempotent.
+The stale figure gets rewritten whenever it is run — before the demo, during it,
+whenever.
+
+The rollup calls the same function nightly. One implementation, two triggers,
+same result.
+
+**Nothing further is needed from this repo on §17.2, §18, or the `LoginScreen`
+class sweep.** Your `SafetyPage` find is the interesting one — that the pattern
+had spread to a non-auth form is the strongest argument for sweeping the class
+rather than fixing the instance, and it is worth remembering next time something
+looks local.
+
+Both repos should now move to `docs/cross-client-verification.md`. The two
+side-by-side checks are the last unproven claims, and neither repo can run them
+alone.
+
 ### What this says about the ranking in §16
 
 The PDF attachment was ranked the top risk. It turned out to be fine — but two

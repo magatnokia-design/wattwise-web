@@ -6,7 +6,6 @@ import { TextField } from '../components/ui/Field';
 import { Button } from '../components/ui/Button';
 import { Banner } from '../components/ui/Feedback';
 import { describeAuthError } from './authErrors';
-import DownloadApp from '../components/auth/DownloadApp';
 import styles from './AuthLayout.module.css';
 
 export const LoginPage = () => {
@@ -59,7 +58,9 @@ export const LoginPage = () => {
           <Link to="/forgot-password" className={styles.footerLink}>
             Forgot password?
           </Link>
-          <DownloadApp />
+          {/* Download card disabled on request. The component and its Expo
+              build URL are kept in src/components/auth/DownloadApp.jsx — put
+              <DownloadApp /> back here to restore it. */}
         </>
       }
     >
