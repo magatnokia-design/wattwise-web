@@ -104,7 +104,9 @@ export const DashboardPage = () => {
         <Badge tone={telemetryFresh ? 'good' : 'neutral'}>
           {telemetryFresh
             ? `Hardware reporting · ${relativeAge(lastTelemetryMs)}`
-            : `No telemetry · last seen ${relativeAge(lastTelemetryMs)}`}
+            : lastTelemetryMs > 0
+              ? `No telemetry · last seen ${relativeAge(lastTelemetryMs)}`
+              : 'No telemetry yet'}
         </Badge>
       </div>
 
@@ -165,13 +167,34 @@ export const DashboardPage = () => {
         />
       </div>
 
+      {/*
+        Deliberately does not say "offline". A device is only visible here when
+        it POSTS readings — `updateOutletMetrics` is the sole writer of
+        `metricsUpdatedAtMs` and of `health.status: 'online'`. Polling for
+        commands does not count: `getDeviceCommand` touches device health only
+        to mark a timeout. So an ESP32 that is powered, on wi-fi, and polling
+        normally still reads as "nothing reporting" here until it sends
+        telemetry, and refreshing cannot change that — there is no newer data
+        to fetch. Sending people to check power and wiring first, as this card
+        used to, points them at the wrong thing.
+      */}
       {!telemetryFresh ? (
         <Card>
           <p style={{ fontSize: 13, color: 'var(--ww-text-light)' }}>
-            <strong style={{ color: 'var(--ww-text-dark)' }}>Nothing is reporting.</strong> The
-            readings above stay at zero until the ESP32 posts telemetry. Check that the device is
-            powered and linked under <Link to="/settings">Settings</Link>. Toggles queued here are
-            still picked up whenever it comes back online.
+            <strong style={{ color: 'var(--ww-text-dark)' }}>Nothing is reporting.</strong> No
+            readings have arrived in the last 12 seconds, so everything above stays at zero.
+          </p>
+          <p style={{ fontSize: 13, color: 'var(--ww-text-light)', marginTop: 10 }}>
+            This does not necessarily mean the ESP32 is offline. WattWise only sees it when it
+            sends a reading — checking for commands is silent. <strong
+              style={{ color: 'var(--ww-text-dark)' }}
+            >Toggling either outlet usually wakes it up.</strong> Refreshing this page will not:
+            there is no newer reading to fetch.
+          </p>
+          <p style={{ fontSize: 13, color: 'var(--ww-text-light)', marginTop: 10 }}>
+            If it stays quiet after a toggle, then check it is powered and still linked under{' '}
+            <Link to="/settings">Settings</Link>. Either way, toggles queued here are picked up as
+            soon as it reports again.
           </p>
         </Card>
       ) : null}
