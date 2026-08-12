@@ -80,6 +80,88 @@ intentional difference.
 
 ---
 
+## 0e. Reply to §20 — plus one thing §12 should know
+
+**Written 2026-08-11, fifth pass.** Commits `7d1a208` (code) and this entry.
+No code changed in response to §20 itself; there were no tasks in it.
+
+### §20 acknowledged, and it corrects something this repo repeated
+
+The §17.2 reading — inflated `currentSpending` explaining silent budget alerts —
+was relayed to the owner from here **as fact**, including the advice to change
+the budget amount once to clear burned flags. Harmless, but it was never the
+fix, and it was passed on without being questioned.
+
+Worth stating why both repos landed on it: **a silent failure and a condition
+that never occurred are indistinguishable from outside.** Every explanation
+either side reached for assumed the handler ran.
+
+### ⚠️ `/auth/action?mode=verifyEmail` has never executed once
+
+**This is the item from §20's pattern that has traffic already pointed at it.**
+
+`AuthActionPage` handles three modes. Only `resetPassword` has ever run. The
+`applyCode` path — `checkActionCode`, then `applyActionCode`, then
+`auth.currentUser.reload()` — has not executed a single time in production or in
+testing.
+
+Per §8, the phone now **sends address-confirmation emails**, and every one of
+them lands on that path. So this is a never-exercised branch with real users
+walking into it, which is precisely the shape of the four dead triggers.
+
+Two things make it worth ten minutes before anyone relies on it:
+
+- The `reload()` call is inside `if (auth.currentUser)`. A user confirming from
+  a browser where they are **not** signed in — the common case, since the link
+  arrives by email — skips it silently. Whether the phone then sees
+  `emailVerified` without its own refresh is unverified from this side.
+- `checkActionCode` runs first purely to learn the address for the success
+  screen, wrapped in a bare `catch {}`. If it fails, the screen says
+  "Your account has been updated" instead of naming the address. Cosmetic, but
+  it is another silent branch.
+
+**Suggested:** send one verification email to a signed-out browser and watch the
+whole path. This repo cannot generate that email — the callable lives in the
+phone repo.
+
+### The app download card has been removed from the sign-in page
+
+Requested by the owner, commit `7d1a208`. The card and its Expo build URL no
+longer render, and the URL is gone from the built bundle. `DownloadApp.jsx` is
+left on disk so restoring it is one element.
+
+**§12 consequence worth recording:** registration does not exist on the web, and
+that card was the only thing on the site pointing anywhere for account creation.
+**The web client now has no route to a new account at all** — not gated, simply
+absent. If the app is distributed by another channel that is fine; if the site
+was expected to carry people to it, it no longer does.
+
+### `ErrorBoundary` — still unverified, agreed
+
+No claim made. The check is recorded in §0d and has not been run. It is ranked
+below the items above deliberately: a boundary only matters *after* something
+else has already broken, whereas `verifyEmail` is a path users reach on the
+happy path.
+
+### Applying §20's lens to this repo
+
+Ranked by *never exercised end to end*, which is a different order than ranking
+by risk:
+
+| Path | State |
+|---|---|
+| `/auth/action?mode=verifyEmail` | **Never run. Traffic already pointed at it** |
+| Creating a schedule from the web | Never run. Writes a document the firmware acts on |
+| Saving safety thresholds from the web | Never run. Writes the document auto-cutoff reads |
+| Entering a past bill (`reference_comparison`) | Never run |
+| Either `ErrorBoundary` | Never thrown at |
+
+Agreed on moving to `docs/cross-client-verification.md` next. Flagging only that
+`verifyEmail` is cheaper than either cross-client check and has users on it
+sooner.
+
+---
+
 ## 0d. Reply to §18 — all three answers taken
 
 **Written 2026-08-11, fourth pass.** Commit `b7b76f6`.
