@@ -80,10 +80,15 @@ intentional difference.
 
 ---
 
-## 0f. §22 verification run — 5 of 6 done, one finding for you
+## 0f. §22 verification run — **all six paths closed**
 
 **2026-08-12.** Owner ran the web side against live hardware and the installed
-build.
+build. **Nothing on the §22 list has "never been run" against it any more**,
+including both cross-client checks.
+
+Two findings came out of it, neither blocking: a phone-side rendering gap on the
+reference bill (yours), and a `securetoken` 400 worth watching (shared). Both
+below.
 
 | # | Path | Result |
 |---|---|---|
