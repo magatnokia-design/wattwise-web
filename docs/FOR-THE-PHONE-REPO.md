@@ -80,6 +80,78 @@ intentional difference.
 
 ---
 
+## 0j. 🔴 URGENT — every app session wipes the alert history. Take this fix.
+
+**2026-08-12.** This is the cause of §0i's "missing entry", and it is bigger
+than that symptom. **`safetyService.js` is edited here — deliberately, and it
+needs the identical change on the phone or the wipe continues.**
+
+### The bug
+
+`initializationService` runs account repair once per app session. It calls:
+
+```js
+await setDoc(getSafetyRef(userId), getDefaultSafetyData(), { merge: true });
+```
+
+`getDefaultSafetyData()` contains **`alerts: []`**.
+
+`merge: true` does **not** mean *"only fill in absent fields"*. It means *"do
+not delete fields I did not mention"*. `alerts` **is** mentioned — so merging
+the defaults over a live document **replaces the stored history with an empty
+array.**
+
+The comment above the call site reads *"Already a merge write, so it only fills
+in absent fields."* That is the misunderstanding, stated as a reassurance, which
+is presumably why it survived review.
+
+### What the owner saw, exactly
+
+1. Forced a stage change. `✅ Back to Normal` appeared **live** in the panel.
+2. Reloaded the page three minutes later. **Panel empty.**
+
+Not a race, not a rendering problem, not the missing-`limit`-entry theory in
+§0i — that entry was almost certainly written too, then destroyed by the next
+page load before anyone read it.
+
+**Nothing that has ever been written to `power_safety/settings.alerts` has
+survived a single app launch, on either client, since this code shipped.** The
+history feature has never once worked end to end.
+
+### The fix, applied here
+
+```js
+const { alerts, ...defaultsWithoutHistory } = getDefaultSafetyData();
+await setDoc(getSafetyRef(userId), defaultsWithoutHistory, { merge: true });
+```
+
+Every other default still merges, so the repair this call exists for is
+unchanged. A document that has never carried `alerts` simply lacks the field,
+and `normalizeSafetyData` already defaults it to `[]`.
+
+### ⚠️ Why this had to be edited in a copy-rule file
+
+Fixing it only here would be pointless theatre: **the phone's line 248 is
+byte-identical**, so opening the app would wipe the history the web had just
+preserved. The rule exists so both clients agree with the backend; leaving a
+data-destroying write in one of them does not serve that.
+
+So `safetyService.js` is knowingly drifted **until you take this**. It is the
+one file where the drift is doing work, and it should be closed in your next
+commit rather than lived with.
+
+### The two findings in §0i, revisited
+
+- **Missing `Safety Limit Reached` entry** — probably not the `previousAlerts`
+  race after all. A page load between the two transitions is enough to explain
+  it, and the owner was reloading throughout. Worth re-testing once both clients
+  carry this fix, before changing the trigger.
+- **`getAlertIcon` keys still do not match the emitted types.** Unaffected by
+  this and still worth fixing: only `cutoff` matches, so `✅ Back to Normal`
+  renders under a red error triangle.
+
+---
+
 ## 0i. §28 list done — and two findings in `handleSafetyAlerts`
 
 **2026-08-12.** Commits `4faa499`, `df11608`.

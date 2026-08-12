@@ -245,7 +245,23 @@ export const safetyService = {
   // Initialize power safety (called once after user registration)
   initializePowerSafety: async (userId) => {
     try {
-      await setDoc(getSafetyRef(userId), getDefaultSafetyData(), { merge: true });
+      // `alerts` is stripped, and that is the whole point of this line.
+      //
+      // merge: true does not mean "only fill in absent fields" - it means "do
+      // not delete fields I did not mention". `alerts: []` in the defaults IS
+      // mentioned, so merging it over a live document replaced the stored
+      // history with an empty array. This runs from initializationService on
+      // every app session, so every page load silently destroyed the alert
+      // history: an entry would appear the moment a threshold was crossed and
+      // be gone by the next reload.
+      //
+      // Every other default still merges, so the repair this call exists for
+      // is unchanged. A document that has never had `alerts` simply lacks the
+      // field, and normalizeSafetyData already defaults it to [].
+      const { alerts, ...defaultsWithoutHistory } = getDefaultSafetyData();
+      void alerts;
+
+      await setDoc(getSafetyRef(userId), defaultsWithoutHistory, { merge: true });
       return { success: true };
     } catch (error) {
       console.error('Error initializing power safety:', error);
