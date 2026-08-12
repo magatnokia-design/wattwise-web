@@ -80,6 +80,78 @@ intentional difference.
 
 ---
 
+## 0i. §28 list done — and two findings in `handleSafetyAlerts`
+
+**2026-08-12.** Commits `4faa499`, `df11608`.
+
+### The §28 list
+
+| # | Item | Result |
+|---|---|---|
+| 1 | Alert history | ✅ **Populates.** It writes and renders — see the finding below |
+| 2 | `notificationHelpers.js` | ✅ Re-synced, and `describeNotificationDetails` wired into the notifications page |
+| 3 | Corrected `email-logo.png` | ✅ Deployed. Re-verified by bytes: 880 B, **120 x 120**, md5 `cdf51d7029ea00595e9118937b1ac0ea` |
+| 4 | The orange bolt | ✅ Gone — `BoltMark.jsx` holds the path once, same geometry as the favicon and email logo |
+
+**Your cost-summing check came back clean.** The only `reduce` over a cost here
+is `liveCostPerHour` in Analytics, which sums per-hour rates across outlets, not
+`history_daily.cost` across days. Nothing understates.
+
+### Fixed here: alert history was only read once, at mount
+
+The hook subscribes to `power_safety`, but `applySafetyData` lifts readings,
+thresholds and stage out of each snapshot — the `alerts` array rides in the same
+payload and is dropped. So an alert raised while the page is open never appeared
+until a reload, under a panel insisting *"Nothing has crossed a threshold"*,
+which is a stronger claim than "nothing has loaded".
+
+Now re-reads on a stage change — one extra read per transition, not a poll.
+**Done in `SafetyPage.jsx`, not the hook**, because `usePowerSafety` is a shared
+copy and **the phone has the identical gap**. Worth taking there.
+
+### ⚠️ Finding 1 — the "Safety Limit Reached" entry did not survive
+
+Owner forced a transition by lowering the voltage maximum below live mains, then
+restored it. Expected two entries. **Only `✅ Back to Normal` is present.**
+
+Not a rendering problem — the panel renders the array unfiltered, and the switch
+in `handleSafetyAlerts` writes an entry for `warning`, `limit` and `cutoff` as
+well as `normal`.
+
+The suspect is `previousAlerts`:
+
+```js
+const previousAlerts = Array.isArray(newData.alerts) ? newData.alerts : [];
+await change.after.ref.set({ alerts: [alertEntry, ...previousAlerts]... });
+```
+
+`newData` is the trigger's own after-snapshot. If the second transition's
+snapshot predates the first transition's `alerts` write, the second write
+carries an empty tail and **overwrites the first entry** rather than prepending
+to it. Telemetry posts about once a second, so the window is not small.
+
+**The notifications collection settles it**, and the badge already reads 2:
+two notifications plus one history entry means both transitions fired and the
+history write lost one. One notification means only one transition fired.
+
+If it is the race, reading `alerts` inside a transaction — or appending with
+`arrayUnion` — fixes it. Backend, so left alone here.
+
+### ⚠️ Finding 2 — `getAlertIcon` keys do not match the types being written
+
+`safetyHelpers.getAlertIcon` maps `voltage`, `current`, `power`, `cutoff`, and
+falls back to `icons.power` — a red error-coloured warning triangle.
+
+`handleSafetyAlerts` emits `warning`, `high_usage`, `cutoff` and `device`.
+**Only `cutoff` matches.** Everything else takes the fallback, which is why
+`✅ Back to Normal` renders under a red alert triangle in the screenshot: a
+success message wearing an error icon.
+
+`safetyHelpers.js` is a copy-rule file, so this is yours. Either add the four
+emitted types or change what the trigger emits — but they should agree.
+
+---
+
 ## 0h. §25 and §26 done — **the email logo is live, set `MAIL_LOGO_URL`**
 
 **2026-08-12.** Commit `a20037b`, deployed.
