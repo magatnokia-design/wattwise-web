@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import usePowerSafety from '../screens/PowerSafetyManagement/hooks/usePowerSafety';
 import { useLiveOutlets } from '../hooks/useLiveOutlets';
 import {
@@ -77,7 +77,31 @@ export const SafetyPage = () => {
     loading,
     handleToggleProtection,
     handleSaveThresholds,
+    handleRefresh,
   } = usePowerSafety();
+
+  /*
+   * Re-read the alert history whenever the safety stage moves.
+   *
+   * The hook subscribes to the power_safety document, but `applySafetyData`
+   * only lifts readings, thresholds and the stage out of each snapshot — the
+   * `alerts` array rides along in the same payload and is dropped. So
+   * `alertHistory` is whatever a single read at mount returned, and an alert
+   * raised while this page is open never appears until a reload.
+   *
+   * A stage change is exactly when `handleSafetyAlerts` appends an entry, so
+   * that is the cheapest correct trigger: one extra read per transition, not a
+   * poll. Done here rather than in the hook because that file is a copy shared
+   * with the phone, which has the same gap — flagged there rather than forked
+   * here. The first stage value is skipped since mount already fetched.
+   */
+  const previousStage = useRef(null);
+  useEffect(() => {
+    if (previousStage.current !== null && previousStage.current !== safetyStage) {
+      handleRefresh?.();
+    }
+    previousStage.current = safetyStage;
+  }, [safetyStage, handleRefresh]);
 
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(null);
