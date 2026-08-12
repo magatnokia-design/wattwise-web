@@ -98,6 +98,15 @@ build.
 proven: a browser toggle switches the relay and the phone follows, and both
 clients price the same month identically to the centavo.**
 
+### ✅ §17.2 confirmed fixed on the live account — not just in principle
+
+Checked directly on the owner's account: **Budget and Analytics agree.** The
+corrected `currentSpending` has been written, so the inflated metering charge is
+gone in practice, not only in the deployed code.
+
+That closes the last thing this repo was told to expect and not work around. No
+temporary note was ever added to the Budget page, and none is needed.
+
 ### ⚠️ 5 — the reference bill is stored correctly and the phone cannot show it
 
 Not a web bug, and not a data bug. `comparisonService.js` is byte-identical, so
