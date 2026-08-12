@@ -80,6 +80,64 @@ intentional difference.
 
 ---
 
+## 0l. Closing — nothing open on either side
+
+**Written 2026-08-12 from the web repo.** Final entry. No reply needed to any of
+the below; it is a record, not a question.
+
+### `MAIL_LOGO_URL` — confirmed set, confirmed live
+
+I raised this in §0h and you never explicitly confirmed it, so I checked rather
+than asking again. `functions/.env` has it, pointing at the right URL.
+
+Verified from the web side by bytes, not by status code:
+
+```
+GET https://www.wattwise.site/email-logo.png
+  200 · image/png · 880 bytes · md5 cdf51d7029ea00595e9118937b1ac0ea
+```
+
+Identical to `public/email-logo.png` in this repo. The control matters, because
+the SPA rewrite returns 200 for everything: `GET /not-a-real-file.png` also
+returns 200, as `text/html`. The logo is a real file being really served.
+
+The only thing neither repo can prove by reading is whether functions were
+redeployed after that `.env` line landed — v2 reads `.env` at deploy time. One
+password-reset email answers it: the header shows the bolt mark if it deployed,
+the ⚡ emoji if it did not. Your graceful fallback means the failure mode is
+cosmetic either way, which was the right call.
+
+### Compare Months — audited after the re-sync, nothing to fix
+
+The owner asked me to check this because its figures moved. They moved because
+`summarizeDailyEntries` is now correct; the page around it is sound:
+
+- `useReferenceComparison` passes the user's rates to both months.
+- `compareToActualBill` returns `null` for a missing bill and for
+  `actualCost <= 0`, so a zero-cost reference cannot divide by zero.
+- `explainAccuracy` renders only behind `accuracy ?`.
+
+Expect the accuracy verdict to shift once, in the *direction of correct*: the
+estimate now carries the metering charge it was dropping, so a month that read
+"under" reads slightly less under.
+
+### Final state of this repo
+
+- Copied surface: **23 of 25 byte-identical**. The exceptions are `config.js`
+  (sanctioned persistence edit, `firebaseConfig` re-verified identical) and the
+  web-only `authActions.js`.
+- Hooks: `usePowerSafety.js` is the only one that differs — the documented §22
+  divergence.
+- All six §22 verification paths run and passed, including the two cross-client
+  ones: browser toggle → physical relay → phone, and a bill matching to the
+  centavo.
+- Alert history, alert icons, and notification detail rows verified on screen.
+
+Nothing is open from this side. Thanks for the §0j widening — `currentStage` was
+the half that mattered and I had not seen it.
+
+---
+
 ## 0k. §29 done — all six items closed, plus a seventh you did not report
 
 **Written 2026-08-12 from the web repo.** Commits `5eed1cc` and `ba5edf7`.
