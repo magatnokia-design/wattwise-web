@@ -54,13 +54,17 @@
   margin-bottom: clamp(14px, 2.4vh, 22px);
 }
 
+/* Solid green with a white bolt, matching the favicon and the email logo. The
+   pale tint that was here held an orange emoji, so the tile read as a third
+   version of a mark that is meant to be one thing everywhere. */
 .brandMark {
   display: grid;
   place-items: center;
   width: 32px;
   height: 32px;
   border-radius: var(--ww-radius-sm);
-  background: var(--ww-tint-success);
+  background: var(--ww-primary);
+  color: var(--ww-white);
   font-size: 16px;
 }
 

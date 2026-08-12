@@ -159,13 +159,13 @@
   gap: 12px;
 }
 
+/* The real mark, not the orange emoji this used to hold. Size comes from the
+   BoltMark prop now, so the compact override is gone rather than fighting it. */
 .placeholderMark {
-  font-size: 24px;
+  display: grid;
+  place-items: center;
+  color: var(--ww-primary);
   opacity: 0.45;
-}
-
-.placeholderCompact .placeholderMark {
-  font-size: 18px;
 }
 
 .placeholderBars {

@@ -1,5 +1,6 @@
 import { useNotifications } from '../screens/Notifications/hooks/useNotifications';
 import {
+  describeNotificationDetails,
   formatNotificationDate,
   formatNotificationTime,
   getNotificationColor,
@@ -75,6 +76,29 @@ export const NotificationsPage = () => {
                     {!notification.read ? <Badge tone="info">New</Badge> : null}
                   </div>
                   <p className={notificationStyles.message}>{notification.message}</p>
+
+                  {/* The readings behind the alert. Until now they were written
+                      to the notification's metadata and shown nowhere on the
+                      web — so "Outlet 1 crossed a threshold" could not be
+                      checked against the voltage that crossed it. Rows come
+                      from notificationHelpers so both clients label them the
+                      same way. */}
+                  {(() => {
+                    const rows = describeNotificationDetails(notification);
+                    if (!rows.length) return null;
+
+                    return (
+                      <dl className={notificationStyles.details}>
+                        {rows.map((row) => (
+                          <div key={row.label} className={notificationStyles.detailRow}>
+                            <dt>{row.label}</dt>
+                            <dd>{row.value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    );
+                  })()}
+
                   <p className={notificationStyles.meta}>
                     {formatNotificationTime(notification.timestamp)} ·{' '}
                     {formatNotificationDate(notification.timestamp)}

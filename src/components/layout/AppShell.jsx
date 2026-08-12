@@ -6,6 +6,7 @@ import { useUnreadCount } from '../../hooks/useUnreadCount';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { Banner } from '../ui/Feedback';
+import { BoltMark } from '../ui/BoltMark';
 import { ErrorBoundary } from './ErrorBoundary';
 import styles from './AppShell.module.css';
 
@@ -106,7 +107,7 @@ export const AppShell = () => {
       <aside className={`${styles.sidebar} ${navOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.brand}>
           <span className={styles.brandMark} aria-hidden="true">
-            ⚡
+            <BoltMark height={17} />
           </span>
           <div>
             <p className={styles.brandName}>WattWise</p>

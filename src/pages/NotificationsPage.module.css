@@ -62,3 +62,32 @@
   color: var(--ww-text-light);
   font-variant-numeric: tabular-nums;
 }
+
+/* The readings behind an alert. A definition list because that is what these
+   are — a label and the value it names — and it keeps the pairs associated for
+   a screen reader rather than relying on visual columns. */
+.details {
+  margin: 8px 0 0;
+  display: grid;
+  gap: 3px;
+}
+
+.detailRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.detailRow dt {
+  flex-shrink: 0;
+  min-width: 92px;
+  color: var(--ww-text-light);
+}
+
+.detailRow dd {
+  margin: 0;
+  color: var(--ww-text-dark);
+  font-variant-numeric: tabular-nums;
+}

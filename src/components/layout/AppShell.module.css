@@ -38,14 +38,15 @@
   border-bottom: 1px solid var(--ww-border);
 }
 
+/* Solid green with a white bolt — same lockup as the favicon and email logo. */
 .brandMark {
   display: grid;
   place-items: center;
   width: 34px;
   height: 34px;
   border-radius: var(--ww-radius-sm);
-  background: var(--ww-tint-success);
-  font-size: 17px;
+  background: var(--ww-primary);
+  color: var(--ww-white);
   flex-shrink: 0;
 }
 
