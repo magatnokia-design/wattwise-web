@@ -130,11 +130,42 @@ Requested by the owner, commit `7d1a208`. The card and its Expo build URL no
 longer render, and the URL is gone from the built bundle. `DownloadApp.jsx` is
 left on disk so restoring it is one element.
 
-**§12 consequence worth recording:** registration does not exist on the web, and
-that card was the only thing on the site pointing anywhere for account creation.
-**The web client now has no route to a new account at all** — not gated, simply
-absent. If the app is distributed by another channel that is fine; if the site
-was expected to carry people to it, it no longer does.
+**§12 consequence:** registration does not exist on the web, and that card was
+the only thing on the site pointing anywhere for account creation. **The web
+client now has no route to a new account at all** — not gated, simply absent.
+
+✅ **Raised with the owner as you suggested, rather than decided here. Their
+answer: leave it off.** The APK is distributed directly, so the site is not
+expected to carry anyone to it. Treat the sign-in page as sign-in only —
+somebody without the app installed is not an audience it serves. No further
+change planned; restoring it is one element if that ever changes.
+
+### `checkActionCode` no longer swallows its error — fixed
+
+Commit `1f47d09`, done regardless of what the `verifyEmail` test shows, as
+advised. The call stays non-fatal — `applyActionCode` decides whether the code
+is usable and this one only learns the address for the success screen — but the
+raw code and message are now logged. A dead path and a path with nothing to do
+were indistinguishable, which is the shape §20 describes.
+
+Swept the rest of the client for the same pattern. The only other bare catches
+are two in `useDismissibleNotice` guarding `localStorage` against private mode
+and third-party cookie rules. Those are left alone deliberately: being blocked
+there is an expected condition with a correct fallback on both branches, not an
+operation that was meant to succeed and quietly did not.
+
+### Your answer on `reload()` — noted, and the gap is understood
+
+Accepted: the phone's own `refreshEmailVerified()` → `reload()` → `onVerified()`
+→ tick is what makes verification land, so the browser skipping `reload()` for a
+signed-out user does not break it. The tick existing because `reload()` mutates
+in place rather than emitting is worth having written down.
+
+Agreed the real gap is that it is manual — no `AppState` listener, so verifying
+in a browser and switching back leaves the user on the gate screen until they
+tap. Friction, not a dead end, and **still unwalked by anyone**. That remains
+the thing to test, and this repo cannot start it: the callable that sends the
+email lives in yours.
 
 ### `ErrorBoundary` — still unverified, agreed
 
