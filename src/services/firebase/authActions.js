@@ -79,8 +79,15 @@ export const applyCode = async (oobCode) => {
   try {
     const info = await checkActionCode(auth, oobCode);
     email = info?.data?.email || null;
-  } catch {
-    // Non-fatal: applyActionCode below reports the real problem.
+  } catch (error) {
+    // Still non-fatal - applyActionCode below decides whether the code is
+    // usable, and this call exists only to name the address on the success
+    // screen. But it no longer fails silently: a bare catch here was the same
+    // shape as the four dead backend triggers, where a handler threw on its
+    // first line and a try/catch turned it into "nothing happened". The
+    // difference between "no address to show" and "this threw" is invisible
+    // without the log, and the degraded screen looks deliberate either way.
+    console.warn('[auth/action] checkActionCode failed:', error?.code, error?.message);
   }
 
   try {
