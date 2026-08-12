@@ -9,8 +9,10 @@ import { formatCurrency } from '../screens/BudgetTracking/utils/budgetHelpers';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
-import { TextField, SelectField } from '../components/ui/Field';
+import { TextField } from '../components/ui/Field';
 import { Badge, Banner, EmptyState, Spinner } from '../components/ui/Feedback';
+import { useMonthStrip } from '../hooks/useMonthStrip';
+import MonthRail from '../components/comparison/MonthRail';
 import styles from './page.module.css';
 import comparisonStyles from './ComparisonPage.module.css';
 
@@ -20,6 +22,10 @@ const DELTAS = [
   { key: 'outlet1', label: 'Outlet 1', unit: ' kWh', digits: 2 },
   { key: 'outlet2', label: 'Outlet 2', unit: ' kWh', digits: 2 },
 ];
+
+// Which field on a month's totals each delta reads, for the case where there is
+// only one month to show and no delta to take.
+const TOTAL_FIELD = { energy: 'kWh', cost: 'cost', outlet1: 'outlet1', outlet2: 'outlet2' };
 
 const EMPTY_BILL = { kWh: '', cost: '', outlet1: '', outlet2: '' };
 
@@ -41,6 +47,8 @@ export const ComparisonPage = () => {
     deleteActualBill,
   } = useReferenceComparison();
 
+  const { monthTotals, loadingStrip } = useMonthStrip(monthOptions);
+
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_BILL);
   const [saving, setSaving] = useState(false);
@@ -49,11 +57,6 @@ export const ComparisonPage = () => {
   const monthALabel = formatMonthLabel(monthA);
   const monthBLabel = formatMonthLabel(monthB);
   const verdict = buildVerdict(comparison, monthALabel, monthBLabel);
-
-  const selectOptions = monthOptions.map((option) => ({
-    value: option.value,
-    label: option.label,
-  }));
 
   const openForm = () => {
     setForm({
@@ -90,6 +93,36 @@ export const ComparisonPage = () => {
     }
 
     setOpen(false);
+  };
+
+  /*
+   * The one-month case. `hasData` is true when *either* month has days
+   * recorded, but a delta needs both — so gating the delta grid on it printed
+   * "↑ 0.20 kWh" against a baseline of "May 2026: 0.00 kWh" for a month that
+   * was never measured at all, under a heading that simultaneously said "Not
+   * enough data yet". Absence of data shown as a measurement of zero, which is
+   * the same mistake as grading an unplugged outlet's 0.0 V.
+   *
+   * So: totals on their own, no delta, no baseline, and the empty month named.
+   */
+  const recordedTotals = totalsA.daysRecorded > 0 ? totalsA : totalsB;
+  const recordedLabel = totalsA.daysRecorded > 0 ? monthALabel : monthBLabel;
+  const unrecordedLabel = totalsA.daysRecorded > 0 ? monthBLabel : monthALabel;
+
+  const renderTotal = (key) => {
+    const config = DELTAS.find((entry) => entry.key === key);
+    const value = Number(recordedTotals[TOTAL_FIELD[key]]) || 0;
+
+    return (
+      <div key={key} className={comparisonStyles.delta}>
+        <p className={comparisonStyles.deltaLabel}>{config.label}</p>
+        <p className={comparisonStyles.deltaValue}>
+          <span className="ww-num">
+            {config.currency ? formatCurrency(value) : `${value.toFixed(config.digits)}${config.unit}`}
+          </span>
+        </p>
+      </div>
+    );
   };
 
   const renderDelta = (key) => {
@@ -138,20 +171,15 @@ export const ComparisonPage = () => {
       {error ? <Banner tone="alert">{error}</Banner> : null}
 
       <Card>
-        <div className={styles.formGrid}>
-          <SelectField
-            label="Month"
-            value={monthA}
-            onChange={(event) => selectMonthA(event.target.value)}
-            options={selectOptions}
-          />
-          <SelectField
-            label="Compared with"
-            value={monthB}
-            onChange={(event) => selectMonthB(event.target.value)}
-            options={selectOptions}
-          />
-        </div>
+        <MonthRail
+          monthOptions={monthOptions}
+          monthTotals={monthTotals}
+          monthA={monthA}
+          monthB={monthB}
+          onSelectA={selectMonthA}
+          onSelectB={selectMonthB}
+          loading={loadingStrip}
+        />
       </Card>
 
       {loading ? (
@@ -166,7 +194,7 @@ export const ComparisonPage = () => {
             <p className={comparisonStyles.verdictDetail}>{verdict.detail}</p>
           </div>
 
-          {comparison.hasData ? (
+          {comparison.bothHaveData ? (
             <Card>
               <CardHeader
                 title={`${monthALabel} vs ${monthBLabel}`}
@@ -174,6 +202,16 @@ export const ComparisonPage = () => {
               />
               <div className={comparisonStyles.deltaGrid}>
                 {DELTAS.map((entry) => renderDelta(entry.key))}
+              </div>
+            </Card>
+          ) : comparison.hasData ? (
+            <Card>
+              <CardHeader
+                title={`${recordedLabel} on its own`}
+                subtitle={`${unrecordedLabel} has no recorded usage, so there is nothing to compare against yet. These are ${recordedLabel}'s totals.`}
+              />
+              <div className={comparisonStyles.deltaGrid}>
+                {DELTAS.map((entry) => renderTotal(entry.key))}
               </div>
             </Card>
           ) : (

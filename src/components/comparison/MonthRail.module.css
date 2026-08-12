@@ -1,0 +1,199 @@
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ww-space-4);
+}
+
+/* Slots */
+.slots {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--ww-space-3);
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--ww-space-4);
+  min-height: 104px;
+  text-align: left;
+  background: var(--ww-white);
+  border: 1.5px dashed var(--ww-border);
+  border-radius: var(--ww-radius);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.slot:hover {
+  border-color: var(--ww-border-hover);
+}
+
+/* The slot a click will fill. Solid rather than dashed, because it is the one
+   currently holding the interaction. */
+.slotActive {
+  border-style: solid;
+  border-color: var(--ww-primary);
+  box-shadow: var(--ww-ring);
+}
+
+/* Drag is over this slot. Deliberately louder than the active state — during a
+   drag the pointer is the subject and the active slot is irrelevant. */
+.slotOver {
+  border-style: solid;
+  border-color: var(--ww-primary-dark);
+  background: var(--ww-tint-success);
+}
+
+.slotLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ww-text-light);
+}
+
+.slotMonth {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ww-text-dark);
+}
+
+.slotTotal {
+  font-size: 13px;
+  color: var(--ww-text);
+}
+
+.slotHint {
+  margin-top: auto;
+  font-size: 11.5px;
+  color: var(--ww-text-light);
+}
+
+.versus {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ww-text-light);
+}
+
+/* Strip */
+.strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.chip {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 62px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 6px 8px;
+  background: var(--ww-white);
+  border: 1px solid var(--ww-border);
+  border-radius: var(--ww-radius-sm);
+  cursor: grab;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.chip:hover {
+  border-color: var(--ww-primary-light);
+  box-shadow: var(--ww-shadow-card);
+  transform: translateY(-2px);
+}
+
+.chip:active {
+  cursor: grabbing;
+}
+
+.chipDragging {
+  opacity: 0.45;
+  transform: none;
+}
+
+/* Already sitting in a slot. */
+.chipInUse {
+  border-color: var(--ww-primary);
+  background: var(--ww-tint-success);
+}
+
+.chipTag {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: var(--ww-primary);
+  color: var(--ww-white);
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+/* A month with no rollups is still selectable — it is a legitimate thing to
+   compare against — but it should not look like a month that measured zero. */
+.chipEmpty .barTrack {
+  opacity: 0.5;
+}
+
+.chipEmpty .chipValue {
+  color: var(--ww-text-light);
+}
+
+.barTrack {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 46px;
+  background: var(--ww-grid);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar {
+  width: 60%;
+  border-radius: 3px 3px 0 0;
+  background: var(--ww-series-1);
+  transition: height 0.2s ease;
+}
+
+.chipInUse .bar {
+  background: var(--ww-primary-dark);
+}
+
+.chipMonth {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ww-text-dark);
+  white-space: nowrap;
+}
+
+.chipValue {
+  font-size: 11px;
+  color: var(--ww-text-light);
+}
+
+@media (max-width: 860px) {
+  .slots {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .versus {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip:hover {
+    transform: none;
+  }
+}
