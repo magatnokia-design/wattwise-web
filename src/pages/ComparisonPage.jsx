@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import useReferenceComparison from '../screens/ReferenceComparison/hooks/useReferenceComparison';
-import { buildVerdict, formatMonthLabel } from '../screens/ReferenceComparison/utils/comparisonHelpers';
+import {
+  buildVerdict,
+  explainAccuracy,
+  formatMonthLabel,
+} from '../screens/ReferenceComparison/utils/comparisonHelpers';
 import { formatCurrency } from '../screens/BudgetTracking/utils/budgetHelpers';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -221,6 +225,21 @@ export const ComparisonPage = () => {
                     ? 'Within the 5% band the billing model expects'
                     : 'Outside the expected 5% band'}
                 </Badge>
+
+                {/*
+                  The badge states the verdict; this states why, which is the
+                  part a reader actually needs. A large gap here is almost
+                  always scope — the bill covers the apartment, WattWise covers
+                  two outlets — and that is not something the badge can convey.
+
+                  From comparisonHelpers rather than written here, so both
+                  clients answer identically. "Why is it 98.9% off" is the first
+                  question anyone asks about this screen, and two clients
+                  answering it differently would be worse than either answer.
+                */}
+                <p className={comparisonStyles.accuracyNote}>
+                  {explainAccuracy(accuracy, monthALabel)}
+                </p>
               </div>
             ) : (
               <EmptyState icon="🧾" title="No bill on file for this month">
