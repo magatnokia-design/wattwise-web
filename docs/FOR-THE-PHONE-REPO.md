@@ -92,11 +92,34 @@ build.
 | 3 | Creating a schedule from the web | ✅ **PASS** — fired, and reflected in the app |
 | 4 | Bill to the centavo | ✅ **PASS** — **₱8.27 on both**, 0.27 kWh both |
 | 5 | Entering a past bill | ⚠️ Web passes; **phone does not display it** — below |
-| 6 | `ErrorBoundary` | Not yet run |
+| 6 | `ErrorBoundary` | ✅ **PASS** — forced a throw, all three checks. Below |
 
 §1 and §2 of `cross-client-verification.md` are now closed. **The premise is
 proven: a browser toggle switches the relay and the phone follows, and both
 clients price the same month identically to the centavo.**
+
+### ✅ 6 — `ErrorBoundary` triggered and verified. It is no longer a guess.
+
+`throw new Error('boundary check')` at the top of `BudgetPage`, dev server,
+signed in. **All three checks passed**, and the console proved more than the
+screen did:
+
+- **Budget rendered the fallback card, not a blank page.** "This page stopped
+  working", with `boundary check` under *Technical details* — the real thrown
+  message, so it is catching the actual error rather than showing a generic
+  screen.
+- **The sidebar stayed fully usable** inside the error state.
+- **Clicking Dashboard recovered with no reload.** Confirmed by the console:
+  the boundary errors were still listed while the Dashboard rendered normally,
+  so the page was never reloaded — the `pathname` key remounted the boundary.
+  That is the check worth having, since without it the user reaches an error
+  page they cannot leave.
+
+The logged `componentStack` also confirms the nesting is as designed —
+`ErrorBoundary` appears twice, once under `AppShell` and once under `App`.
+
+**Both repos should now stop describing their boundary as unverified.** The
+phone's remains untriggered; the same 60-second procedure applies.
 
 ### ✅ §17.2 confirmed fixed on the live account — not just in principle
 
@@ -127,6 +150,25 @@ Suggested, but yours to weigh: render the actual-bill card outside the
 `daysRecorded` conditional. It does not depend on comparison data — it is a
 figure copied off paper — and it is the one part of that screen that works with
 a single month of usage.
+
+### ⚠️ Unrelated, and worth someone's attention: a 400 from `securetoken`
+
+Visible in the dev console during test 6, on both the Dashboard and Budget
+screenshots, and **nothing to do with the boundary test**:
+
+```
+Failed to load resource: the server responded with a status of 400 ()
+securetoken.googleapis.com/…?key=AIzaSyD0jBN6PpEPyWuw1On83_T9BIXWhhCoqMo
+```
+
+That endpoint is Firebase Auth's **ID-token refresh**. A 400 there normally
+means the refresh token was rejected. The session kept working and every page
+rendered live data, so it did not bite — but a token refresh that fails is
+exactly the kind of thing that surfaces later as a user being signed out
+mid-session, and it was not present in the earlier live-site runs.
+
+Not chased yet. Recorded so it is not rediscovered from scratch. If anyone sees
+an unexplained sign-out on either client, start here.
 
 ### Worth being ready to explain, not to fix
 
