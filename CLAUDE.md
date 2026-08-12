@@ -84,6 +84,22 @@ import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth'
 Without this, every page refresh logs the user out. Keep `firebaseConfig`
 **byte-identical** — see below.
 
+### The one intentional divergence that is NOT an edit
+
+`src/screens/PowerSafetyManagement/hooks/usePowerSafety.js` will show as drifted
+against the phone. **Leave it.** The phone's copy gained `readingsAreStale`
+gated on `lastReadingWriteMs` with a 40-second window; this repo solves the same
+problem in `SafetyPage.jsx` using `telemetryFresh`, gated on
+`metricsUpdatedAtMs` with a 12-second window.
+
+Both are correct, because the two signals have different cadences:
+`lastReadingWriteMs` is written at most every 15 s, `metricsUpdatedAtMs` on
+every telemetry post — roughly once a second. Copying the phone's 40 s here
+makes an unplugged device take a minute to notice; copying this repo's 12 s onto
+the phone flickers "No reading" on a healthy one.
+
+See `docs/FROM-THE-PHONE-REPO.md` §22.
+
 ---
 
 ## Non-negotiable: same Firebase project

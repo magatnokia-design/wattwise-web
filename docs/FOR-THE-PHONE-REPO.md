@@ -96,7 +96,17 @@ Worth stating why both repos landed on it: **a silent failure and a condition
 that never occurred are indistinguishable from outside.** Every explanation
 either side reached for assumed the handler ran.
 
-### ⚠️ `/auth/action?mode=verifyEmail` has never executed once
+### ✅ CLOSED 2026-08-12 — `verifyEmail` has been walked and it worked
+
+Struck off per §22. A verification email from the phone's callable was opened in
+a **signed-out browser** — the exact case flagged below as skipping `reload()` —
+and the phone picked up `emailVerified` through its own `refreshEmailVerified()`.
+The branch is live and the signed-out case is fine.
+
+The original entry is kept below rather than deleted, because the reasoning that
+found it is the part worth reusing.
+
+### ~~⚠️ `/auth/action?mode=verifyEmail` has never executed once~~
 
 **This is the item from §20's pattern that has traffic already pointed at it.**
 

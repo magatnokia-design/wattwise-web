@@ -604,6 +604,68 @@ had spread to a non-auth form is the strongest argument for sweeping the class
 rather than fixing the instance, and it is worth remembering next time something
 looks local.
 
+## 20. Four backend triggers had never run — fixed, and it rewrites earlier notes
+
+**The largest finding so far, and it changes what both repos should believe
+about the system.**
+
+Every Firestore trigger is registered with **v2** `onDocumentWritten`, which
+calls the handler with a single event — `event.data` for the before/after pair,
+`event.params` for the path wildcards. Four were written against the **v1**
+signature `(change, context)`, so `context` arrived `undefined` and
+`context.params` threw on the handler's first line.
+
+Each sits inside a `try/catch` that logs and returns `null`. No error to the
+caller, no retry, no alert. **Silent since deployment.**
+
+| Trigger | What never happened |
+|---|---|
+| `handleDailyReceiptEmails` | No daily summary was ever sent |
+| `handleBudgetAlerts` | Budget alerts never fired |
+| `handleDeviceCommandEmails` | Failed outlet commands never emailed |
+| `handleSafetyAlerts` | **Auto-cutoff alerts never reached anyone** |
+
+`handlePushNotifications` was already correct, which is why push worked while
+everything around it did not — and why the silence looked like four unrelated
+problems rather than one cause.
+
+### Two earlier entries in this document are now wrong
+
+- **§17.2 said the inflated `currentSpending` was why budget alerts stayed
+  silent.** The inflation was real and is fixed, but it was not the cause. The
+  trigger threw before it ever read the threshold flags.
+- **The device-failure email was put down to timing** — the command succeeding
+  late. Even a genuine failure would have emailed nothing.
+
+Both were reasonable readings of the evidence and both were wrong, because a
+silent failure looks identical to a condition that never occurred.
+
+### Verified, not assumed
+
+Fixed and deployed, then proven by firing the path deliberately: a daily summary
+email arrived, `250 2.0.0 OK`, inbox. `triggerSignatures.test.js` gives each
+handler a v2 event on a path that returns early and asserts nothing was logged
+as an error — confirmed to fail when one handler is reverted to the v1
+signature.
+
+**Still unproven:** budget, device and safety alerts have not fired since the
+fix. The safety alert matters most and is hardest to trigger naturally.
+
+### Nothing to do here
+
+Triggers are backend-only. This is recorded because it changes what the web
+client can assume about alerting, not because anything in that repo needs
+changing.
+
+### The pattern worth carrying
+
+Three separate bugs found this session — a missing index, a fee counted per day,
+four dead triggers — and **not one produced an error anybody would see.** All
+three surfaced only by deliberately making a path run end to end.
+
+Both repos have features nobody has ever exercised. That is where the next one
+is.
+
 Both repos should now move to `docs/cross-client-verification.md`. The two
 side-by-side checks are the last unproven claims, and neither repo can run them
 alone.
@@ -615,3 +677,136 @@ unrelated failures were sitting in front of it, and neither would have been
 found without trying to reach it. **The untested path was hiding bugs that had
 nothing to do with the thing being tested.** Worth remembering when the two
 cross-client checks in §16 finally get run.
+## 21. The download card is off for a temporary reason, not a permanent one
+
+§0e records the owner's answer as *"the site isn't expected to carry anyone to
+it"*, which reads as a settled design decision. The owner's actual reason is
+narrower and worth having straight:
+
+**There is no public APK to link to yet.** The app is on EAS internal
+distribution while it is still being built and rebuilt every few hours. A
+download card would point at something a visitor cannot install.
+
+That is a state, not a decision. It changes the moment distribution does — a
+public build, a Play Store listing, or a stable APK link. So:
+
+- **Do not treat "the site has no route to account creation" as intended
+  architecture.** It is a consequence of where the build is right now.
+- Restoring the card is one element, as §0e says. Keep it that way.
+- If the site ever needs to carry a visitor to the app, that is a change of
+  circumstances rather than a reversal.
+
+Recorded because the difference matters to whoever reads this next: one version
+means "never do this", the other means "not yet".
+
+
+## 22. The build shipped, and every alert path is now proven — your turn
+
+**Written 2026-08-12 from the phone repo.** Phone commits `2b06fb4`, `c70349c`.
+No code in this repo was changed to write this. **§20, §21 and §22 are
+uncommitted in your tree — they are mine; commit them with your next change.**
+
+The APK is built, installed and tested. Nothing on the phone side is now
+waiting on anything. The remaining unproven paths in this project are
+**almost all on the web client**, so this entry hands the list over.
+
+### The four dead triggers are no longer only "fixed" — they are proven
+
+§20 closed with *"Still unproven: budget, device and safety alerts have not
+fired since the fix."* All three have now fired, against the live project, on a
+real account:
+
+| Path | Evidence |
+|---|---|
+| `handleBudgetAlerts` | Fired at **50% and 75%** of a ₱400 budget. Email + push both arrived |
+| `handleSafetyAlerts` | Fired **in both directions** — into alert and back to normal |
+| `handleDeviceCommandEmails` | Failure email arrived when a command timed out unacked |
+| `handleDailyReceiptEmails` | Daily summary delivered, `250 2.0.0 OK` |
+
+**What this means for you:** the web client can now assume alerting works. Any
+document this repo writes that the phone-side triggers watch — a budget, a
+safety threshold — will produce a notification and an email. Until this week
+none of them would have.
+
+Also verified since §20: the **monthly invoice PDF** (5.0 KB, `WattWise-2026-07.pdf`,
+opened from the inbox), password reset, and the `invoices` composite index that
+had been failing silently. `docs/cross-client-verification.md` §3 is closed.
+
+### ⚠️ Your #1 never-run path has been walked — and it worked
+
+§0e ranked `/auth/action?mode=verifyEmail` first: *"Never run. Traffic already
+pointed at it."*
+
+**It has now run.** A verification email sent by the phone's callable was opened
+in a **signed-out browser**, which is the exact case §0e flagged as skipping
+`reload()` inside `if (auth.currentUser)`. The page confirmed the address, and
+the phone then picked up `emailVerified` through its own
+`refreshEmailVerified()` on the gate screen.
+
+So: the branch is live, the signed-out case is fine, and the manual step is
+friction rather than a dead end — as you predicted. **Strike it off the table
+in §0e.** Your remaining never-run list is unchanged otherwise, and is now the
+longest one in the project.
+
+### `useSettings.js` has drifted — you are safe, but re-sync anyway
+
+§0 recorded this file as byte-identical after copying it verbatim. It no longer
+is. Phone commit `2b06fb4` added a guard your copy does not have:
+
+```js
+// phone
+const fetchSettings = useCallback(async (requestedUserId) => {
+  const currentUserId = requestedUserId === undefined
+    ? (auth.currentUser?.uid || null)
+    : requestedUserId;
+
+// this repo
+const fetchSettings = useCallback(async (currentUserId) => {
+```
+
+**The bug is not reachable here.** Every call site in this repo passes an
+explicit uid — `SettingsPage.jsx:79` and the auth listener at
+`useSettings.js:152` — so nothing ever arrives as `undefined`. On the phone,
+React Navigation's focus effect called it with no argument, every return to the
+tab resolved to "signed out", and the screen reset to `DEFAULT_SETTINGS`: name
+"User", email `--`, rate "Not set", budget ₱0.00, device "Not linked", while
+Firestore still held all of it.
+
+Re-sync regardless. The guard costs nothing, and the next zero-argument call
+site added here reintroduces a bug that looks like data loss.
+
+### Not a bug — do **not** sync `usePowerSafety.js`
+
+The phone gained `readingsAreStale` in `2b06fb4`, gated on `lastReadingWriteMs`
+with a **40 s** window. Your copy has no such thing and should not gain one:
+
+- The phone reads `lastReadingWriteMs`, written by `powerSafety.js` at most
+  every **15 s** (`READING_WRITE_INTERVAL_MS`). 40 s clears two intervals, so a
+  healthy device is never called stale between writes.
+- This repo gates on `metricsUpdatedAtMs` via `telemetryFresh`, written on
+  **every** telemetry post — roughly once a second. A 12 s window is correct
+  against that cadence.
+
+**Two different signals, two correct windows.** Copying the phone's 40 s here
+would make the page slow to notice an unplugged device; copying your 12 s onto
+the phone would flicker "No reading" on a healthy one. Recorded so neither is
+"fixed" into the other later.
+
+### What is left, and it is mostly yours
+
+Ranked by *never exercised end to end*, carried over from §0e with the closed
+item removed:
+
+| # | Path | Why it is ranked here |
+|---|---|---|
+| 1 | **Cross-client toggle** (`cross-client-verification.md` §1) | Now possible — the phone build is installed. Proves the premise of having two clients |
+| 2 | **Saving safety thresholds from the web** | Writes the document auto-cutoff reads. That trigger is live now, so a bad write has real consequences |
+| 3 | **Creating a schedule from the web** | Writes a document the firmware acts on. Never run |
+| 4 | **Bill to the centavo** (§2 of the same doc) | Parity of the arithmetic is under test; what is untested is whether both clients feed it the same input |
+| 5 | **Entering a past bill** (`reference_comparison`) | Never run |
+| 6 | **Either `ErrorBoundary`** | Never thrown at. Ranked last on purpose — it only matters after something else breaks |
+
+The owner is running these from the website side over the next stretch and does
+not want to be interrupted with questions mid-test. Everything needed to run
+them is in this document and in `docs/cross-client-verification.md`. **Prefer
+producing a step list they can follow over asking which item to start with.**
