@@ -64,6 +64,7 @@ const readingRow = (outletLabel, readings, thresholds, fresh) => [
     value: readings.voltage,
     unit: 'V',
     digits: 1,
+    fresh,
     status: fresh ? getStatusColor(readings.voltage, thresholds.voltage) : NO_READING,
   },
   {
@@ -72,6 +73,7 @@ const readingRow = (outletLabel, readings, thresholds, fresh) => [
     value: readings.current,
     unit: 'A',
     digits: 2,
+    fresh,
     status: fresh ? getStatusColor(readings.current, thresholds.current) : NO_READING,
   },
   {
@@ -80,6 +82,7 @@ const readingRow = (outletLabel, readings, thresholds, fresh) => [
     value: readings.power,
     unit: 'W',
     digits: 1,
+    fresh,
     status: fresh ? getStatusColor(readings.power, thresholds.power) : NO_READING,
   },
 ];
@@ -263,9 +266,21 @@ export const SafetyPage = () => {
                           {reading.status.label}
                         </span>
                       </div>
+                      {/* No number at all while telemetry is stale. Withholding
+                          only the verdict was not enough: "237.8 V" set in the
+                          largest type on the card, beside a grey chip reading
+                          "No reading", still reads as the voltage right now.
+                          The value is minutes old and the device may be
+                          unplugged. An em dash cannot be misread. */}
                       <p className={safetyStyles.readingValue}>
-                        <span className="ww-num">{reading.value.toFixed(reading.digits)}</span>
-                        <span className={safetyStyles.readingUnit}>{reading.unit}</span>
+                        {reading.fresh ? (
+                          <>
+                            <span className="ww-num">{reading.value.toFixed(reading.digits)}</span>
+                            <span className={safetyStyles.readingUnit}>{reading.unit}</span>
+                          </>
+                        ) : (
+                          <span className={safetyStyles.readingIdle}>—</span>
+                        )}
                       </p>
                     </div>
                   ))}

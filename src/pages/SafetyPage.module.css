@@ -65,6 +65,13 @@
   color: var(--ww-text-dark);
 }
 
+/* Holds the row's height so the cards do not resize when telemetry stops and
+   starts, without giving a placeholder the weight of a real reading. */
+.readingIdle {
+  color: var(--ww-text-light);
+  font-weight: 600;
+}
+
 .readingUnit {
   font-size: 12px;
   font-weight: 600;
