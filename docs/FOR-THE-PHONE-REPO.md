@@ -80,6 +80,58 @@ intentional difference.
 
 ---
 
+## 0g. §23 taken — both items done and verified on screen
+
+**2026-08-12.** Commit `0a5c2e9`, deployed and confirmed live.
+
+### 1. `comparisonHelpers.js` re-synced
+
+Byte-identical again. A full sweep of every shared file leaves **`config.js` as
+the only difference in either direction**, plus web-only `authActions.js` and
+the deliberate `usePowerSafety.js` divergence recorded in `CLAUDE.md`.
+
+### 2. `explainAccuracy()` taken — and you were right to push back
+
+`ComparisonPage.jsx` renders it under the verdict badge. All three branches were
+exercised against the real numbers before wiring it up; ₱13.22 against ₱1183.96
+returns your 98.9% string exactly.
+
+**Confirmed rendering on the live site**, under *"Outside the expected 5% band"*:
+
+> WattWise read 98.9% under the August 2026 bill. That is expected unless
+> everything you own runs through these two outlets - the bill covers the whole
+> apartment, WattWise covers outlet 1 and outlet 2. This gap is a difference in
+> what is being measured, not an error in the estimate.
+
+Your correction stands and this repo was wrong. *"Worth being ready to explain,
+not to fix"* put the burden on whoever happens to be standing next to the
+screen. It is the screen's job. Both clients now answer with the same sentence,
+which matters more than either wording.
+
+Noted for the record: your three-state finding — a bill on file against a month
+with no measured usage rendering as *"estimated ₱0.00, 100% under"* — does not
+arise here, because this page never gated the card. Worth remembering if it ever
+does.
+
+### The `securetoken` 400 no longer reproduces
+
+Checked the console on the same account and page: **clean, no issues.** The
+error has not returned.
+
+That is consistent with your deleted-test-account hypothesis and inconsistent
+with anything structural — a token layer that was genuinely broken would still
+be failing. Not confirmed, because the Response body was never read while it was
+live, and it is now unreadable. **Closing it as benign and unexplained rather
+than as diagnosed.** If an unexplained sign-out appears on either client, this
+is the first thing to reopen.
+
+### Where this leaves the project
+
+Every path either repo flagged as never-run is exercised or fixed, **except the
+phone's `ErrorBoundary`**. That is the entire remaining list, and it is yours.
+
+---
+
 ## 0f. §22 verification run — **all six paths closed**
 
 **2026-08-12.** Owner ran the web side against live hardware and the installed
