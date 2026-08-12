@@ -245,23 +245,36 @@ export const safetyService = {
   // Initialize power safety (called once after user registration)
   initializePowerSafety: async (userId) => {
     try {
-      // `alerts` is stripped, and that is the whole point of this line.
+      // Only the *settings* are repaired here. `merge: true` does not skip the
+      // fields it is given - it overwrites them - so merging the full defaults
+      // over a live document wiped everything the device and the triggers had
+      // written into it.
       //
-      // merge: true does not mean "only fill in absent fields" - it means "do
-      // not delete fields I did not mention". `alerts: []` in the defaults IS
-      // mentioned, so merging it over a live document replaced the stored
-      // history with an empty array. This runs from initializationService on
-      // every app session, so every page load silently destroyed the alert
-      // history: an entry would appear the moment a threshold was crossed and
-      // be gone by the next reload.
+      // `alerts: []` was the visible one: alert history was erased on every
+      // app session, on both clients, since this shipped. Nothing written to
+      // that array had ever survived a single launch, and the panel said
+      // "Nothing has crossed a threshold" - a much stronger claim than
+      // "nothing loaded". Found from the web repo.
       //
-      // Every other default still merges, so the repair this call exists for
-      // is unchanged. A document that has never had `alerts` simply lacks the
-      // field, and normalizeSafetyData already defaults it to [].
-      const { alerts, ...defaultsWithoutHistory } = getDefaultSafetyData();
-      void alerts;
+      // `currentStage: 'normal'` is the same bug with a louder failure:
+      // resetting a device sitting at 'limit' back to 'normal' is a stage
+      // change, and handleSafetyAlerts would send a "Back to Normal" alert and
+      // email for something that never happened. The outlet readings and
+      // lastCutoff are device state too, and none of it is this function's to
+      // restore.
+      //
+      // A document that does not exist yet is still created in full, by
+      // getPowerSafety above.
+      const {
+        alerts,
+        currentStage,
+        outlet1,
+        outlet2,
+        lastCutoff,
+        ...settingsOnly
+      } = getDefaultSafetyData();
 
-      await setDoc(getSafetyRef(userId), defaultsWithoutHistory, { merge: true });
+      await setDoc(getSafetyRef(userId), settingsOnly, { merge: true });
       return { success: true };
     } catch (error) {
       console.error('Error initializing power safety:', error);

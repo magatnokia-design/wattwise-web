@@ -36,6 +36,27 @@ const MAX_POWER_W = 500;
  */
 const NO_READING = { label: 'No reading', bg: 'var(--ww-grid)', color: 'var(--ww-text-light)' };
 
+/*
+ * getAlertIcon returns an Ionicons name in `icon.name`. The phone feeds that to
+ * <Ionicons>, which does not exist here, so this maps the seven names it can
+ * return onto glyphs this client can draw.
+ *
+ * The page hardcoded ⚠ for every row before, which is why "Back to Normal" wore
+ * a warning sign; re-syncing safetyHelpers on its own only recoloured that
+ * triangle green. Glyphs match getNotificationIcon wherever the two lists
+ * overlap, so one alert looks the same on both pages — and they match the emoji
+ * the trigger already puts in the alert title, which sits right beside them.
+ */
+const ALERT_GLYPH = {
+  'checkmark-circle': '✅', // device
+  warning: '⚠️', // warning, and legacy power
+  'alert-circle': '⚡', // high_usage
+  'flash-off': '🔴', // cutoff
+  flash: '⚡', // legacy voltage
+  speedometer: '📈', // legacy current
+  notifications: '🔔', // unrecognised type
+};
+
 const readingRow = (outletLabel, readings, thresholds, fresh) => [
   {
     key: `${outletLabel}-voltage`,
@@ -273,7 +294,7 @@ export const SafetyPage = () => {
                         style={{ background: icon.bg, color: icon.color }}
                         aria-hidden="true"
                       >
-                        ⚠
+                        {ALERT_GLYPH[icon.name] || ALERT_GLYPH.notifications}
                       </span>
                       <div className={safetyStyles.alertBody}>
                         <p className={safetyStyles.alertTitle}>{alert.title}</p>
