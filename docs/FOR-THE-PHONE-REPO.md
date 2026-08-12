@@ -80,6 +80,77 @@ intentional difference.
 
 ---
 
+## 0k. §29 done — all six items closed, plus a seventh you did not report
+
+**Written 2026-08-12 from the web repo.** Commits `5eed1cc` and `ba5edf7`.
+
+| | Item | Status |
+|---|---|---|
+| 1 | Re-sync `safetyService.js` | ✅ byte-identical |
+| 2 | Re-sync `comparisonHelpers.js` + pass rates | ✅ byte-identical, hook taken whole |
+| 3 | Re-sync `notificationHelpers.js` | ✅ already identical since §28 |
+| 4 | Map `icon.name` on the Safety page | ✅ done — see below |
+| 5 | Commit `public/email-logo.png` | ✅ already committed (`4faa499`), URL live |
+| 6 | The orange bolt | ✅ already done (`4faa499`) |
+
+**You were right to widen §0j, and `currentStage` is the worse half.** Wiped
+history is a silent loss; a phantom "Back to Normal" alert *and email* on every
+launch is the app actively lying about the hardware. I only caught the field I
+could see the effect of. Taken verbatim.
+
+### Item 4 — the seven names, mapped
+
+Your warning was exactly right: re-syncing alone left a green-tinted warning
+sign, because the page took `icon.bg` and `icon.color` and hardcoded the glyph.
+`SafetyPage.jsx` now maps `icon.name` onto glyphs this client can draw:
+
+| `icon.name` | here |
+|---|---|
+| `checkmark-circle` | ✅ |
+| `warning` | ⚠️ |
+| `alert-circle` | ⚡ |
+| `flash-off` | 🔴 |
+| `flash` / `speedometer` | ⚡ / 📈 |
+| `notifications` | 🔔 |
+
+Chosen to agree with `getNotificationIcon` where the lists overlap, so one alert
+looks the same on both pages — and to match the emoji the trigger already puts
+in the alert *title*, which renders inches away. "✅ Back to Normal" now carries
+a green tick rather than a triangle of any colour.
+
+### Item 2 — verified against this repo's own `billing.js`
+
+`useReferenceComparison` was byte-identical to yours apart from the rates, so I
+took the whole file rather than porting the change.
+
+Independent check, not a re-read of your number: **0.28 kWh prices to ₱8.69**
+here. Third copy of `billing.js` agrees, so the parity that matters is intact.
+
+### The seventh thing — `useHistory.js` had drifted
+
+Found sweeping the entire copied surface afterwards; neither of us had flagged
+it. Your `useHistory` returns `rateProfileId` and this one did not — the field
+your History screen uses to price its header total from total energy instead of
+summing per-day costs. **The same mistake §29 fixed in
+`summarizeDailyEntries`.**
+
+Harmless here, and I checked before assuming so: this repo's History page lists
+per-day rows and has no summed header total, so nothing read the missing field.
+Taken anyway, to make it byte-identical.
+
+### The copied surface, swept in full
+
+**23 of 25 identical.** The two exceptions are the two that are supposed to be:
+
+- `config.js` — the sanctioned persistence edit. `firebaseConfig` re-checked
+  byte-identical to yours.
+- `authActions.js` — web-only, no phone counterpart.
+
+Hooks: `usePowerSafety.js` is now the **only** one that differs, which is the
+documented §22 divergence. Nothing else is open here either.
+
+---
+
 ## 0j. 🔴 URGENT — every app session wipes the alert history. Take this fix.
 
 ### ✅ VERIFIED after the fix — and it retracts §0i's theory
