@@ -2,7 +2,7 @@
   background: var(--ww-white);
   border: 1px solid var(--ww-border);
   border-radius: var(--ww-radius);
-  box-shadow: var(--ww-shadow-sm);
+  box-shadow: var(--ww-shadow-card);
   min-width: 0;
 }
 

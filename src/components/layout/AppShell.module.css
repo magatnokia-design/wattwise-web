@@ -1,7 +1,13 @@
+/* Tinted canvas with a soft wash anchored beside the sidebar, so white cards
+   have something to sit on. Fixed attachment keeps the light source still while
+   the page scrolls — a wash that scrolls with the content reads as a stripe. */
 .shell {
   display: flex;
   min-height: 100vh;
-  background: var(--ww-bg);
+  background-color: var(--ww-canvas);
+  background-image: var(--ww-canvas-wash);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 .skipLink {
@@ -27,6 +33,10 @@
   flex-direction: column;
   background: var(--ww-white);
   border-right: 1px solid var(--ww-border);
+  /* The sidebar is white and the canvas is not, so the edge already reads —
+     this just stops it looking cut out. Overridden by .sidebarOpen's drawer
+     shadow below 1024px. */
+  box-shadow: 1px 0 3px rgba(17, 24, 39, 0.03);
   z-index: 50;
 }
 
@@ -95,7 +105,7 @@
 }
 
 .navLink:hover {
-  background: var(--ww-bg);
+  background: var(--ww-canvas);
   color: var(--ww-text-dark);
 }
 
@@ -205,8 +215,21 @@
 .main {
   flex: 1;
   padding: var(--ww-space-5) var(--ww-space-6) var(--ww-space-6);
-  max-width: 1400px;
+  max-width: var(--ww-main-max);
   width: 100%;
+}
+
+/*
+ * Analytics and Compare Months only.
+ *
+ * Those two are the pages where the data is the point: one is a chart that
+ * gains resolution with every pixel, the other is two month columns read side
+ * by side. Everything else keeps 1400 — a row of dashboard cards does not get
+ * better by getting wider, it just gets further apart, and a settings form at
+ * 1680px is worse than one at 1400.
+ */
+.mainWide {
+  max-width: var(--ww-main-max-wide);
 }
 
 .scrim {

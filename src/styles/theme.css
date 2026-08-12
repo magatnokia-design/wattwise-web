@@ -43,6 +43,36 @@
   --ww-tint-error: #fef2f2;
   --ww-orange: #f97316;
 
+  /*
+   * Canvas layering. Web-only, and deliberately so: `--ww-bg` above mirrors
+   * colors.js `background` and must keep mirroring it, so the depth this page
+   * needs is added around it rather than by changing it.
+   *
+   * The phone app never had this problem. A 390px column never shows enough
+   * background for the eye to compare it against a card. On a 1920px monitor
+   * the sidebar, the canvas and every card sat within 2% of white with a 5%
+   * shadow between them, and the whole app read as one flat sheet.
+   *
+   * Still green and white. The tint is a desaturated step toward the theme
+   * green, and the wash is `--ww-primary` at 8% — a light source near the
+   * sidebar, so the page has a direction rather than a colour.
+   */
+  --ww-canvas: #f4f7f6;
+  --ww-canvas-wash: radial-gradient(
+    1100px 620px at 6% -8%,
+    rgba(16, 185, 129, 0.08),
+    rgba(16, 185, 129, 0) 62%
+  );
+
+  /* One step above --ww-shadow-sm. Cards need an edge to read as a surface,
+     and 5% was not one once they were no longer the only white thing. */
+  --ww-shadow-card: 0 1px 2px rgba(17, 24, 39, 0.04), 0 2px 6px rgba(17, 24, 39, 0.05);
+
+  /* Content cap. Analytics and Compare Months opt into the wider one — see
+     .mainWide in AppShell.module.css for why only those two. */
+  --ww-main-max: 1400px;
+  --ww-main-max-wide: 1680px;
+
   /* Geometry */
   --ww-radius-sm: 8px;
   --ww-radius: 12px;

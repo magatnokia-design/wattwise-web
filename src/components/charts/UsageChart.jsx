@@ -106,7 +106,7 @@ export const UsageChart = ({ series = [], outlet1Name, outlet2Name, effectiveRat
 
       {view === 'chart' ? (
         <div className={styles.chartWrap}>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: -12 }} barGap={2}>
               <CartesianGrid stroke={CHART_COLORS.grid} vertical={false} />
               <XAxis

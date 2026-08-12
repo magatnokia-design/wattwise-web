@@ -24,9 +24,29 @@
   box-shadow: var(--ww-shadow-sm);
 }
 
+/*
+ * Height lives here rather than in ResponsiveContainer's prop so it can answer
+ * the viewport. The container was a fixed 300px, which is a reasonable shape at
+ * 850px wide and a flat strip at 1030px — the bars lose the vertical range that
+ * makes two days comparable at a glance. Growing the height with the width
+ * keeps the plot area in roughly the same proportion.
+ */
 .chartWrap {
   width: 100%;
   min-width: 0;
+  height: 300px;
+}
+
+@media (min-width: 1500px) {
+  .chartWrap {
+    height: 360px;
+  }
+}
+
+@media (min-width: 1800px) {
+  .chartWrap {
+    height: 400px;
+  }
 }
 
 .tooltip {

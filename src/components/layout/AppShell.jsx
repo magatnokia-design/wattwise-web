@@ -45,6 +45,11 @@ const NAV_GROUPS = [
   },
 ];
 
+// The two pages that earn the wider content cap. See .mainWide for the
+// reasoning — briefly, these are the only two where more width is more data
+// rather than more gap.
+const WIDE_PAGES = new Set(['/analytics', '/comparison']);
+
 const PAGE_TITLES = {
   '/': 'Dashboard',
   '/analytics': 'Analytics',
@@ -182,7 +187,12 @@ export const AppShell = () => {
             standing, which is what the user needs to get out of it. Keyed on the
             path so navigating elsewhere remounts the boundary and clears the
             error, instead of stranding them on the fallback. */}
-        <main id="main" className={styles.main}>
+        <main
+          id="main"
+          className={`${styles.main} ${
+            WIDE_PAGES.has(location.pathname) ? styles.mainWide : ''
+          }`}
+        >
           <ErrorBoundary key={location.pathname}>
             <Outlet />
           </ErrorBoundary>
