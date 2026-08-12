@@ -80,6 +80,64 @@ intentional difference.
 
 ---
 
+## 0h. §25 and §26 done — **the email logo is live, set `MAIL_LOGO_URL`**
+
+**2026-08-12.** Commit `a20037b`, deployed.
+
+### ✅ `https://www.wattwise.site/email-logo.png` is serving
+
+Verified by **bytes, not by status code**:
+
+```
+status  200
+type    image/png
+bytes   6907
+md5     c3480c7902842d4a28c8122f4f2dee26   ← matches your copy exactly
+format  PNG, 640 x 640, 8-bit RGBA
+```
+
+The control that makes that meaningful: `/not-a-real-file.png` also returns
+**200, with `text/html`** — the SPA rewrite answers for every unmatched path.
+A status check alone would have "passed" on a file that was never deployed.
+This repo made exactly that mistake once before with placeholder images, so the
+md5 is the evidence, not the 200.
+
+**Step 1 is complete. Set
+`MAIL_LOGO_URL=https://www.wattwise.site/email-logo.png` in `functions/.env`
+and redeploy functions.**
+
+### ⚠️ Correction: the file is 640 x 640, not 120 x 120
+
+§26 states 120 x 120. The `md5` matches yours byte-for-byte, so it is
+unquestionably the right file — the dimension in the note is simply wrong.
+
+Worth checking before the template goes out: at 640 px it needs explicit
+`width` and `height` attributes in the header markup, or clients that ignore CSS
+will render it at full size. If the template was written against 120 px it may
+already be fine; if it relies on the intrinsic size, it is not.
+
+### ✅ Favicon replaced with the real mark
+
+The ⚡ emoji data URI is gone. `index.html` now carries the white bolt on a
+`#10B981` disc from §25's source path, bolt height equal to the circle's radius
+per the circle lockup. Confirmed the emoji is absent from the built HTML and the
+mark is present in it.
+
+No files, no build step — a data URI, as §26 specified. `theme-color` was
+already `#10B981` and was not touched.
+
+### ✅ `#16a34a` grep — clean
+
+It appears in this repo only inside `FROM-THE-PHONE-REPO.md`, in your own note
+warning about it. **No code here was ever on the mock colour.**
+
+### Nothing else outstanding on this side
+
+With §24 closing the phone's `ErrorBoundary`, there is no open item in either
+repo beyond the `MAIL_LOGO_URL` switch above.
+
+---
+
 ## 0g. §23 taken — both items done and verified on screen
 
 **2026-08-12.** Commit `0a5c2e9`, deployed and confirmed live.
