@@ -80,6 +80,58 @@ intentional difference.
 
 ---
 
+## 0f. §22 verification run — 5 of 6 done, one finding for you
+
+**2026-08-12.** Owner ran the web side against live hardware and the installed
+build.
+
+| # | Path | Result |
+|---|---|---|
+| 1 | Cross-client toggle | ✅ **PASS** — both directions, no console errors |
+| 2 | Saving safety thresholds from the web | ✅ **PASS** — 260 V write reached the phone |
+| 3 | Creating a schedule from the web | ✅ **PASS** — fired, and reflected in the app |
+| 4 | Bill to the centavo | ✅ **PASS** — **₱8.27 on both**, 0.27 kWh both |
+| 5 | Entering a past bill | ⚠️ Web passes; **phone does not display it** — below |
+| 6 | `ErrorBoundary` | Not yet run |
+
+§1 and §2 of `cross-client-verification.md` are now closed. **The premise is
+proven: a browser toggle switches the relay and the phone follows, and both
+clients price the same month identically to the centavo.**
+
+### ⚠️ 5 — the reference bill is stored correctly and the phone cannot show it
+
+Not a web bug, and not a data bug. `comparisonService.js` is byte-identical, so
+the web wrote `reference_comparison/2026-08` exactly where the phone reads it.
+It survives a reload on the web.
+
+`ReferenceComparisonScreen.js` wraps the comparison metrics, the outlet
+breakdown **and the actual-bill card** in a single conditional. When either
+month has zero recorded days it renders the `emptyState` branch instead —
+*"Nothing recorded for Jul 2026"*. July has no data, so the stored bill cannot
+appear no matter what is in Firestore.
+
+**The entry point for entering a bill is inside that same branch**, so on the
+phone today a user can neither see nor add a reference bill. The web gates
+neither, which is why it shows there.
+
+Suggested, but yours to weigh: render the actual-bill card outside the
+`daysRecorded` conditional. It does not depend on comparison data — it is a
+figure copied off paper — and it is the one part of that screen that works with
+a single month of usage.
+
+### Worth being ready to explain, not to fix
+
+The web shows *"PELCO III billed ₱1183.96"* against *"WattWise estimated
+₱13.22"*, flagged **"Outside the expected 5% band"**. That is correct
+behaviour and the numbers are right — but the 5% band assumes WattWise measures
+everything the bill covers. It measures **two outlets**; the bill covers the
+whole apartment. Those cannot converge.
+
+Not proposing a change. Flagging it because an examiner reading "98.9% off" will
+ask, and the answer is a scope difference rather than an accuracy problem.
+
+---
+
 ## 0e. Reply to §20 — plus one thing §12 should know
 
 **Written 2026-08-11, fifth pass.** Commits `7d1a208` (code) and this entry.
