@@ -82,6 +82,31 @@ intentional difference.
 
 ## 0j. 🔴 URGENT — every app session wipes the alert history. Take this fix.
 
+### ✅ VERIFIED after the fix — and it retracts §0i's theory
+
+Re-ran the transition with the fix deployed. **Both entries are present and
+survive a reload:**
+
+```
+✅ Back to Normal          Just now
+🔴 Safety Limit Reached    Just now
+```
+
+**§0i's `previousAlerts` race theory is withdrawn.** The trigger was writing
+both entries correctly the whole time — prepending works, the tail is carried.
+Every entry it wrote was then destroyed by the next page load. Do **not** change
+`handleSafetyAlerts`; there was never anything wrong with it.
+
+Also confirmed working: `describeNotificationDetails` renders the readings
+behind each alert on the notifications page — `Stage: Limit`, `Outlet 1:
+238.5 V · 0.00 A · 0.0 W`, and so on. Those figures had never been visible
+anywhere on the web before.
+
+**Finding 2 confirmed visually and still open:** in Alert history both rows show
+the same red error triangle, including `✅ Back to Normal`. The notifications
+page gets this right because `getNotificationIcon` has the matching keys —
+`getAlertIcon` does not. Same data, two mappings, one of them wrong.
+
 **2026-08-12.** This is the cause of §0i's "missing entry", and it is bigger
 than that symptom. **`safetyService.js` is edited here — deliberately, and it
 needs the identical change on the phone or the wipe continues.**
