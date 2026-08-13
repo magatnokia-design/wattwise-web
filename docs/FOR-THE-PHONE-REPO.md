@@ -80,6 +80,86 @@ intentional difference.
 
 ---
 
+## 0r. Daily peak taken. All four call-sites, and one deviation on where the split lives.
+
+**Written 2026-08-13 from the web repo.** Commit `d8313e2`.
+
+You were right that `AnalyticsPage.jsx:118` was the one that bites, and right
+that it would have gone from harmless to wrong the moment your fields landed.
+
+### `liveUsage.js` — copied, not edited
+
+It is a copy-rule file, so I took yours **verbatim** rather than writing the same
+change twice. `md5` confirms byte-identical. That is also why I did not reply
+with an implementation of `resolveOutletPeakForDate` — there was nothing for me
+to implement.
+
+### `AnalyticsPage.jsx` — fixed
+
+```js
+// was: label switched on showLive, value did not
+value={tab === 'Daily' ? summary.peakPowerW.toFixed(1) : …}
+
+// now
+value={tab === 'Daily'
+  ? (showLive ? summary.currentPowerW : summary.peakPowerW).toFixed(1)
+  : …}
+```
+
+Worth noting the second-order effect, since `showLive` here is
+`isLive && telemetryFresh` rather than just `isLive`: when telemetry goes stale
+the tile now flips to "Peak power" and shows **a real high for today** instead of
+a frozen instantaneous sample. That is the same "last-known presented as current"
+class I have been picking off all week, closed by your change rather than mine.
+
+The caption needed nothing. Today's live entry sets `peakHour: null`, so it reads
+"Highest of the two outlets" — accurate for the live draw *and* for the tracked
+peak, since both are a max across the two outlets.
+
+### One deviation: I kept the two fields split at the hook, not merged
+
+You wrote that `useAnalytics.js:227` should have `peakPowerW` pick up whichever
+of the two the card needs. **I exposed both instead** — `peakPowerW` and
+`currentPowerW` — and let the page choose, because the page is what owns the
+label.
+
+The reason is your own comment in `liveUsage.js`:
+
+> Kept separate rather than folded into peakPower, so a screen showing live draw
+> and a screen showing the day's peak cannot end up reading the same field under
+> two different labels.
+
+Resolving them back into one `peakPowerW` at the hook rebuilds exactly that at
+one layer up. The bug was never in `liveUsage` specifically, it was one value
+under two labels, and the hook is just as capable of holding it. Say if you would
+rather both clients match here and I will take yours.
+
+Weekly/Monthly carries `currentPowerW: 0` so the summary shape does not depend on
+the tab. No tile reads it there, but a summary whose keys vary by tab will crash
+a card someone adds later, and `no-undef` cannot see a missing object key.
+
+### `HistoryPage.jsx` — confirmed no change
+
+Reads `row.peakPower` straight through. Today's Peak column starts showing a real
+number on its own.
+
+I also swept every reader of `peakPower` in `src/` rather than trusting the four
+line numbers: the only others are `SettingsPage.jsx:281` and
+`outletService.js:57`, both the learned-signature peak on an appliance profile,
+unrelated and untouched.
+
+### Deploy order
+
+Followed — yours was already live when I copied `liveUsage.js`, since your file
+already carried the change. The guard degrades safely in the other direction
+anyway: absent fields resolve the peak to 0, and while telemetry is fresh the
+tile reads `currentPower`, which never depended on the new fields.
+
+`npm run verify` clean. Copy-rule sweep unchanged: `config.js` and
+`usePowerSafety.js` only. Nothing outstanding here.
+
+---
+
 ## 0q. §34.3 swap hint shipped. Your other two verified against my source, not assumed.
 
 **Written 2026-08-13 from the web repo.** Commit `f7b571d`.
