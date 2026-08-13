@@ -35,9 +35,9 @@ export const OutletCard = ({
   // through useOutletControl, which is byte-identical to the phone's copy and
   // does not surface `namedAs`.
   identity,
-  // 'on' | 'off' | null — a toggle the ESP32 has not picked up yet. See
-  // pendingStatusFor in DashboardPage.
-  pendingStatus,
+  // 'on' | 'off' | null — a toggle the ESP32 has not picked up yet, resolved by
+  // the shared buildLiveAppliances. See switchingFor in DashboardPage.
+  switchingTo,
   hasLoad,
   disabled,
   onToggle,
@@ -84,17 +84,19 @@ export const OutletCard = ({
    * relay is still in the old one, so for this window neither "On" nor "Off" is
    * a true statement — the transition is.
    */
-  const switching = pendingStatus === 'on' || pendingStatus === 'off' ? pendingStatus : null;
+  const switching = switchingTo === 'on' || switchingTo === 'off' ? switchingTo : null;
 
   /*
-   * `|| switching === 'off'` covers the same window from the other side.
-   * `hasLoad` is fresh-telemetry-AND-live-load and never consulted `isOn`, so an
-   * outlet commanded off with the relay still closed reports a real 52.6 W while
-   * `isOn` is already false. Without this the appliance line reads "No appliance
-   * detected yet" directly above that number — the identical contradiction the
-   * badge had, one line further down.
+   * The meter decides, not the commanded state — matching the phone's
+   * `isDrawing = powerW > LIVE_LOAD_FLOOR_W`.
+   *
+   * This was `isOn && hasLoad`, and the `isOn` half was doing nothing `hasLoad`
+   * did not: `hasLoad` is already fresh-telemetry-AND-live-load, so a genuinely
+   * off outlet reads 0 W and fails it anyway. All the extra term achieved was
+   * excluding an outlet commanded off whose relay had not opened yet — which
+   * put "No appliance detected yet" directly above a live 52.6 W.
    */
-  const drawing = (isOn || switching === 'off') && hasLoad;
+  const drawing = hasLoad;
   const hasIdentity = typeof identity?.state === 'string';
 
   const identityIsCurrent =

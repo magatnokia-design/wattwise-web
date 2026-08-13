@@ -46,8 +46,17 @@ export const AnalyticsPage = () => {
   const showLive = isLive && telemetryFresh;
 
   const drawing = telemetryFresh ? liveAppliances.filter((appliance) => appliance.isDrawing) : [];
+  /*
+   * `&& !isSwitching` — without it this fires "switched on but drawing nothing"
+   * for the whole pending window, up to ~15 s before the relay actually closes.
+   * The outlet is not idle, it is mid-command, and `isSwitching` is the only
+   * thing that distinguishes "told to come on, hasn't yet" from "on with nothing
+   * plugged in". Same premature assertion as the badge, one banner down.
+   */
   const idleOn = telemetryFresh
-    ? liveAppliances.filter((appliance) => appliance.isOn && !appliance.isDrawing)
+    ? liveAppliances.filter(
+        (appliance) => appliance.isOn && !appliance.isDrawing && !appliance.isSwitching
+      )
     : [];
   const liveCostPerHour = drawing.reduce((sum, appliance) => sum + appliance.costPerHour, 0);
   const livePower = drawing.reduce((sum, appliance) => sum + appliance.powerW, 0);
@@ -245,8 +254,29 @@ export const AnalyticsPage = () => {
                       <span style={{ fontWeight: 600, color: 'var(--ww-text-dark)' }}>
                         {appliance.applianceName}
                       </span>
-                      <Badge tone={appliance.isDrawing ? 'good' : appliance.isOn ? 'warn' : 'neutral'}>
-                        {appliance.isDrawing ? 'Drawing' : appliance.isOn ? 'Idle' : 'Off'}
+                      {/* Switching outranks both: during that window neither the
+                          commanded state nor the meter is the whole truth, and
+                          the transition is what is actually happening. */}
+                      <Badge
+                        tone={
+                          appliance.isSwitching
+                            ? 'warn'
+                            : appliance.isDrawing
+                              ? 'good'
+                              : appliance.isOn
+                                ? 'warn'
+                                : 'neutral'
+                        }
+                      >
+                        {appliance.isSwitching
+                          ? appliance.switchingTo === 'off'
+                            ? 'Switching off…'
+                            : 'Switching on…'
+                          : appliance.isDrawing
+                            ? 'Drawing'
+                            : appliance.isOn
+                              ? 'Idle'
+                              : 'Off'}
                       </Badge>
                     </div>
                     <div

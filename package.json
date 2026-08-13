@@ -8,8 +8,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint src",
-    "verify": "npm run lint && npm run build"
+    "lint": "eslint src test",
+    "verify": "npm run lint && npm test && npm run build",
+    "test": "node --import ./test/vite-resolve-hook.js --test test/*.test.js"
   },
   "dependencies": {
     "firebase": "^12.11.0",
