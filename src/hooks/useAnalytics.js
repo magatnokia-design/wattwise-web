@@ -222,9 +222,18 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
           totalCost: bill.totals.total,
           averageUsage: totalEnergy,
           peakUsage: totalEnergy,
-          // Watts, not kWh: the highest instantaneous draw the day recorded, or
-          // the current draw while the day is still live.
+          // Watts, not kWh. These stay two fields on purpose: the backend now
+          // tracks a real daily high (peakPowerTodayW, rolled over on the same
+          // boundary as energyDateKey), so the day's peak and the live draw are
+          // genuinely different numbers. Collapsing them here would rebuild the
+          // bug at the hook layer — one value read under two labels, which is
+          // how "PEAK POWER 0.0 W" appeared the moment both outlets went off.
+          //
+          // currentPower only exists on the live entry; a rolled-up day resolves
+          // it to 0, which is correct, because a closed day has no live draw and
+          // the card reads peakPowerW there.
           peakPowerW: toNumber(dailyEntry?.peakPower),
+          currentPowerW: toNumber(dailyEntry?.currentPower),
           peakHour: formatPeakHour(dailyEntry?.peakHour),
           busiestDay: dailyEntry?.date ? formatShortDate(entryDate) : 'N/A',
           outlet1Total,
@@ -325,7 +334,15 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
         totalCost: bill.totals.total,
         averageUsage: days.length ? totalEnergy / days.length : 0,
         peakUsage,
+        // Highest daily peak in the period — a real high now that the backend
+        // tracks one, where before it was the highest instantaneous sample that
+        // happened to be live when each day rolled up.
         peakPowerW: entries.reduce((highest, entry) => Math.max(highest, toNumber(entry?.peakPower)), 0),
+        // Carried so both branches return the same shape. No tile reads it here
+        // — Weekly and Monthly show "Daily average" — but a summary whose keys
+        // depend on the tab is the sort of thing that crashes a card someone
+        // adds later, and `no-undef` cannot see a missing object key.
+        currentPowerW: 0,
         peakHour: 'N/A',
         busiestDay: busiestDayData ? formatShortDate(busiestDayData.date) : 'N/A',
         outlet1Total,

@@ -116,9 +116,14 @@ export const AnalyticsPage = () => {
             set together rather than a shared unit that only fits one of them. */}
         <StatTile
           label={tab === 'Daily' ? (showLive ? 'Drawing now' : 'Peak power') : 'Daily average'}
+          /* The label already switched on showLive; the value has to switch with
+             it. It did not, and read peakPowerW either way — harmless only while
+             peakPower *was* the instantaneous max. Now that the backend tracks a
+             real daily high, leaving this alone would put the day's peak under a
+             "Drawing now" heading. Two labels, two fields. */
           value={
             tab === 'Daily'
-              ? summary.peakPowerW.toFixed(1)
+              ? (showLive ? summary.currentPowerW : summary.peakPowerW).toFixed(1)
               : summary.averageUsage.toFixed(3)
           }
           unit={tab === 'Daily' ? 'W' : 'kWh'}
