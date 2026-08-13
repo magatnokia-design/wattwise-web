@@ -43,7 +43,22 @@ export const OutletCard = ({
   const [busy, setBusy] = useState(false);
 
   const fallbackLabel = `Outlet ${outletNumber}`;
-  const displayName = applianceName || fallbackLabel;
+
+  /*
+   * 'changed' means the detector scored the live run against the signature saved
+   * under this outlet's own name and it did not match — whatever is plugged in,
+   * it is not that. The owner swapped a 16 W lamp for a 60 W fan and both
+   * clients went on calling the outlet "LED Lamp" until he accepted a suggestion
+   * a minute later.
+   *
+   * So the card stops asserting the name and states the doubt instead. It does
+   * not guess a replacement: the detector's alternative is a suggestion, and
+   * suggestion-first means the user confirms it. `unknown` is never treated as
+   * `changed` — a typed name is a claim, not a measurement, and accusing someone
+   * of swapping an appliance the system never measured is worse than silence.
+   */
+  const identityChanged = suggestion?.identityState === 'changed' && !!applianceName;
+  const displayName = identityChanged ? `Not ${applianceName}` : applianceName || fallbackLabel;
 
   const openRename = () => {
     setDraftName(applianceName || '');
@@ -76,12 +91,21 @@ export const OutletCard = ({
         <div className={styles.identity}>
           <span className={`${styles.dot} ${isOn ? styles.dotOn : ''}`} aria-hidden="true" />
           <div className={styles.names}>
-            <h2 className={styles.name} title={displayName}>
+            <h2
+              className={`${styles.name} ${identityChanged ? styles.nameChanged : ''}`}
+              title={identityChanged ? `Named ${applianceName}, but the readings do not match it` : displayName}
+            >
               {displayName}
             </h2>
             <p className={styles.sub}>
               {fallbackLabel}
-              {applianceName ? ' · named' : ' · not named yet'}
+              {identityChanged
+                ? ' · readings do not match this name'
+                : applianceName
+                  ? suggestion?.recognised
+                    ? ' · recognised'
+                    : ' · named'
+                  : ' · not named yet'}
             </p>
           </div>
         </div>

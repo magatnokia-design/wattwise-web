@@ -38,6 +38,17 @@
   min-width: 160px;
 }
 
+/* Amber, not the suggestion row's green: this is not an offer, it is the app
+   saying the name above has stopped describing what is plugged in. */
+.identityNote {
+  margin-top: var(--ww-space-3);
+  padding: 8px 12px;
+  background: var(--ww-tint-warning);
+  border-radius: var(--ww-radius-sm);
+  font-size: 13px;
+  color: var(--ww-text);
+}
+
 .suggestionRow {
   display: flex;
   flex-wrap: wrap;

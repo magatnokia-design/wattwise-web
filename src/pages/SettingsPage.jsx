@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSettings } from '../screens/Settings/hooks/useSettings';
+import { useLiveOutlets } from '../hooks/useLiveOutlets';
 import {
   formatAckStatusValue,
   formatDeviceHealthValue,
@@ -38,7 +39,31 @@ const ratesToDraft = (rates) => {
   }, {});
 };
 
+/*
+ * Whether to offer a name is the backend's call now.
+ *
+ * Both clients used to re-derive it from the raw fields and only one got it
+ * right, so this page went on offering "Accept: LED Lamp" for an outlet already
+ * named LED Lamp — the owner had accepted it on the phone and the site kept
+ * asking. Clearing the detection fields on accept would not have helped either;
+ * the detector re-evaluates every two samples and writes the same suggestion
+ * back within a second.
+ *
+ * `suggestionPending` settles it in one place. The label comparison stays as the
+ * fallback for outlet documents written before that field shipped.
+ */
+const shouldOfferSuggestion = (outlet, suggestedName, currentName) => {
+  const pending = outlet?.applianceIdentity?.suggestionPending;
+  if (typeof pending === 'boolean') return pending;
+
+  const normalise = (value) => String(value || '').trim().toLowerCase();
+  return !!suggestedName && normalise(suggestedName) !== normalise(currentName);
+};
+
 export const SettingsPage = () => {
+  // withRates: false — this page needs applianceIdentity, not billing figures,
+  // and the rates read is a second Firestore round trip for nothing.
+  const { outlets } = useLiveOutlets({ withRates: false });
   const {
     settings,
     savedAppliances,
@@ -232,6 +257,17 @@ export const SettingsPage = () => {
                     ? settings.outlet1SuggestionConfidence
                     : settings.outlet2SuggestionConfidence;
 
+                const outlet = outlets.find(
+                  (candidate) => Number(candidate.outletNumber) === outletNumber
+                );
+                // The raw field, not settings.outletNName — that one defaults to
+                // "Outlet 1", which would read as a user-given name and make the
+                // fallback comparison compare a suggestion against a placeholder.
+                const currentName = String(outlet?.applianceName || '').trim();
+                const offerSuggestion = shouldOfferSuggestion(outlet, suggested, currentName);
+                const identityChanged =
+                  outlet?.applianceIdentity?.state === 'changed' && !!currentName;
+
                 return (
                   <div key={outletNumber} className={settingsStyles.outletBlock}>
                     <div className={styles.row} style={{ alignItems: 'flex-end' }}>
@@ -248,7 +284,14 @@ export const SettingsPage = () => {
                       </Button>
                     </div>
 
-                    {suggested ? (
+                    {identityChanged ? (
+                      <p className={settingsStyles.identityNote}>
+                        The readings on this outlet no longer match{' '}
+                        <strong>{currentName}</strong>.
+                      </p>
+                    ) : null}
+
+                    {offerSuggestion && suggested ? (
                       <div className={settingsStyles.suggestionRow}>
                         <span>
                           Detected as <strong>{suggested}</strong>

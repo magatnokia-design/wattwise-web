@@ -51,6 +51,13 @@
   white-space: nowrap;
 }
 
+/* The name is being contradicted by the measurements, so it must not read as a
+   plain assertion. Amber rather than red: nothing is wrong, the label is just
+   out of date. */
+.nameChanged {
+  color: var(--ww-warning);
+}
+
 .sub {
   font-size: 12px;
   color: var(--ww-text-light);
