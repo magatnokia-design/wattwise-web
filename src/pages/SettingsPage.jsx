@@ -96,14 +96,21 @@ export const SettingsPage = () => {
   const [renaming, setRenaming] = useState(false);
   const [renameError, setRenameError] = useState('');
 
-  const openRename = (label) => {
-    setRenameTarget(label);
+  // { label, outletNumber } — outletNumber only when renaming from an outlet row.
+  const openRename = (label, outletNumber = null) => {
+    setRenameTarget({ label, outletNumber });
     setRenameDraft(label);
     setRenameError('');
   };
 
+  const hasSignature = (label) => {
+    const wanted = String(label || '').trim().toLowerCase();
+    return savedAppliances.some((appliance) => appliance.label.toLowerCase() === wanted);
+  };
+
   const submitRename = async () => {
     const next = renameDraft.trim();
+    const { label, outletNumber } = renameTarget;
 
     if (!next) {
       setRenameError('Give the appliance a name.');
@@ -112,13 +119,33 @@ export const SettingsPage = () => {
 
     // A capitalisation-only fix is a legitimate rename and the backend allows
     // it, so only an exact match is a no-op worth short-circuiting.
-    if (next === renameTarget) {
+    if (next === label) {
       setRenameTarget(null);
       return;
     }
 
     setRenaming(true);
-    const result = await renameSavedAppliance(renameTarget, next);
+
+    /*
+     * Two routes, and which one applies depends on whether a signature was ever
+     * learned for this name.
+     *
+     * An outlet named while its appliance was not drawing gets the name but no
+     * signature — registerApplianceProfile returns learned: false. That name
+     * never reaches Saved appliances, so renameApplianceProfile would answer
+     * not-found, and with free-text naming gone the outlet would be stuck with
+     * a name nothing on the page could change. That is the dead end this
+     * avoids.
+     *
+     * Where a signature does exist the callable is the only correct route: it
+     * renames the signature and the outlet together, and matchNamedAppliance
+     * resolves an outlet's name against the saved profiles, so splitting them
+     * would silently break identity matching on that outlet.
+     */
+    const result = hasSignature(label)
+      ? await renameSavedAppliance(label, next)
+      : await updateOutletName(outletNumber, next, { source: 'manual' });
+
     setRenaming(false);
 
     if (!result.success) {
@@ -127,6 +154,8 @@ export const SettingsPage = () => {
       setRenameError(result.error || 'Could not rename this appliance.');
       return;
     }
+
+    if (outletNumber) refresh();
 
     setRenameTarget(null);
   };
@@ -332,6 +361,21 @@ export const SettingsPage = () => {
                       <p className={settingsStyles.outletName}>
                         {currentName || <span className={styles.muted}>Not named yet</span>}
                       </p>
+                      {/* Renaming an outlet that already has a name is not the
+                          free-text naming that was removed — the name still has
+                          to arrive from a detection first. This is the relabel
+                          half of the owner's rule, and without it an outlet
+                          named before a signature was learned could never be
+                          corrected. */}
+                      {currentName ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => openRename(currentName, outletNumber)}
+                        >
+                          Rename
+                        </Button>
+                      ) : null}
                     </div>
 
                     {identityChanged ? (
@@ -520,9 +564,9 @@ export const SettingsPage = () => {
           />
 
           <p className={styles.muted}>
-            The learned signature keeps its measurements — only the label
-            changes. Any outlet currently named <strong>{renameTarget}</strong>{' '}
-            is renamed with it, so WattWise can still recognise this appliance.
+            {hasSignature(renameTarget?.label)
+              ? `The learned signature keeps its measurements — only the label changes. Any outlet currently named ${renameTarget?.label} is renamed with it, so WattWise can still recognise this appliance.`
+              : `Nothing has been learned for ${renameTarget?.label} yet — this only changes the outlet's label. Run the appliance and accept the detection to teach WattWise its signature.`}
           </p>
         </div>
       </Modal>

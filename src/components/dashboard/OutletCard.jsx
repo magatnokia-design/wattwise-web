@@ -204,7 +204,7 @@ export const OutletCard = ({
         <div className={styles.footer}>
           <p className={styles.footerNote}>
             {applianceName
-              ? 'Rename this appliance in Settings → Saved appliances.'
+              ? 'Rename this outlet in Settings → Outlets.'
               : 'Run the appliance for a minute and WattWise will suggest a name.'}
           </p>
         </div>

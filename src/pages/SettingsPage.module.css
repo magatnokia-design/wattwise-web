@@ -41,8 +41,16 @@
 /* The outlet's name is read-only now — it arrives by accepting a detection. */
 .outletHead {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--ww-space-3);
+}
+
+.outletHead .outletName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .outletLabel {
