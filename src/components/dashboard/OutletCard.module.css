@@ -51,16 +51,23 @@
   white-space: nowrap;
 }
 
-/* The name is being contradicted by the measurements, so it must not read as a
-   plain assertion. Amber rather than red: nothing is wrong, the label is just
-   out of date. */
-.nameChanged {
-  color: var(--ww-warning);
+/* The appliance, under the outlet that holds it. Reads darker than a caption
+   because it is content, not a label — the outlet number above it is the
+   constant, and this is the part that actually changes. */
+.sub {
+  font-size: 12.5px;
+  color: var(--ww-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.sub {
-  font-size: 12px;
-  color: var(--ww-text-light);
+/* The measurements contradict the name, so it must not read as a plain
+   assertion. Amber rather than red: nothing is wrong, the label is out of
+   date. */
+.subChanged {
+  color: var(--ww-warning);
+  font-weight: 600;
 }
 
 .controls {

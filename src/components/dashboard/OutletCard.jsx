@@ -54,7 +54,25 @@ export const OutletCard = ({
    * of swapping an appliance the system never measured is worse than silence.
    */
   const identityChanged = suggestion?.identityState === 'changed' && !!applianceName;
-  const displayName = identityChanged ? `Not ${applianceName}` : applianceName || fallbackLabel;
+
+  /*
+   * The outlet is the heading; the appliance is what changes underneath it.
+   *
+   * These were the other way round, so plugging something new into outlet 1
+   * appeared to rename the outlet — and the card's own subtitle had to explain
+   * which outlet you were looking at. There are exactly two outlets and their
+   * IDs are fixed in hardware; the appliance is the part that comes and goes.
+   *
+   * The appliance line survives the outlet being switched off, because a saved
+   * appliance is still what is plugged in when nothing is drawing.
+   */
+  const applianceLine = identityChanged
+    ? `Not ${applianceName}`
+    : applianceName
+      ? suggestion?.recognised
+        ? `${applianceName} · recognised`
+        : applianceName
+      : 'No appliance detected yet';
 
   /*
    * Naming is suggestion-only, by the owner's decision.
@@ -93,21 +111,16 @@ export const OutletCard = ({
         <div className={styles.identity}>
           <span className={`${styles.dot} ${isOn ? styles.dotOn : ''}`} aria-hidden="true" />
           <div className={styles.names}>
-            <h2
-              className={`${styles.name} ${identityChanged ? styles.nameChanged : ''}`}
-              title={identityChanged ? `Named ${applianceName}, but the readings do not match it` : displayName}
+            <h2 className={styles.name}>{fallbackLabel}</h2>
+            <p
+              className={`${styles.sub} ${identityChanged ? styles.subChanged : ''}`}
+              title={
+                identityChanged
+                  ? `Named ${applianceName}, but the readings do not match it`
+                  : undefined
+              }
             >
-              {displayName}
-            </h2>
-            <p className={styles.sub}>
-              {fallbackLabel}
-              {identityChanged
-                ? ' · readings do not match this name'
-                : applianceName
-                  ? suggestion?.recognised
-                    ? ' · recognised'
-                    : ' · named'
-                  : ' · not named yet'}
+              {applianceLine}
             </p>
           </div>
         </div>
@@ -120,7 +133,7 @@ export const OutletCard = ({
             checked={isOn}
             disabled={disabled}
             onChange={onToggle}
-            label={`Toggle ${displayName}`}
+            label={`Toggle ${fallbackLabel}${applianceName ? ` (${applianceName})` : ''}`}
           />
         </div>
       </div>
