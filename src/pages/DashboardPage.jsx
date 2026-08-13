@@ -130,7 +130,10 @@ export const DashboardPage = () => {
           label="Cost today"
           value={formatCurrency(estimatedCost)}
           icon="💰"
-          caption={`PELCO III · ${formatCurrency(effectiveRate)}/kWh effective`}
+          /* The marginal rate now, not total/kWh — useOutletControl returns it
+             under the same name. Calling it "effective" here was the caption
+             that read P5610.00/kWh beside a 16 W lamp. */
+          caption={`PELCO III · ${formatCurrency(effectiveRate)}/kWh for extra use`}
         />
         <StatTile
           label="Running cost"

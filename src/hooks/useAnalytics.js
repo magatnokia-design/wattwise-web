@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { budgetService, historyService } from '../services/firebase';
 import { useAuth } from './useAuth';
-import { calculatePelcoIIIBill } from '../utils/billing';
+import { calculatePelcoIIIBill, marginalRatePerKwh } from '../utils/billing';
 import { buildLiveAppliances, buildLiveTodayEntry, withLiveToday } from '../utils/liveUsage';
 
 /**
@@ -199,12 +199,17 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
       const outlet2Total = toNumber(dailyEntry?.outlet2Energy);
       const entryDate = dailyEntry?.date ? new Date(`${dailyEntry.date}T00:00:00`) : new Date();
 
+      // A day is not a billing period, so the once-a-month P5.00 metering charge
+      // has no business in today's cost - with it, a day on which almost nothing
+      // ran was priced at P5.61 for 0.001 kWh. Marginal, matching
+      // processDailyRollup and the live History row.
       const bill = calculatePelcoIIIBill(totalEnergy, {
         date: entryDate,
         supplyRates,
         profileId: rateProfileId || null,
         daysInPeriod: dailyEntry ? 1 : 0,
         billingDays: getDaysInMonth(entryDate),
+        includePeriodFlats: false,
       });
 
       const outlet1Name = String(dailyEntry?.outlet1Name || '').trim() || 'Outlet 1';
@@ -225,6 +230,7 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
           outlet1Total,
           outlet2Total,
           effectiveRate: bill.effectiveRate,
+          marginalRate: marginalRatePerKwh({ supplyRates, profileId: rateProfileId || null }),
           applianceUsage: aggregateApplianceUsage(dailyEntry ? [dailyEntry] : []),
           outlet1Name,
           outlet2Name,
@@ -279,12 +285,18 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
 
     // One rate, applied once, over the whole period's kWh — never per-day and
     // summed. PELCO III averages monthly and applies uniformly.
+    //
+    // The period flats belong to Monthly and only Monthly. "The last 7 days" is
+    // not a billing period, so charging it a full month's metering fee overstates
+    // a week by the whole P5.60 — the same error, one scale up, that made a day
+    // cost P5.61.
     const bill = calculatePelcoIIIBill(totalEnergy, {
       date: endDate,
       supplyRates,
       profileId: rateProfileId || null,
       daysInPeriod: entries.length > 0 ? days.length : 0,
       billingDays: getDaysInMonth(endDate),
+      includePeriodFlats: tab === 'Monthly',
     });
 
     const latestEntry = entries[entries.length - 1];
@@ -319,6 +331,7 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
         outlet1Total,
         outlet2Total,
         effectiveRate: bill.effectiveRate,
+        marginalRate: marginalRatePerKwh({ supplyRates, profileId: rateProfileId || null }),
         applianceUsage: aggregateApplianceUsage(entries),
         outlet1Name,
         outlet2Name,

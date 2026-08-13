@@ -102,7 +102,15 @@ export const AnalyticsPage = () => {
         <StatTile
           label="Cost"
           value={formatCurrency(summary.totalCost)}
-          caption={`PELCO III · ${formatCurrency(summary.effectiveRate)}/kWh effective`}
+          /* "Effective" is total/kWh, which is a fair description of a whole
+             billing period and a nonsense one for anything shorter — early in a
+             period it smears the fixed P5.00 metering charge across whatever
+             energy exists, and reported P5,610/kWh. Only Monthly reports it. */
+          caption={
+            tab === 'Monthly'
+              ? `PELCO III · ${formatCurrency(summary.effectiveRate)}/kWh effective`
+              : `PELCO III · ${formatCurrency(summary.marginalRate)}/kWh for extra use`
+          }
         />
         {/* Daily shows watts, the other tabs kWh — so label, value and unit are
             set together rather than a shared unit that only fits one of them. */}
@@ -145,7 +153,10 @@ export const AnalyticsPage = () => {
                 series={series}
                 outlet1Name={summary.outlet1Name}
                 outlet2Name={summary.outlet2Name}
-                effectiveRate={summary.effectiveRate}
+                /* Each bar is one day, and a day priced at the period's
+                   effective rate carries a share of the monthly metering fee it
+                   never incurred. Tooltips price marginally. */
+                effectiveRate={summary.marginalRate}
               />
             )}
           </Card>
