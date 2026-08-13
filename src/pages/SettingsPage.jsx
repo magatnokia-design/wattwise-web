@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSettings } from '../screens/Settings/hooks/useSettings';
-import { useLiveOutlets } from '../hooks/useLiveOutlets';
 import {
   formatAckStatusValue,
   formatDeviceHealthValue,
@@ -41,30 +40,19 @@ const ratesToDraft = (rates) => {
 };
 
 /*
- * Whether to offer a name is the backend's call now.
+ * The Outlets card is gone entirely, at the owner's request.
  *
- * Both clients used to re-derive it from the raw fields and only one got it
- * right, so this page went on offering "Accept: LED Lamp" for an outlet already
- * named LED Lamp — the owner had accepted it on the phone and the site kept
- * asking. Clearing the detection fields on accept would not have helped either;
- * the detector re-evaluates every two samples and writes the same suggestion
- * back within a second.
+ * Detections are offered on the Dashboard, beside the live readings that
+ * produced them, which is the only place they can be judged. Repeating the same
+ * prompt here meant two screens deciding independently whether to show it — and
+ * they disagreed, so the site kept offering a name the phone had already
+ * accepted.
  *
- * `suggestionPending` settles it in one place. The label comparison stays as the
- * fallback for outlet documents written before that field shipped.
+ * Learned appliances below is now the single place a name is edited. Renaming a
+ * signature renames the outlet wearing it, so nothing is lost by dropping the
+ * outlet rows.
  */
-const shouldOfferSuggestion = (outlet, suggestedName, currentName) => {
-  const pending = outlet?.applianceIdentity?.suggestionPending;
-  if (typeof pending === 'boolean') return pending;
-
-  const normalise = (value) => String(value || '').trim().toLowerCase();
-  return !!suggestedName && normalise(suggestedName) !== normalise(currentName);
-};
-
 export const SettingsPage = () => {
-  // withRates: false — this page needs applianceIdentity, not billing figures,
-  // and the rates read is a second Firestore round trip for nothing.
-  const { outlets } = useLiveOutlets({ withRates: false });
   const {
     settings,
     savedAppliances,
@@ -75,8 +63,6 @@ export const SettingsPage = () => {
     updateNotifications,
     // updateDeviceSettings / clearDeviceSettings are deliberately not pulled in.
     // Pairing is the phone app's job — see the ESP32 card below.
-    updateOutletName,
-    clearOutletDetection,
     removeSavedAppliance,
     renameSavedAppliance,
   } = useSettings();
@@ -96,21 +82,14 @@ export const SettingsPage = () => {
   const [renaming, setRenaming] = useState(false);
   const [renameError, setRenameError] = useState('');
 
-  // { label, outletNumber } — outletNumber only when renaming from an outlet row.
-  const openRename = (label, outletNumber = null) => {
-    setRenameTarget({ label, outletNumber });
+  const openRename = (label) => {
+    setRenameTarget(label);
     setRenameDraft(label);
     setRenameError('');
   };
 
-  const hasSignature = (label) => {
-    const wanted = String(label || '').trim().toLowerCase();
-    return savedAppliances.some((appliance) => appliance.label.toLowerCase() === wanted);
-  };
-
   const submitRename = async () => {
     const next = renameDraft.trim();
-    const { label, outletNumber } = renameTarget;
 
     if (!next) {
       setRenameError('Give the appliance a name.');
@@ -119,33 +98,13 @@ export const SettingsPage = () => {
 
     // A capitalisation-only fix is a legitimate rename and the backend allows
     // it, so only an exact match is a no-op worth short-circuiting.
-    if (next === label) {
+    if (next === renameTarget) {
       setRenameTarget(null);
       return;
     }
 
     setRenaming(true);
-
-    /*
-     * Two routes, and which one applies depends on whether a signature was ever
-     * learned for this name.
-     *
-     * An outlet named while its appliance was not drawing gets the name but no
-     * signature — registerApplianceProfile returns learned: false. That name
-     * never reaches Saved appliances, so renameApplianceProfile would answer
-     * not-found, and with free-text naming gone the outlet would be stuck with
-     * a name nothing on the page could change. That is the dead end this
-     * avoids.
-     *
-     * Where a signature does exist the callable is the only correct route: it
-     * renames the signature and the outlet together, and matchNamedAppliance
-     * resolves an outlet's name against the saved profiles, so splitting them
-     * would silently break identity matching on that outlet.
-     */
-    const result = hasSignature(label)
-      ? await renameSavedAppliance(label, next)
-      : await updateOutletName(outletNumber, next, { source: 'manual' });
-
+    const result = await renameSavedAppliance(renameTarget, next);
     setRenaming(false);
 
     if (!result.success) {
@@ -154,8 +113,6 @@ export const SettingsPage = () => {
       setRenameError(result.error || 'Could not rename this appliance.');
       return;
     }
-
-    if (outletNumber) refresh();
 
     setRenameTarget(null);
   };
@@ -168,7 +125,6 @@ export const SettingsPage = () => {
   const [rateStatus, setRateStatus] = useState(null);
   const [savingRates, setSavingRates] = useState(false);
 
-  const [outletStatus, setOutletStatus] = useState(null);
 
   useEffect(() => {
     setName(settings.profileName === 'User' ? '' : settings.profileName);
@@ -201,23 +157,6 @@ export const SettingsPage = () => {
     );
   };
 
-  // Accepting a detection is the only way an outlet gets a name now, so it is
-  // also the only thing that reports on the result.
-  const acceptDetection = async (outletNumber, suggested, confidence) => {
-    setOutletStatus(null);
-    const result = await updateOutletName(outletNumber, suggested, {
-      source: 'auto_suggestion',
-      confidencePercent: confidence,
-    });
-
-    setOutletStatus(
-      result.success
-        ? { tone: 'good', message: `Outlet ${outletNumber} is now ${suggested}.` }
-        : { tone: 'alert', message: result.error || 'Could not apply the detection.' }
-    );
-
-    if (result.success) refresh();
-  };
 
   const rateTotal = sumSupplyRates(rateDraft);
   const primaryField = SUPPLY_RATE_FIELDS.find((field) => field.primary);
@@ -320,99 +259,6 @@ export const SettingsPage = () => {
             </div>
           </Card>
 
-          <Card>
-            {/* Free-text outlet naming was removed at the owner's request. An
-                outlet is named by accepting what the detector measured, and
-                relabelled afterwards under Saved appliances — which renames the
-                signature and the outlet together. Accepting still runs through
-                registerApplianceProfile, so the signature is learned exactly as
-                typing a name used to do. */}
-            <CardHeader
-              title="Outlets"
-              subtitle="An outlet takes its name from what WattWise detects. Accept a detection and its power signature is learned at the same time."
-            />
-
-            {outletStatus ? <Banner tone={outletStatus.tone}>{outletStatus.message}</Banner> : null}
-
-            <div className={styles.stack} style={{ marginTop: 12 }}>
-              {[1, 2].map((outletNumber) => {
-                const suggested =
-                  outletNumber === 1 ? settings.outlet1SuggestedName : settings.outlet2SuggestedName;
-                const confidence =
-                  outletNumber === 1
-                    ? settings.outlet1SuggestionConfidence
-                    : settings.outlet2SuggestionConfidence;
-
-                const outlet = outlets.find(
-                  (candidate) => Number(candidate.outletNumber) === outletNumber
-                );
-                // The raw field, not settings.outletNName — that one defaults to
-                // "Outlet 1", which would read as a user-given name and make the
-                // fallback comparison compare a suggestion against a placeholder.
-                const currentName = String(outlet?.applianceName || '').trim();
-                const offerSuggestion = shouldOfferSuggestion(outlet, suggested, currentName);
-                const identityChanged =
-                  outlet?.applianceIdentity?.state === 'changed' && !!currentName;
-
-                return (
-                  <div key={outletNumber} className={settingsStyles.outletBlock}>
-                    <div className={settingsStyles.outletHead}>
-                      <p className={settingsStyles.outletLabel}>Outlet {outletNumber}</p>
-                      <p className={settingsStyles.outletName}>
-                        {currentName || <span className={styles.muted}>Not named yet</span>}
-                      </p>
-                      {/* Renaming an outlet that already has a name is not the
-                          free-text naming that was removed — the name still has
-                          to arrive from a detection first. This is the relabel
-                          half of the owner's rule, and without it an outlet
-                          named before a signature was learned could never be
-                          corrected. */}
-                      {currentName ? (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => openRename(currentName, outletNumber)}
-                        >
-                          Rename
-                        </Button>
-                      ) : null}
-                    </div>
-
-                    {identityChanged ? (
-                      <p className={settingsStyles.identityNote}>
-                        The readings on this outlet no longer match{' '}
-                        <strong>{currentName}</strong>.
-                      </p>
-                    ) : null}
-
-                    {offerSuggestion && suggested ? (
-                      <div className={settingsStyles.suggestionRow}>
-                        <span>
-                          Detected as <strong>{suggested}</strong>
-                          {confidence != null ? ` (${confidence}%)` : ''}
-                        </span>
-                        <div className={styles.row}>
-                          <Button
-                            size="sm"
-                            onClick={() => acceptDetection(outletNumber, suggested, confidence)}
-                          >
-                            Accept
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => clearOutletDetection(outletNumber)}
-                          >
-                            Dismiss
-                          </Button>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
 
           <Card>
             <CardHeader
@@ -564,9 +410,9 @@ export const SettingsPage = () => {
           />
 
           <p className={styles.muted}>
-            {hasSignature(renameTarget?.label)
-              ? `The learned signature keeps its measurements — only the label changes. Any outlet currently named ${renameTarget?.label} is renamed with it, so WattWise can still recognise this appliance.`
-              : `Nothing has been learned for ${renameTarget?.label} yet — this only changes the outlet's label. Run the appliance and accept the detection to teach WattWise its signature.`}
+            The signature keeps its measurements — only the label changes. Any
+            outlet currently named <strong>{renameTarget}</strong> is renamed
+            with it, so WattWise still recognises this appliance afterwards.
           </p>
         </div>
       </Modal>

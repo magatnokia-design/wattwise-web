@@ -31,6 +31,10 @@ export const OutletCard = ({
   applianceName,
   metrics,
   suggestion,
+  // Raw applianceIdentity from the outlet document. Read here rather than
+  // through useOutletControl, which is byte-identical to the phone's copy and
+  // does not surface `namedAs`.
+  identity,
   hasLoad,
   disabled,
   onToggle,
@@ -53,37 +57,49 @@ export const OutletCard = ({
    * `changed` — a typed name is a claim, not a measurement, and accusing someone
    * of swapping an appliance the system never measured is worse than silence.
    */
-  const identityChanged = suggestion?.identityState === 'changed' && !!applianceName;
-
   /*
-   * The outlet is the heading; the appliance is what changes underneath it.
+   * The outlet is the heading; the appliance is what changes underneath it, and
+   * the line reports what is being *measured* rather than what the outlet is
+   * called.
    *
-   * These were the other way round, so plugging something new into outlet 1
-   * appeared to rename the outlet — and the card's own subtitle had to explain
-   * which outlet you were looking at. There are exactly two outlets and their
-   * IDs are fixed in hardware; the appliance is the part that comes and goes.
+   * Nothing is asserted until the detector has actually placed the load. The
+   * card used to print the stored name the instant a draw appeared, so
+   * switching on a new appliance flashed "Electric Fan" for several seconds
+   * before admitting it was not one. That is the same claim-without-evidence as
+   * the stale voltage on Power Safety — it just corrected itself fast enough to
+   * look like a glitch instead of a bug.
    *
-   * The line reports what is being *measured*, not what the outlet is called.
-   * A relay that is off, or on with nothing drawing, is measuring nothing — so
-   * it says so rather than naming an appliance on the strength of a stored
-   * label. "Electric Fan" under a dead outlet is the same claim-without-evidence
-   * as the stale voltage on Power Safety and the LED Lamp that had already been
-   * unplugged.
-   *
-   * The stored name is not lost, and this is not where it lives: Settings →
-   * Outlets holds it, and that is where renaming happens.
+   * `applianceIdentity` is only about the name it was computed against, which is
+   * why `namedAs` is checked. Accepting a suggestion renames the outlet
+   * immediately, but the stored verdict still describes the *old* name until the
+   * next evaluation — that is what briefly rendered "Not Speaker" one second
+   * after choosing Speaker. A verdict about a name the outlet no longer wears is
+   * not evidence about the one it does.
    */
-  const detecting = isOn && hasLoad;
+  const drawing = isOn && hasLoad;
+  const hasIdentity = typeof identity?.state === 'string';
 
-  const applianceLine = !detecting
+  const identityIsCurrent =
+    hasIdentity &&
+    String(identity.namedAs || '').trim().toLowerCase() ===
+      String(applianceName || '').trim().toLowerCase();
+
+  // Absent the field entirely (documents written before it shipped), fall back
+  // to the stored name rather than showing "Detecting…" forever.
+  const verdict = !hasIdentity ? 'legacy' : identityIsCurrent ? identity.state : 'stale';
+  const identityChanged = verdict === 'changed' && !!applianceName;
+
+  const applianceLine = !drawing
     ? 'No appliance detected yet'
     : identityChanged
       ? `Not ${applianceName}`
-      : applianceName
-        ? suggestion?.recognised
+      : verdict === 'confirmed' && applianceName
+        ? identity.recognised
           ? `${applianceName} · recognised`
           : applianceName
-        : 'Detecting…';
+        : verdict === 'legacy' && applianceName
+          ? applianceName
+          : 'Detecting…';
 
   /*
    * Naming is suggestion-only, by the owner's decision.

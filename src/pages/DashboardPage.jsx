@@ -51,7 +51,15 @@ export const DashboardPage = () => {
   // and every priced figure on this page, so this must not read preferences a
   // second time. The outlet snapshot itself is the same query useOutletControl
   // listens to, which the Firestore SDK serves from one watch target.
-  const { telemetryFresh, lastTelemetryMs } = useLiveOutlets({ withRates: false });
+  const { outlets, telemetryFresh, lastTelemetryMs } = useLiveOutlets({ withRates: false });
+
+  // applianceIdentity carries `namedAs`, which the card needs to tell a current
+  // verdict from one computed against a name the outlet has since been renamed
+  // away from. useOutletControl lifts only `state` and `recognised` out of it,
+  // and that file is a byte-identical copy of the phone's.
+  const identityFor = (outletNumber) =>
+    outlets.find((outlet) => Number(outlet.outletNumber) === outletNumber)?.applianceIdentity ||
+    null;
   const rateNotice = useDismissibleNotice('rate-notice');
   const [toggleError, setToggleError] = useState('');
 
@@ -152,6 +160,7 @@ export const DashboardPage = () => {
           applianceName={outlet1ApplianceName}
           metrics={outlet1Metrics}
           suggestion={outlet1Suggestion}
+          identity={identityFor(1)}
           hasLoad={outlet1HasLoad}
           disabled={isToggling}
           onToggle={handleToggle(1)}
@@ -163,6 +172,7 @@ export const DashboardPage = () => {
           applianceName={outlet2ApplianceName}
           metrics={outlet2Metrics}
           suggestion={outlet2Suggestion}
+          identity={identityFor(2)}
           hasLoad={outlet2HasLoad}
           disabled={isToggling}
           onToggle={handleToggle(2)}
