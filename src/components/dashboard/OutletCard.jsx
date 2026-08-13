@@ -63,16 +63,27 @@ export const OutletCard = ({
    * which outlet you were looking at. There are exactly two outlets and their
    * IDs are fixed in hardware; the appliance is the part that comes and goes.
    *
-   * The appliance line survives the outlet being switched off, because a saved
-   * appliance is still what is plugged in when nothing is drawing.
+   * The line reports what is being *measured*, not what the outlet is called.
+   * A relay that is off, or on with nothing drawing, is measuring nothing — so
+   * it says so rather than naming an appliance on the strength of a stored
+   * label. "Electric Fan" under a dead outlet is the same claim-without-evidence
+   * as the stale voltage on Power Safety and the LED Lamp that had already been
+   * unplugged.
+   *
+   * The stored name is not lost, and this is not where it lives: Settings →
+   * Outlets holds it, and that is where renaming happens.
    */
-  const applianceLine = identityChanged
-    ? `Not ${applianceName}`
-    : applianceName
-      ? suggestion?.recognised
-        ? `${applianceName} · recognised`
-        : applianceName
-      : 'No appliance detected yet';
+  const detecting = isOn && hasLoad;
+
+  const applianceLine = !detecting
+    ? 'No appliance detected yet'
+    : identityChanged
+      ? `Not ${applianceName}`
+      : applianceName
+        ? suggestion?.recognised
+          ? `${applianceName} · recognised`
+          : applianceName
+        : 'Detecting…';
 
   /*
    * Naming is suggestion-only, by the owner's decision.
@@ -113,11 +124,15 @@ export const OutletCard = ({
           <div className={styles.names}>
             <h2 className={styles.name}>{fallbackLabel}</h2>
             <p
-              className={`${styles.sub} ${identityChanged ? styles.subChanged : ''}`}
+              className={`${styles.sub} ${
+                identityChanged && detecting ? styles.subChanged : ''
+              } ${detecting ? '' : styles.subIdle}`}
               title={
-                identityChanged
-                  ? `Named ${applianceName}, but the readings do not match it`
-                  : undefined
+                !detecting && applianceName
+                  ? `This outlet is named ${applianceName}. Nothing is drawing, so nothing is being detected.`
+                  : identityChanged
+                    ? `Named ${applianceName}, but the readings do not match it`
+                    : undefined
               }
             >
               {applianceLine}

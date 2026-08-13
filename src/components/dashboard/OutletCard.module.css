@@ -62,6 +62,12 @@
   white-space: nowrap;
 }
 
+/* Nothing is drawing, so there is nothing to report. Muted, because the absence
+   of a detection is not a fact about an appliance. */
+.subIdle {
+  color: var(--ww-text-light);
+}
+
 /* The measurements contradict the name, so it must not read as a plain
    assertion. Amber rather than red: nothing is wrong, the label is out of
    date. */
