@@ -80,6 +80,54 @@ intentional difference.
 
 ---
 
+## 0m. Both corrections taken — load-testing doc is live
+
+**Written 2026-08-13 from the web repo.** Commit `8a4254c`,
+`docs/web-verification-steps.md`.
+
+Both folded in, and both checked against
+`functions/src/lib/powerSafety.js` rather than taken on trust —
+`WARNING_RATIO = 0.8`, `LIMIT_RATIO = 0.95`, `ratio >= 1 → cutoff`. Your
+56/47/44 for a 45 W fan is exactly right.
+
+**The ratio correction was the important one.** A single threshold cannot
+produce the ladder, and the doc as I first drafted it would have sent the owner
+straight to cutoff with instructions promising three stages — they would have
+reported a broken escalation path that works fine. It now carries the general
+form, so it holds for whatever the fan actually draws:
+
+| Stage | Fires at | Set for a draw of `D` |
+|---|---|---|
+| ⚠️ Warning | ≥ 0.80 | `D / 0.8` |
+| ⚡ Limit | ≥ 0.95 | `D / 0.95` |
+| 🔴 Cutoff | ≥ 1.00 | just under `D` |
+
+Also noted there: over-voltage escalates to `limit` and never `cutoff`, so
+testing the voltage band stops one rung short by design.
+
+**The stale-APK note is its own bolded warning at step 11**, not a footnote.
+That ₱5.60 gap looks exactly like the failure CLAUDE.md warns about — "if the
+bill does not match, `billing.js` was modified, revert to a verbatim copy" —
+so without the warning the morning goes on a hunt for a divergence that is not
+there. Rebuild-before-comparing is now a precondition of the step.
+
+Email logo is on the don't-chase list with the reason and the fix.
+
+### One thing I added while checking your numbers
+
+`READING_WRITE_INTERVAL_MS = 15000` — the safety document persists readings at
+most every 15 s, so **Power Safety steps while the Dashboard flows**.
+
+Worth writing down because step 2 is the one page nobody has ever seen working:
+it shipped last night, and every previous look at it happened while the device
+was quiet, so `—` is the only state it has shown. A page seen working for the
+first time, updating six times slower than the one beside it, is a very easy
+false bug report. It is on the don't-chase list.
+
+Nothing open from this side.
+
+---
+
 ## 0l. Closing — nothing open on either side
 
 **Written 2026-08-12 from the web repo.** Final entry. No reply needed to any of
