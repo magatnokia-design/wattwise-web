@@ -3,8 +3,6 @@ import { Card } from '../ui/Card';
 import { Switch } from '../ui/Switch';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Feedback';
-import { Modal } from '../ui/Modal';
-import { TextField } from '../ui/Field';
 import styles from './OutletCard.module.css';
 
 const METRICS = [
@@ -38,8 +36,6 @@ export const OutletCard = ({
   onToggle,
   onRename,
 }) => {
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [draftName, setDraftName] = useState('');
   const [busy, setBusy] = useState(false);
 
   const fallbackLabel = `Outlet ${outletNumber}`;
@@ -60,16 +56,22 @@ export const OutletCard = ({
   const identityChanged = suggestion?.identityState === 'changed' && !!applianceName;
   const displayName = identityChanged ? `Not ${applianceName}` : applianceName || fallbackLabel;
 
-  const openRename = () => {
-    setDraftName(applianceName || '');
-    setRenameOpen(true);
-  };
-
+  /*
+   * Naming is suggestion-only, by the owner's decision.
+   *
+   * There is no free-text field on either client any more: a name arrives by
+   * accepting what the detector measured, or by picking one of its alternatives.
+   * Relabelling afterwards is Settings → saved appliances → Rename, which goes
+   * through renameApplianceProfile and carries the outlet with it.
+   *
+   * Both paths below still reach registerApplianceProfile, which is what learns
+   * the signature — so accepting a suggestion teaches WattWise exactly as typing
+   * a name used to.
+   */
   const submitName = async (name, options) => {
     setBusy(true);
     await onRename(name, options);
     setBusy(false);
-    setRenameOpen(false);
   };
 
   const acceptSuggestion = () =>
@@ -171,9 +173,6 @@ export const OutletCard = ({
             <Button size="sm" onClick={acceptSuggestion} loading={busy}>
               Use this name
             </Button>
-            <Button size="sm" variant="secondary" onClick={openRename}>
-              Name it myself
-            </Button>
           </div>
 
           {suggestion.candidates?.length > 1 ? (
@@ -199,40 +198,17 @@ export const OutletCard = ({
           ) : null}
         </div>
       ) : (
+        /* No suggestion to show. Nothing to offer either — naming happens by
+           accepting a measurement, so an outlet with no detection yet simply
+           waits for one rather than inviting a name the app cannot verify. */
         <div className={styles.footer}>
-          <Button size="sm" variant="ghost" onClick={openRename}>
-            {applianceName ? 'Rename appliance' : 'Name this appliance'}
-          </Button>
+          <p className={styles.footerNote}>
+            {applianceName
+              ? 'Rename this appliance in Settings → Saved appliances.'
+              : 'Run the appliance for a minute and WattWise will suggest a name.'}
+          </p>
         </div>
       )}
-
-      <Modal
-        open={renameOpen}
-        onClose={() => setRenameOpen(false)}
-        title={`Name ${fallbackLabel}`}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setRenameOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              loading={busy}
-              onClick={() => submitName(draftName.trim() || fallbackLabel, { source: 'manual' })}
-            >
-              Save
-            </Button>
-          </>
-        }
-      >
-        <TextField
-          label="Appliance name"
-          placeholder="Electric fan"
-          value={draftName}
-          onChange={(event) => setDraftName(event.target.value)}
-          hint="If this appliance is running now, WattWise also learns its power signature so it can recognise it next time."
-          autoFocus
-        />
-      </Modal>
     </Card>
   );
 };

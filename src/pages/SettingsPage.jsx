@@ -139,19 +139,12 @@ export const SettingsPage = () => {
   const [rateStatus, setRateStatus] = useState(null);
   const [savingRates, setSavingRates] = useState(false);
 
-  const [outletDraft, setOutletDraft] = useState({ 1: '', 2: '' });
   const [outletStatus, setOutletStatus] = useState(null);
 
   useEffect(() => {
     setName(settings.profileName === 'User' ? '' : settings.profileName);
     setRateDraft(ratesToDraft(settings.supplyRates));
-    setOutletDraft({ 1: settings.outlet1Name, 2: settings.outlet2Name });
-  }, [
-    settings.profileName,
-    settings.supplyRates,
-    settings.outlet1Name,
-    settings.outlet2Name,
-  ]);
+  }, [settings.profileName, settings.supplyRates]);
 
   const refresh = () => fetchSettings(auth.currentUser?.uid || null);
 
@@ -179,16 +172,22 @@ export const SettingsPage = () => {
     );
   };
 
-  const saveOutletName = async (outletNumber) => {
+  // Accepting a detection is the only way an outlet gets a name now, so it is
+  // also the only thing that reports on the result.
+  const acceptDetection = async (outletNumber, suggested, confidence) => {
     setOutletStatus(null);
-    const result = await updateOutletName(outletNumber, outletDraft[outletNumber], {
-      source: 'manual',
+    const result = await updateOutletName(outletNumber, suggested, {
+      source: 'auto_suggestion',
+      confidencePercent: confidence,
     });
+
     setOutletStatus(
       result.success
-        ? { tone: 'good', message: `Outlet ${outletNumber} renamed.` }
-        : { tone: 'alert', message: result.error || 'Could not rename the outlet.' }
+        ? { tone: 'good', message: `Outlet ${outletNumber} is now ${suggested}.` }
+        : { tone: 'alert', message: result.error || 'Could not apply the detection.' }
     );
+
+    if (result.success) refresh();
   };
 
   const rateTotal = sumSupplyRates(rateDraft);
@@ -293,9 +292,15 @@ export const SettingsPage = () => {
           </Card>
 
           <Card>
+            {/* Free-text outlet naming was removed at the owner's request. An
+                outlet is named by accepting what the detector measured, and
+                relabelled afterwards under Saved appliances — which renames the
+                signature and the outlet together. Accepting still runs through
+                registerApplianceProfile, so the signature is learned exactly as
+                typing a name used to do. */}
             <CardHeader
               title="Outlets"
-              subtitle="Naming an outlet while its appliance is running also teaches WattWise that appliance's power signature."
+              subtitle="An outlet takes its name from what WattWise detects. Accept a detection and its power signature is learned at the same time."
             />
 
             {outletStatus ? <Banner tone={outletStatus.tone}>{outletStatus.message}</Banner> : null}
@@ -322,18 +327,11 @@ export const SettingsPage = () => {
 
                 return (
                   <div key={outletNumber} className={settingsStyles.outletBlock}>
-                    <div className={styles.row} style={{ alignItems: 'flex-end' }}>
-                      <TextField
-                        label={`Outlet ${outletNumber} name`}
-                        value={outletDraft[outletNumber] || ''}
-                        onChange={(event) =>
-                          setOutletDraft({ ...outletDraft, [outletNumber]: event.target.value })
-                        }
-                        className={settingsStyles.grow}
-                      />
-                      <Button variant="secondary" onClick={() => saveOutletName(outletNumber)}>
-                        Save
-                      </Button>
+                    <div className={settingsStyles.outletHead}>
+                      <p className={settingsStyles.outletLabel}>Outlet {outletNumber}</p>
+                      <p className={settingsStyles.outletName}>
+                        {currentName || <span className={styles.muted}>Not named yet</span>}
+                      </p>
                     </div>
 
                     {identityChanged ? (
@@ -352,12 +350,7 @@ export const SettingsPage = () => {
                         <div className={styles.row}>
                           <Button
                             size="sm"
-                            onClick={() =>
-                              updateOutletName(outletNumber, suggested, {
-                                source: 'auto_suggestion',
-                                confidencePercent: confidence,
-                              }).then(refresh)
-                            }
+                            onClick={() => acceptDetection(outletNumber, suggested, confidence)}
                           >
                             Accept
                           </Button>

@@ -207,6 +207,11 @@
   justify-content: flex-start;
 }
 
+.footerNote {
+  font-size: 12.5px;
+  color: var(--ww-text-light);
+}
+
 @media (max-width: 520px) {
   .metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));

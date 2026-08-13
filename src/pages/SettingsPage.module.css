@@ -38,6 +38,27 @@
   min-width: 160px;
 }
 
+/* The outlet's name is read-only now — it arrives by accepting a detection. */
+.outletHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ww-space-3);
+}
+
+.outletLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ww-text-light);
+}
+
+.outletName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ww-text-dark);
+}
+
 /* Amber, not the suggestion row's green: this is not an offer, it is the app
    saying the name above has stopped describing what is plugged in. */
 .identityNote {
