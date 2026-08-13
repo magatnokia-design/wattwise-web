@@ -17,6 +17,7 @@ import {
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Switch } from '../components/ui/Switch';
+import { Modal } from '../components/ui/Modal';
 import { TextField } from '../components/ui/Field';
 import { Badge, Banner, EmptyState, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
@@ -77,7 +78,58 @@ export const SettingsPage = () => {
     updateOutletName,
     clearOutletDetection,
     removeSavedAppliance,
+    renameSavedAppliance,
   } = useSettings();
+
+  /*
+   * Rename goes through the callable, never a direct write to applianceProfiles.
+   *
+   * It renames the signature *and* any outlet wearing the old label, in that
+   * order, because matchNamedAppliance resolves an outlet's name against the
+   * saved profiles. A signature renamed on its own would leave the outlet
+   * pointing at a label that no longer exists, every run would come back
+   * `unknown`, and applianceIdentity would stop working on that outlet without
+   * saying so.
+   */
+  const [renameTarget, setRenameTarget] = useState(null);
+  const [renameDraft, setRenameDraft] = useState('');
+  const [renaming, setRenaming] = useState(false);
+  const [renameError, setRenameError] = useState('');
+
+  const openRename = (label) => {
+    setRenameTarget(label);
+    setRenameDraft(label);
+    setRenameError('');
+  };
+
+  const submitRename = async () => {
+    const next = renameDraft.trim();
+
+    if (!next) {
+      setRenameError('Give the appliance a name.');
+      return;
+    }
+
+    // A capitalisation-only fix is a legitimate rename and the backend allows
+    // it, so only an exact match is a no-op worth short-circuiting.
+    if (next === renameTarget) {
+      setRenameTarget(null);
+      return;
+    }
+
+    setRenaming(true);
+    const result = await renameSavedAppliance(renameTarget, next);
+    setRenaming(false);
+
+    if (!result.success) {
+      // not-found / already-exists / invalid-argument all arrive here with
+      // user-safe messages from the callable.
+      setRenameError(result.error || 'Could not rename this appliance.');
+      return;
+    }
+
+    setRenameTarget(null);
+  };
 
   const [name, setName] = useState('');
   const [nameStatus, setNameStatus] = useState(null);
@@ -346,13 +398,22 @@ export const SettingsPage = () => {
                         peak <span className="ww-num">{appliance.peakPower.toFixed(1)} W</span>
                       </p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      onClick={() => removeSavedAppliance(appliance.label)}
-                    >
-                      Forget
-                    </Button>
+                    <div className={styles.row}>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => openRename(appliance.label)}
+                      >
+                        Rename
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={() => removeSavedAppliance(appliance.label)}
+                      >
+                        Forget
+                      </Button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -432,6 +493,46 @@ export const SettingsPage = () => {
           </Card>
         </div>
       </div>
+
+      <Modal
+        open={!!renameTarget}
+        onClose={() => (renaming ? null : setRenameTarget(null))}
+        title="Rename appliance"
+        width={440}
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setRenameTarget(null)}
+              disabled={renaming}
+            >
+              Cancel
+            </Button>
+            <Button loading={renaming} onClick={submitRename}>
+              Rename
+            </Button>
+          </>
+        }
+      >
+        <div className={styles.stack}>
+          {renameError ? <Banner tone="alert">{renameError}</Banner> : null}
+
+          <TextField
+            label="Name"
+            value={renameDraft}
+            onChange={(event) => {
+              setRenameDraft(event.target.value);
+              setRenameError((current) => (current ? '' : current));
+            }}
+          />
+
+          <p className={styles.muted}>
+            The learned signature keeps its measurements — only the label
+            changes. Any outlet currently named <strong>{renameTarget}</strong>{' '}
+            is renamed with it, so WattWise can still recognise this appliance.
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 };
