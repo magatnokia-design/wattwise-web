@@ -80,6 +80,161 @@ intentional difference.
 
 ---
 
+## 0o. Web-only live testing round — one self-inflicted outage, and four findings for you
+
+**Written 2026-08-13 from the web repo.** Commit `0cd7e62`.
+
+The owner ran a full session against live hardware from the **website only** —
+no phone client, since your EAS quota is blocked until 1 September. Everything
+below is measured, not assumed.
+
+### First: I shipped a crash, and it was live for ~2 hours
+
+`8dc10e9` renamed a local from `detecting` to `drawing` and left three uses
+behind in the appliance-line JSX. `detecting` is not a prop, a local, or an
+import, so **every `OutletCard` render threw `ReferenceError` and took the whole
+dashboard route down.** Fixed in `0cd7e62`.
+
+**Why it shipped is the part worth your attention: this repo has no linter and
+no tests.** `vite build` compiles undefined identifiers happily — they are only
+errors at runtime. A bare ESLint `no-undef` run catches it instantly. I verified
+both directions:
+
+```
+current src/     → 75 files linted, 0 errors
+pre-fix file     → 3 errors, lines 144/145/147, 'detecting' is not defined
+```
+
+⚠️ **Worth checking whether your repo has the same gap.** The bug class is
+"rename a variable, miss a usage in JSX", and nothing about it is specific to
+this client.
+
+### Deploy pipeline — `firebase deploy` is not the live path here
+
+`www.wattwise.site` is served by **Vercel from GitHub** (`Server: Vercel`,
+`X-Vercel-Cache: HIT`). `firebase deploy --only hosting` publishes to
+`wattwise-fe394.web.app`, which nobody visits. The live path is
+`git push origin main`. Noting it because my earlier "verified live by md5"
+claims in §0k–§0n happened to pass only because Vercel had built the same commit.
+
+### What the testing confirmed working
+
+- **Alert histories match across both clients.** The owner's two screenshots were
+  50 minutes apart; every entry reconciles once that offset is applied
+  (phone "6m ago" @15:43 = web "57m ago" @16:33). Same order, same icon
+  semantics. `ALERT_HISTORY_LIMIT = 20` confirmed — the array is bounded.
+- Saved appliances are re-detected on replug without re-prompting.
+- Outlet cards correctly show "No appliance detected yet" when nothing draws.
+- Safety emails received; auto-cutoff fired and recovered.
+- Deep links, hard refresh, live telemetry all good. Copy-rule files: **10/10
+  byte-identical to yours**, `config.js` and `usePowerSafety.js` still the only
+  intentional divergences.
+
+---
+
+### §0o.1 — `powerSafety.js` judges *combined* draw against 500 W, not 1000 W
+
+This is the one I would act on first. Three places hold these constants and
+**yours is the only one out of step**:
+
+| | Per outlet | Combined |
+|---|---|---|
+| `docs/esp32/…/WattWise_ESP32_Relay_Cloud.ino:78,80` (the real enforcer) | 500 | **1000** |
+| `functions/src/http/updateOutletMetrics.js:25,26` | 500 | **1000** |
+| `functions/src/lib/powerSafety.js:12,126` | 500 | **500** ← |
+
+```js
+// powerSafety.js:126
+const combinedStage = stageFromRatio(totalPowerW / HARD_MAX_POWER_W);  // 500
+```
+
+**Consequence:** 200 W + 200 W = 400 W already trips a *Power Warning* (0.8
+ratio), and 300 W + 300 W = 600 W trips a full *auto-cutoff* — both well inside
+what the firmware permits. Meanwhile `updateOutletMetrics` looking at that same
+600 W considers it fine. Same quantity, two ceilings, same backend.
+
+Not observed in this round only because the test load was a 58 W fan. It will
+fire the moment anything in the hundreds of watts is used.
+
+### §0o.2 — out-of-scope loads are detected, then silently discarded
+
+`applianceDetector.js:583`:
+
+```js
+if (top.effectiveScore > MAX_ACCEPTABLE_SCORE) {
+  return null;
+}
+```
+
+Per your own comment at line 21, in-scope loads score 0.13–0.25 and "a load far
+outside the appliances this system supports scores above 0.5". So the detector
+**already knows** it is looking at an unsupported appliance — and returns `null`,
+which both clients render identically to "still gathering data".
+
+That is the strongest possible "this appliance isn't supported" signal and it is
+being thrown away. If you wrote it to the outlet doc (an `outOfScope` flag, or a
+reason on `applianceIdentity`), both clients could say so honestly. **Requested,
+not assumed** — the field is yours to design.
+
+### §0o.3 — nothing covers 230–500 W, so a rice cooker gets no suggestion at all
+
+`Game Console` tops out at 230 W mean. Anything above scores past
+`MAX_ACCEPTABLE_SCORE` and returns `null` per §0o.2. The owner asked about
+expanding the list; I proposed two additions that fill the empty band and are
+separable from each other on `stdDevPower` alone:
+
+| Label | `meanPower` | `stdDevPower` | Rationale |
+|---|---|---|---|
+| Rice Cooker | 250–450 | low (resistive, steady) | PH-ubiquitous, currently invisible |
+| Desktop PC | 90–400 | high (swings) | same band, opposite steadiness |
+
+⚠️ **Blocked by §0o.1** — at a 500 W combined ceiling, a 400 W rice cooker alone
+sits at 0.8 ratio, so anything on outlet 2 warns or cuts. Fix the ceiling first
+or these profiles are unusable.
+
+**Not yet confirmed by the owner**, so treat as a proposal. Would need a
+`MODEL_VERSION` bump from `rule-v3` and an update to `applianceDetector.test.js`.
+
+### §0o.4 — onboarding promises a different list than the detector has
+
+`src/screens/Onboarding/OnboardingScreen.js:36` lists 7 appliances by hand.
+The detector has 8. The list **omits `Monitor` entirely**, and three names differ
+from what the app will actually display: "TV" vs `Television`, "Gaming Console"
+vs `Game Console`, "Radio/Speaker" vs `Speaker`. Cosmetic — nothing misbehaves —
+but a user is told one set and shown another.
+
+---
+
+### Two the owner raised that are yours, for the record
+
+- **Schedule lag ~1 minute.** Confirmed inherent, not a bug:
+  `functions/index.js:270` is `schedule: '* * * * *'`, so worst case is ~60 s of
+  cron granularity plus the ESP32's command-poll interval on top. Making this
+  feel instant needs Cloud Tasks with an exact dispatch time per schedule, which
+  is a real piece of work — flagging it rather than proposing it.
+- **July 2026 shows ₱5.60 spent on a month with no usage.** Looks like the
+  metering charge being applied to a zero-usage month. Worth confirming that is
+  intended before the owner's panel sees it.
+
+### Power caps: a note on the owner's paper
+
+The owner's project paper specifies 1000 W combined, 500 W per outlet **when
+both are in use**, and up to 1000 W on a single outlet **when it is the only one
+active**. That third clause is not implemented anywhere — the firmware enforces a
+flat 500 W per outlet at line 78 with no sole-outlet exception.
+
+**The owner has decided to keep the hardware limits exactly as they are**, on the
+grounds that the relay module (not the PZEM-004T, which measures to ~2300 W) is
+the binding constraint. Recording it only so the paper and the code can be
+reconciled on paper's side. **No change requested.**
+
+### Nothing changed on your side
+
+I have not modified anything under `C:\App\WattWise`. Files showing as modified
+there are your own uncommitted `renameApplianceProfile` work.
+
+---
+
 ## 0n. §30 items 7–10 done — and 1–6 were already closed
 
 **Written 2026-08-13 from the web repo.** Commits `55be683` and `14d74b8`.
