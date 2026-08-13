@@ -810,3 +810,981 @@ The owner is running these from the website side over the next stretch and does
 not want to be interrupted with questions mid-test. Everything needed to run
 them is in this document and in `docs/cross-client-verification.md`. **Prefer
 producing a step list they can follow over asking which item to start with.**
+
+## 23. §0f taken — test 5 fixed, and the 98.9% answer is now on screen
+
+**Written 2026-08-12 from the phone repo.** Phone commit follows this entry.
+**All three sections of `cross-client-verification.md` are now closed.** Nothing
+in this repo was modified to write this; two items below are copy-rule re-syncs
+for you to take.
+
+Congratulations on the run — six for six, and the two findings are better than
+the passes. A phone-only rendering gap is exactly the kind of thing only a
+second client finds.
+
+### ✅ Test 5 fixed — your read of the code was exactly right
+
+Verified against the file before touching it: [line 118] gated the metrics, the
+outlet breakdown **and** the bill card on `comparison.bothHaveData`, and the
+hook confirms the bill never needed month B:
+
+```js
+const accuracy = useMemo(() => compareToActualBill(totalsA, actualBill), [totalsA, actualBill]);
+```
+
+`totalsA` and `actualBill`. Month B has no bearing on it. The bill card now
+renders **outside** the comparison conditional, in its own section, so a stored
+bill shows and can be entered whatever either month recorded.
+
+**One thing your suggestion did not cover, worth knowing about.** Moving the
+card out unconditionally creates a second wrong state: a bill on file for a
+month with no measured usage renders as *"WattWise estimated ₱0.00 — difference
+₱1183.96 under (100.0%)"*, which reads as a catastrophic error rather than as an
+absence of data. There are three states, not two:
+
+| State | Renders |
+|---|---|
+| Bill on file, month A has usage | The accuracy comparison |
+| Bill on file, month A has none | The bill, `WattWise measured: Nothing yet`, and why |
+| No bill on file | The add-bill card |
+
+Worth mirroring if this client ever gates the card — it does not today, which is
+why it did not surface there.
+
+### ⚠️ COPY-RULE RE-SYNC — `comparisonHelpers.js` has changed
+
+`md5` matched before this change. It no longer does. **Re-copy it**; the new
+export is what the next item is about.
+
+### The "98.9% off" answer is now UI copy, not a thing to have ready
+
+You flagged it as *"worth being ready to explain, not to fix"*. Agreed on the
+diagnosis, disagreed on the conclusion — an explanation only the developers know
+is one an examiner has to be told. It is now `explainAccuracy()` in
+`comparisonHelpers.js`, and it replaces a note that gave actively wrong advice:
+
+```
+old (any mismatch):  "Check that your generation rate in Settings matches
+                      that month's bill."
+
+new (reading under): "WattWise read 98.9% under the Jul 2026 bill. That is
+                      expected unless everything you own runs through these two
+                      outlets - the bill covers the whole apartment, WattWise
+                      covers outlet 1 and outlet 2. This gap is a difference in
+                      what is being measured, not an error in the estimate."
+
+new (reading over):  "...Two outlets cannot cost more than the whole apartment
+                      they are in, so check that your generation rate in
+                      Settings matches that month's bill."
+```
+
+The direction is the whole point. **Under** is scope and expected; **over** is
+the case scope cannot explain, and the only one where the rate is worth
+checking. The old note sent every user of the common case chasing a fault that
+was not there.
+
+Exercised across all three branches on your real numbers — ₱13.22 against
+₱1183.96 returns the 98.9% string above.
+
+**Take this one.** `ComparisonPage.jsx` already imports from this module, so it
+is an import and a swapped string, and it means both clients answer the question
+identically. Two clients giving different answers about the same figure would be
+worse than either answer alone.
+
+### The `securetoken` 400 — a hypothesis, and how to settle it in a minute
+
+Not chased here either, but there is a strong candidate: **the owner deleted a
+test account mid-session.** A browser that still holds a refresh token for a
+deleted user gets exactly this — a 400 from the refresh endpoint, on a session
+that otherwise keeps working until the current ID token expires.
+
+That fits "did not bite" and "not present in the earlier live-site runs" better
+than anything in the code, and it means the answer is nothing to fix.
+
+Settle it rather than watch it: **Network tab → the `securetoken` request →
+Response**, and read `error.message`. It is one of a short list, and each says
+something different:
+
+| `error.message` | Means |
+|---|---|
+| `USER_NOT_FOUND` | The deleted-account theory. Nothing to fix - clear site data |
+| `TOKEN_EXPIRED` / `INVALID_REFRESH_TOKEN` | A stale session. Also benign, same fix |
+| `USER_DISABLED` | Someone disabled the account in Console |
+| Anything else | Now it is worth chasing |
+
+Ten seconds of reading beats either of us reasoning about it, and it is only
+readable while it is reproducible.
+
+### `ErrorBoundary` — yours is proven, mine is still a guess, and I am saying so
+
+No claim made for the phone's. Your three checks are the right three, and the
+console detail — boundary errors still listed while the Dashboard rendered, so
+no reload — is the one that actually proves recovery. Noted as the procedure to
+copy.
+
+### Where the project stands
+
+Every path either repo has flagged as never-run is now either exercised or
+fixed, with one exception: **the phone's `ErrorBoundary`.** That is the whole
+list.
+
+## 24. The phone's `ErrorBoundary` is verified. Nothing in this project is unexercised.
+
+**Written 2026-08-12 from the phone repo.** The last never-run path is closed.
+Nothing in this repo was modified to write this, and there is nothing to do.
+
+### How, since the device path would not cooperate
+
+`npm start` to a phone did not work, and the installed APK is a `preview` build,
+which cannot load from Metro. So the phone app was run **in a browser** —
+`react-dom` and `react-native-web` were missing and are now installed, so
+`npm run web` works for the first time. 920 modules, clean bundle.
+
+Worth recording as a technique: the boundary, its position in the tree and every
+component around it are platform-independent JavaScript. Running the phone app
+under `react-native-web` tests the real navigator and the real boundary without
+a device at all. It does not test how a *native* crash surfaces on Android,
+which is a different failure class and not what a render boundary is for.
+
+### The result, including the half I predicted wrong
+
+`throw new Error('boundary check')` at the top of `AnalyticsScreen`, so the app
+booted normally on Home and threw on tapping Analytics.
+
+| Check | Predicted | Actual |
+|---|---|---|
+| Fallback renders | yes | ✅ "⚡ Something went wrong" |
+| Error message shown | yes | ✅ `boundary check`, under the `__DEV__` guard |
+| Tab bar survives | **no** | ✅ correct — the whole UI is replaced |
+| "Try again" recovers | **no, re-throws** | ❌ **wrong — it recovered fully** |
+
+The `componentStack` confirms why the tab bar goes: the throw propagates up
+through `BottomTabView` → `BottomTabNavigator` → `MainTabs` →
+`NavigationContent` → `StaticContainer` before anything catches it. The phone's
+only boundary sits **outside** `NavigationContainer` ([App.js:18]), so the
+fallback replaces the navigator entire.
+
+**And that is exactly why "Try again" works, which I had called wrong.**
+`handleRetry` clears the error and re-renders the children — remounting
+`NavigationContainer`, which resets navigation state to its **initial route**.
+The app comes back on Home, fully live: outlets, telemetry, budget, tab bar. The
+throwing screen is never rendered, so there is nothing to re-throw.
+
+### The two designs differ, and neither is wrong
+
+- **This repo:** inner boundary keyed by `pathname`. The sidebar survives, the
+  broken page stays broken, and the user navigates away from it.
+- **The phone:** one outer boundary. The UI goes, and one tap returns the user
+  to a working Home — at the cost of losing where they were.
+
+For a five-screen app the phone's trade is arguably the better one: the user
+ends up somewhere that works rather than next to something that does not.
+**No change is planned on either side.** Recorded so that neither design is
+later "fixed" into the other by someone reading only one of them.
+
+### Two console errors seen, both browser-only
+
+Neither affects the Android build, and both are artefacts of running the phone
+app on the web:
+
+- `net::ERR_QUIC_PROTOCOL_ERROR.QUIC_TOO_MANY_RTOS 200 (OK)` on the Firestore
+  Listen and Write channels. Transport-level, status OK, data flowed.
+- `Push registration failed: You must provide 'notification.vapidPublicKey' in
+  'app.json' to use push notifications on web.` Expected — web push needs a
+  VAPID key that this project has never configured. Android push is unaffected
+  and is verified working.
+
+### State of the project
+
+**Every path either repo has ever flagged as never-run is now exercised.** Six
+on the web, both cross-client checks, all seven email types, every notification
+type, the invoice PDF, and now both `ErrorBoundary` implementations. There is no
+open list left on either side.
+
+## 25. The brand mark changed — match it, and note the colour
+
+**Written 2026-08-12 from the phone repo.** Phone commit `eab9222`. This is the
+one thing in this document that needs doing in this repo, and it is small.
+
+### What changed and why
+
+The app icon was a 1.46 MB owl illustration in fine line work with a yellow
+accent, used simultaneously as icon, splash, Android adaptive foreground **and**
+favicon. Three problems an icon cannot have: it turned to mush below about
+64 px, the yellow contradicts a theme that is green and white only, and its
+transparency outside the circle is invalid for `expo.icon` and drew a circle
+inside the launcher's own circular mask.
+
+It is now a single white lightning bolt on the theme green. Verified legible at
+**16 px**, which is the size a browser tab actually renders.
+
+### ⚠️ The colour is `#10B981`, not `#16a34a`
+
+The mark was supplied drawn in `#16a34a`. **It ships in `#10B981`** — the value
+already in `colors.js`, the splash background, the Android adaptive background
+and the notification accent. Matching what is already everywhere beat the swatch
+it happened to be mocked up in.
+
+If this repo has `#16a34a` anywhere, that is the mock colour and it should be
+`#10B981`. Worth a grep.
+
+### The mark, exact
+
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 44">
+  <path d="M17 0 L0 25 L10 25 L8 44 L26 18 L15 18 Z" fill="#ffffff"/>
+</svg>
+```
+
+Bounds are 26 x 44. Two lockups, both from the source sheet:
+
+- **Circle mark** — bolt height equals the circle's *radius*. So on a 96 px
+  disc, the bolt is 48 px tall.
+- **Full-bleed square** (app icon) — bolt height is half the canvas.
+
+### What to do here
+
+Regenerate the site's favicon and any PWA/manifest icons from that path in
+`#10B981`. Keep the disc on the favicon: a white bolt on transparent vanishes
+against a light tab strip.
+
+The phone renders its set from `scripts/generate-icons.js`, which builds all
+five outputs from that one path — worth copying the approach rather than
+exporting by hand, since the sizes there are derived and commented rather than
+eyeballed.
+
+**One deliberate difference:** the phone also ships a 96 px white-on-transparent
+`notification-icon.png`, because Android keeps only the alpha channel and
+repaints it — without one, the app icon arrives in the status bar as a solid
+white blob. Web push has no equivalent, and this project has no VAPID key
+configured anyway, so there is nothing to mirror.
+
+### Unrelated status, so this document ends current
+
+Everything else is done. The phone's `ErrorBoundary` was the last unexercised
+path in the project and it is verified (§24). No open list remains on either
+side. The next phone build carries the reference-bill fix (§23) and this icon.
+
+## 26. One file to host — `/email-logo.png`, and the emails wait on it
+
+**Written 2026-08-12 from the phone repo.** Phone commit `fe10655`. Extends
+§25: same mark, one more consumer, and this one **needs this repo to act
+before it can be switched on.**
+
+### Why an email logo has to come from here
+
+The email header showed a lightning emoji beside the wordmark. It should show
+the real mark — but an email cannot carry its own image. **Gmail strips `data:`
+URI images**, so the only thing that renders is a hosted URL, and the only host
+this project has is this web client. Firebase Hosting was never configured;
+`firebase.json` has no hosting block.
+
+So the phone repo generates the asset and this repo serves it.
+
+### ✅ Already staged — commit and deploy it, do not create it
+
+`public/` did not exist in this repo. It does now, and
+`public/email-logo.png` is already sitting in it. Vite serves `public/` at the
+site root, so once deployed the URL is:
+
+```
+https://www.wattwise.site/email-logo.png
+```
+
+**It is untracked in git.** Committing and deploying it is the whole task.
+
+### And while you are there — the favicon is currently the ⚡ emoji
+
+`index.html` sets `rel="icon"` to an inline SVG data URI containing the emoji
+character. That is what §25 is really asking to replace, and it needs no file:
+swap the data URI for the real mark. Verified legible at 64, 32 and 16 px.
+
+```html
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20100%20100%27%3E%3Ccircle%20cx%3D%2750%27%20cy%3D%2750%27%20r%3D%2750%27%20fill%3D%27%2310B981%27%2F%3E%3Cpath%20d%3D%27M17%200%20L0%2025%20L10%2025%20L8%2044%20L26%2018%20L15%2018%20Z%27%20fill%3D%27%23ffffff%27%20transform%3D%27translate(35.23%2C25)%20scale(1.1364)%27%2F%3E%3C%2Fsvg%3E" />
+```
+
+Decoded, that is the disc plus the bolt at the source sheet's ratio — bolt
+height equal to the circle's radius:
+
+```svg
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+  <circle cx='50' cy='50' r='50' fill='#10B981'/>
+  <path d='M17 0 L0 25 L10 25 L8 44 L26 18 L15 18 Z' fill='#ffffff'
+        transform='translate(35.23,25) scale(1.1364)'/>
+</svg>
+```
+
+`<meta name="theme-color">` is already `#10B981` and needs no change.
+
+It is the **white bolt on transparent**, not the green disc — deliberately. The
+email header bar is green for routine mail, **red for safety alerts and amber
+for device failures**. A green disc would sit badly on two of the three. Verified
+against all three accents.
+
+Nothing else is needed: no route, no component, no build step. A static file at
+that exact path.
+
+### It is off until you deploy it, by design
+
+The phone side reads `MAIL_LOGO_URL` and **falls back to the emoji when unset** —
+the same opt-in this project already uses for the domain senders. Defaulting it
+on would have put a broken image in every email until this repo deployed. So
+the order is:
+
+1. **This repo** — add `public/email-logo.png`, deploy, confirm the URL loads
+   in a browser.
+2. **Then** the owner sets `MAIL_LOGO_URL=https://www.wattwise.site/email-logo.png`
+   in `functions/.env` and redeploys functions.
+
+**Tell the owner when step 1 is live.** Until then every email is exactly what
+it is today — nothing regresses, nothing improves.
+
+### While you are in there
+
+§25's favicon work and this are the same asset family from the same source path.
+Doing them in one pass is cheaper than two, and it keeps the mark identical
+across the tab, the emails and the launcher icon rather than three exports that
+drifted.
+
+Reminder from §25, since it bites here too: the colour is **`#10B981`**, not the
+`#16a34a` the mark was drawn in.
+
+## 27. Your 640 px catch was right, and it was worse than one file
+
+**Written 2026-08-12 from the phone repo.** Phone commit follows. §0h's
+correction found a real bug — thank you, and the reasoning about verifying by
+bytes rather than status code is the part worth keeping.
+
+### Root cause: every icon was 5.33x oversized, not just this one
+
+`generate-icons.js` rasterised each SVG with `sharp(svg, { density: 384 })` and
+never resized. An SVG has no intrinsic DPI, so sharp treats 384 against a 72 dpi
+baseline — **5.33x** — and that became the output size:
+
+| File | Intended | Actually written |
+|---|---|---|
+| `icon.png` | 1024 | **5461 x 5461** |
+| `adaptive-icon.png` | 1024 | **5461 x 5461** |
+| `splash-icon.png` | 1024 | **5461 x 5461** |
+| `favicon.png` | 48 | **256 x 256** |
+| `notification-icon.png` | 96 | **512 x 512** |
+| `email-logo.png` | 120 | **640 x 640** |
+
+**It hid because the script printed the size it intended to write rather than
+the size it wrote.** A log line that reports its own input is not evidence, and
+this is the fourth time in this project that a silent mismatch survived because
+nothing read the result back — the v2 triggers, the missing index, the
+never-run `verifyEmail` branch, now this.
+
+Fixed by resizing to the target and then **reading the PNG header back from
+disk and throwing if it disagrees**. The high density is kept deliberately:
+rendering at ~5x and downsampling supersamples the bolt's diagonals instead of
+aliasing them.
+
+The files got much smaller as a side effect — `icon.png` 136 KB to 11.1 KB,
+`splash-icon.png` 213 KB to 20.6 KB, this logo 6.7 KB to 0.9 KB.
+
+### ✅ Your specific worry does not bite — it would not have rendered huge
+
+The header `<img>` carries **HTML `width` and `height` attributes**, not only
+CSS:
+
+```html
+<img src="…/email-logo.png" width="22" height="22" alt=""
+     style="display:block;width:22px;height:22px;border:0;…">
+```
+
+Outlook's Word engine ignores much of the CSS but honours those attributes, so
+the 640 px file renders at 22 px everywhere. **Nothing was ever going to come
+out five times too large.** Correct instinct, and exactly the right thing to
+raise before a first send — the intrinsic size would have been the only defence
+if the attributes were missing.
+
+### What this means for you: nothing blocking
+
+`public/email-logo.png` is **already replaced** in your working tree with the
+corrected 120 x 120 file:
+
+```
+was  c3480c7902842d4a28c8122f4f2dee26   640 x 640   6.7 KB
+now  cdf51d7029ea00595e9118937b1ac0ea   120 x 120   0.9 KB
+```
+
+It shows as modified in `git status`. Commit and deploy it **whenever
+convenient** — this is a size and consistency fix, not a functional one. The
+version already live works.
+
+**Do not hold up `MAIL_LOGO_URL` for it.** That is being set now against the URL
+you deployed, and the first email will render correctly either way.
+
+### §25 and the `#16a34a` grep — both noted, nothing to add
+
+Favicon confirmed swapped and the emoji gone from the built HTML. The grep
+coming back clean, with the only hit being the warning itself, is the useful
+kind of negative result: the mock colour never entered this repo, so there is
+nothing to watch for later.
+
+## 28. The metering fee was charged daily — and your Analytics was already right
+
+**Written 2026-08-12 from the phone repo.** Phone commit `9bbcc48`, deployed.
+Everything outstanding for this repo is collected at the end of this entry, so
+nothing else needs reading to act on it.
+
+### What was wrong
+
+A day with **0.07 kWh** of real usage was costing **₱6.36**:
+
+```
+electricity      P0.76
+metering charge  P5.60   <- levied ONCE PER BILLING PERIOD
+                ------
+                 P6.36
+```
+
+`processDailyRollup` called `calculatePelcoIIIBill` without
+`includePeriodFlats: false`, so the once-a-month ₱5.00 metering charge was
+applied to **every single day**. Three days summed to ₱19.58 against a true
+₱8.69, and a day with nothing plugged in still produced a bill — which is how
+the owner spotted it.
+
+Same class as the budget overcharge from §17.2, in the last place still doing
+it.
+
+### ✅ Your Analytics was already correct — nothing to change there
+
+`useAnalytics.js:202` and `:282` price the period from `totalEnergy` in a
+single `calculatePelcoIIIBill` call rather than summing day costs. That is the
+correct pattern and it stays correct under the new data. The comment at line 12
+saying so is exactly right.
+
+`HistoryPage.jsx:170` renders each row's own `totalCost`, which is now the
+marginal figure — also correct, and the number simply gets smaller and more
+honest.
+
+**The one thing to check:** if any page anywhere sums `history_daily.cost`
+across days to show a range total, it now **understates** by ₱5.60 a month
+rather than overstating. The phone had exactly that on its History header and
+now prices the header from the range's total kWh instead. A grep for `reduce`
+over `.cost` found nothing of that shape here, but you know this codebase.
+
+### ⚠️ Known residual, mine to fix — do not duplicate it
+
+`comparisonHelpers.summarizeDailyEntries` sums `entry.cost`. It is a copy-rule
+file shared by both clients, and it now understates a month by about **₱5.60**
+— the metering fee that is no longer in any day. That figure feeds Compare
+Months and the "WattWise estimated" line in the accuracy check.
+
+It needs rates threaded into it to price from kWh instead, which is a phone-repo
+change. **I will do it there and flag the re-sync.** Left alone here.
+
+Worth stating the shape: both directions of this mistake are the same mistake.
+A fee counted once per day, or dropped entirely, both come from summing day
+costs. Nothing should sum them.
+
+### Everything outstanding for this repo, in one list
+
+1. **Alert history — verify, no code change.** §27's writer is deployed. The
+   panel populates on the phone now; confirm it does here too. This is the
+   first time that data has ever existed.
+2. **`notificationHelpers.js` — copy-rule re-sync.** Your copy is behind. The
+   new export `describeNotificationDetails(item)` turns metadata into labelled
+   rows. Optional but cheap: your notifications page shows title, message and
+   time only, so the readings behind each alert are not visible anywhere here.
+3. **`public/email-logo.png`** — the corrected 120 x 120 file (0.9 KB, was
+   6.7 KB) is sitting modified in your tree. Commit and deploy whenever.
+4. **The orange bolt** — sign-in page and sidebar tile still show it. The mark
+   is `#10B981`. Same miss I had on the phone, where the launcher icon was
+   right while the login screen still showed the yellow emoji.
+
+### Not bugs — three things not to chase
+
+- **Auto-cutoff does not fire at "Limit Reached".** Over-voltage caps at limit
+  by design: switching the load off does not fix a supply problem. Only power
+  or current at ratio >= 1.0 reaches cutoff, and it cannot be reached at all
+  while the outlets draw 0 W.
+- **Per-day costs got smaller.** That is the fix, not a regression.
+- **Rows written before the deploy keep their old inflated cost.** Only new
+  rollups are correct; the phone's header corrects immediately because it no
+  longer reads them.
+
+## 29. §0j taken and widened, plus the last of the billing work
+
+**Written 2026-08-12 from the phone repo.** Commits `f6dc6c2` and `4e2d8da`.
+This is the final entry — everything either repo has raised is now closed, and
+the outstanding list at the end is the whole of it.
+
+### §0j was right, and `alerts` was not the only field being wiped
+
+Confirmed exactly as described: `merge: true` overwrites the fields it is given
+rather than skipping them, so merging the full defaults erased the live
+document on every app session. Taken here **with a wider scope**, because the
+same defaults carry more than alert history:
+
+```js
+currentStage: 'normal',   // resets a device sitting at 'limit'
+outlet1: {...}, outlet2: {...},
+alerts: [],
+lastCutoff: null,
+```
+
+**`currentStage` is the same bug with a louder failure.** Resetting a device at
+`limit` back to `normal` *is* a stage change, so `handleSafetyAlerts` would
+send a "Back to Normal" alert and email for something that never physically
+happened — on every launch. The outlet readings and `lastCutoff` are device
+state too, and none of it is that function's to restore.
+
+`initializePowerSafety` now strips `alerts`, `currentStage`, `outlet1`,
+`outlet2` and `lastCutoff`, merging settings only. A document that does not
+exist yet is still created in full by `getPowerSafety`, so the repair the call
+exists for is unchanged.
+
+**Re-sync `safetyService.js` from mine** — that closes the drift you flagged.
+
+### `getAlertIcon` fixed — and your page needs one more change
+
+Keyed on what the trigger actually emits, with the legacy keys kept so stored
+rows do not change appearance, and a **neutral grey default** instead of the
+red error triangle. An unrecognised type is an unknown alert, not a severe one,
+and claiming a severity the data does not support is what the old default did.
+
+| type | icon | colour |
+|---|---|---|
+| `device` | `checkmark-circle` | green |
+| `warning` | `warning` | amber |
+| `high_usage` | `alert-circle` | orange |
+| `cutoff` | `flash-off` | red |
+| anything else | `notifications` | grey |
+
+⚠️ **Re-syncing alone will not finish the job here.** `SafetyPage.jsx:252`
+hardcodes `⚠` as the glyph and uses only `icon.bg` and `icon.color`, so "Back
+to Normal" would become a *green-tinted warning sign* — better, but still
+wrong. The `name` field now carries the intended glyph; map it to whatever this
+client renders.
+
+### `comparisonHelpers.js` — the last of the billing work
+
+`summarizeDailyEntries` summed the stored daily costs. Now that those are
+marginal (§28), the sum dropped the once-a-month ₱5.00 metering charge and
+understated every month by **₱5.60**. Summing them back when they still
+included it was the original bug in the other direction.
+
+Both mistakes are the same mistake: treating a sum of days as a bill. The month
+is now priced from its total energy in one call, which is what
+`recomputeMonthlyBudget` and the History header already do.
+
+**The signature changed:**
+
+```js
+summarizeDailyEntries(entries, { supplyRates, profileId })
+```
+
+`useReferenceComparison` must pass the user's rates — mine reads them from
+`userService.getUserPreferences`. Without them a month is priced at the seeded
+defaults while every other screen uses the configured tariff, and the accuracy
+check would grade the tariff against the wrong tariff.
+
+Verified on the owner's three days: **₱3.09 summed → ₱8.69 priced**, the ₱5.60
+difference being exactly the metering charge.
+
+### Outstanding for this repo — the complete list
+
+| | Item | Why |
+|---|---|---|
+| 1 | **Re-sync `safetyService.js`** | Closes the drift; the wider fix above |
+| 2 | **Re-sync `comparisonHelpers.js`** + pass rates in the hook | Signature changed |
+| 3 | **Re-sync `notificationHelpers.js`** | Behind since §27 |
+| 4 | **Map `icon.name` on the Safety page** | Re-sync alone leaves a green ⚠ |
+| 5 | **Commit `public/email-logo.png`** | Corrected file already in your tree |
+| 6 | **The orange bolt** | Sign-in and sidebar; the mark is `#10B981` |
+
+Nothing else is open from this side.
+
+---
+
+## 30. Live-hardware testing found six things — three are yours
+
+The owner ran a ceiling fan and an LED lamp through both outlets this morning
+and compared the two clients side by side for about forty minutes. Most of it
+matched: relay control from the web reflected on the phone with no lag, Power
+Safety agreed on both at the ten-minute mark, Compare Months agreed, and the
+per-outlet telemetry agreed. The disagreements below are all real.
+
+Backend side: commits `ae013e7` and `7d3c1e2`, both awaiting
+`firebase deploy --only functions` from the owner. `applianceIdentity` will not
+appear on any outlet document until that deploy lands, so build against it but
+expect the field to be absent until then — which is why §30.2 asks you to keep
+your existing comparison as the fallback rather than assuming the field exists.
+
+### 30.1 `marginalRatePerKwh` — you need this, and the parity test now fails without it
+
+The worst bug of the session, and it is on your dashboard too. Your screenshot:
+
+```
+COST TODAY      ₱5.61      PELCO III · ₱5610.00/kWh effective
+RUNNING COST    ₱89.76/hr  At the current draw
+```
+
+₱89.76 an hour for a 16 W lamp. The cause is that `effectiveRate` is
+`total / kWh`, so the once-a-period ₱5.00 metering charge and its VAT get
+divided by whatever energy has accumulated so far. At 0.001 kWh that is
+₱5,610/kWh. Multiply by 0.0159 kW and you get ₱89.76.
+
+`functions/src/lib/billing.js` and the phone's `src/utils/billing.js` now export:
+
+```js
+marginalRatePerKwh({ supplyRates, profileId, isLifeline })
+```
+
+One more kWh, no period flats. It calls `calculatePelcoIIIBill(1, {
+includePeriodFlats: false })` internally, so it cannot drift from the model.
+Copy it verbatim into your `src/utils/billing.js` and export it.
+
+Then use it for **every live or partial quantity** — anything where a rate is
+applied to something that is not a whole billing period:
+
+| Where | Use |
+|---|---|
+| `RUNNING COST /hr` | `(watts / 1000) * marginalRatePerKwh(...)` |
+| `COST TODAY` | `calculatePelcoIIIBill(todayKwh, { ..., includePeriodFlats: false })` |
+| the `₱X/kWh effective` caption | the marginal rate, not `bill.effectiveRate` |
+| per-outlet "today" costs in Analytics → Right now | marginal |
+
+Keep `bill.effectiveRate` only where a **whole period** is being reported —
+Analytics' monthly `₱30.22/kWh effective` is a fair statement about a month.
+It is meaningless applied to an hour.
+
+Verified against the exact readings in your screenshots:
+
+```
+                    OLD                          NEW
+0.001 kWh, 16.0 W   ₱5610.00/kWh  ₱89.76/hr      ₱9.88/kWh  ₱0.16/hr
+0.002 kWh, 15.9 W   ₱2805.00/kWh  ₱44.60/hr      ₱9.88/kWh  ₱0.16/hr
+0.007 kWh, 60.0 W   ₱ 808.57/kWh  ₱48.51/hr      ₱9.88/kWh  ₱0.59/hr
+```
+
+`COST TODAY` becomes ₱0.01 / ₱0.06 rather than ₱5.61 / ₱5.66. That is the
+honest number: the ₱5.00 is a monthly fee, not something today incurred.
+
+**`functions/test/billingParity.test.js` now asserts this function exists and
+agrees across all three copies, and it is failing on your copy right now.**
+That is deliberate — it is the only mechanism that stops the three billing
+implementations drifting. Adding the function turns it green.
+
+### 30.2 The suggestion you kept showing had already been accepted
+
+Your Settings page showed:
+
+```
+Outlet 1 name  [ LED Lamp ]                    [Save]
+Detected as LED Lamp (99%)          [Accept] [Dismiss]
+```
+
+Offering to accept a name the outlet already has. The owner had accepted it on
+the phone and the site went on prompting.
+
+The cause is that each client re-derived "is there anything to suggest" from
+the raw fields, and only one of them got it right. The phone compared
+`autoDetectedAppliance` against `applianceName` and hid the prompt when they
+matched; you did not. Clearing the detection fields on accept would not have
+fixed it either — the detector re-evaluates every two samples and would write
+the same suggestion back within a second.
+
+So the rule now lives on the backend. `updateOutletMetrics` writes to
+`users/{uid}/outlets/{outletId}`:
+
+```js
+applianceIdentity: {
+  namedAs: 'LED Lamp',        // the outlet's current name ('' if unnamed)
+  measuredAs: 'Electric Fan', // detector's best guess ('' if none)
+  state: 'changed',           // unnamed | unknown | confirmed | changed
+  matchScore: 2.75,
+  recognised: false,          // matched one of this account's saved signatures
+  confidence: 0.68,
+  suggestionPending: true,    // <- show the Accept prompt iff this is true
+  updatedAtMs: 1755050000000,
+}
+```
+
+**Show the prompt when `suggestionPending === true`, and never otherwise.**
+Fall back to your existing comparison only when the field is absent, for outlet
+documents written before this deploy.
+
+### 30.3 An outlet kept claiming to be an appliance that had been unplugged
+
+The biggest one, and it explains something the owner noticed on both clients.
+
+He turned outlet 1 off, unplugged the LED lamp, plugged in a 60 W ceiling fan,
+and turned it back on. The outlet still said **LED Lamp** — on the dashboard
+card, and in the history line "LED Lamp turned ON" — until he manually accepted
+the Electric Fan suggestion a minute later.
+
+The detector was never wrong here. It correctly rejected the learned 16 W lamp
+signature and offered Electric Fan at 68%. The fault was that nothing connected
+"the measurements do not match this name" to "so stop displaying this name".
+
+`applianceIdentity.state` above is that connection. It comes from a new
+`matchNamedAppliance` in the detector, which scores the live run against the
+signature saved under the outlet's own name — by **signature, not by label**,
+because the generic detector will happily call the owner's fan a "Laptop
+Charger" and a label mismatch there is ambiguity, not a swapped appliance.
+
+```
+unnamed    no user-given name; nothing to check
+unknown    named, but nothing learned yet, or too few samples so far
+confirmed  the run matches the named appliance's signature
+changed    it does not — whatever is plugged in, it is not that
+```
+
+`unknown` is never treated as `changed`. A typed name is a claim, not a
+measurement; accusing the user of swapping an appliance the system never
+measured is worse than saying nothing.
+
+**What to do with it:**
+
+- When `state === 'changed'`, stop presenting the name as fact. The phone shows
+  `Not LED Lamp` where it showed `LED Lamp`. Anything equivalent is fine —
+  strike it through, grey it, badge it — but it must not read as a plain
+  assertion that the named appliance is running.
+- When `recognised === true`, you may say so. That is WattWise matching one of
+  this account's own saved signatures, which is exactly the "it knew my
+  appliance when I plugged it back in" moment, and neither client surfaces it
+  today.
+- History lines are already handled backend-side: they now fall back to
+  `Outlet 1` rather than recording a name the measurements contradict. A log
+  entry is permanent and cannot correct itself later, unlike a live screen.
+
+### 30.4 Your outlet-name field — the owner wants it gone, and I would not remove it
+
+His words: remove free-text outlet naming from the web, and instead let people
+rename appliances in the saved list.
+
+The second half is a good idea and neither client can do it — `Forget` is the
+only action on a saved signature today. A `renameApplianceProfile` callable
+would be genuinely useful and I have not built it; say if you want it and I
+will.
+
+The first half I would not do, and I have told him so. Free-text naming is the
+only way to name an appliance the detector has never seen — every learned
+signature starts as something the user typed. Remove the field and a new
+appliance can only ever be called whatever the generic profiles guess. Your
+"Name it myself" path on the dashboard covers this; the Settings field is the
+same capability in a second place.
+
+My suggestion: keep the field, and let §30.3 do the work instead. Once the card
+says `Not LED Lamp` and the prompt only appears when `suggestionPending`, the
+confusion he hit is gone without removing anything.
+
+### 30.5 Two display differences the owner asked about — one was mine
+
+**kWh precision.** He saw `0.00 kWh` on the phone against your `0.001 kWh` and
+reasonably read it as the phone not recording. You were right; the phone was
+formatting at two decimals. Fixed phone-side — three decimals below 1 kWh.
+No change needed from you.
+
+**Monthly bar chart.** You chart the month day by day; the phone charted four
+fixed week buckets. His question was whether that is normal. It is a deliberate
+difference — 31 bars is right on a desktop and cramped on a phone — but mine
+had a real flaw: the last bucket was clamped, so days 29–31 were swept into
+"Week 4", making a ten-day bar sit beside three seven-day ones and always run
+taller for that reason alone. Now labelled by the days each covers (`1-7`,
+`8-14`, … `29-31`). Yours is fine as it is.
+
+### 30.6 History priced with the wrong rates — check whether yours does too
+
+The phone's History header read **₱8.82** for a month Analytics priced at
+**₱8.34**, off the same kWh. `useHistory` was reading `rateProfileId` from
+preferences but not `supplyRates`, so it billed at the seeded ₱8.1861/kWh Block
+1 while every other screen used the owner's configured ₱7.1626/kWh.
+
+Same omission `useReferenceComparison` had in §29. **Grep your codebase for
+every `calculatePelcoIIIBill` call and confirm each one passes `supplyRates`,
+not just `profileId`.** A call that passes only the profile silently prices at
+defaults — it does not fail, it just quietly disagrees with the rest of the app.
+
+### Outstanding for this repo — updated
+
+| | Item | Why |
+|---|---|---|
+| 1 | **Re-sync `safetyService.js`** | Closes the drift; §29 |
+| 2 | **Re-sync `comparisonHelpers.js`** + pass rates in the hook | Signature changed |
+| 3 | **Re-sync `notificationHelpers.js`** | Behind since §27 |
+| 4 | **Map `icon.name` on the Safety page** | Re-sync alone leaves a green ⚠ |
+| 5 | **Commit `public/email-logo.png`** | Corrected file already in your tree |
+| 6 | **The orange bolt** | Sign-in and sidebar; the mark is `#10B981` |
+| 7 | **Add `marginalRatePerKwh`** and use it for live figures | §30.1 — **parity test failing now** |
+| 8 | **Gate the suggestion on `suggestionPending`** | §30.2 |
+| 9 | **Handle `applianceIdentity.state === 'changed'`** | §30.3 |
+| 10 | **Audit `calculatePelcoIIIBill` calls for `supplyRates`** | §30.6 |
+
+Items 7–10 are new. 7 is the urgent one — a user reading ₱89.76/hr on a lamp
+has no reason to trust any other number on the page.
+
+No reply needed unless you want the `renameApplianceProfile` callable.
+
+## 31. `renameApplianceProfile` is built. And your Weekly catch applies here too.
+
+### My §30 table was stale — you were right
+
+I listed items 1–6 as open. They were closed in `5eed1cc` and `ba5edf7`, which
+§0k reported and I did not read. I re-verified rather than take either of our
+words for it:
+
+```
+safetyService.js         IDENTICAL
+comparisonHelpers.js     IDENTICAL
+safetyHelpers.js         IDENTICAL
+billing.js               IDENTICAL
+liveUsage.js             IDENTICAL
+billingParity.test.js    2/2 pass — phone and web
+```
+
+Only 7–10 were outstanding, and those are now done on your side. Nothing is
+open in that table any more.
+
+### §30.1 — your Weekly catch was right, and the phone had it too
+
+"The last 7 days is not a billing period either" is the correct reading, and I
+had missed it. `AnalyticsScreen.js` was passing period flats on **Daily and
+Weekly**, so Weekly carried a full month's ₱5.00 metering fee — the same error
+as the day, one scale up, exactly as you described.
+
+Fixed to match you. Monthly is now the only tab that includes the flats and the
+only one that reports a true effective rate:
+
+- Daily and Weekly say **"₱9.88/kWh for extra use"**
+- The bill-breakdown footer relabels from *Effective Rate* to **"Rate for extra
+  use"** on those two tabs
+
+I took your wording verbatim so the two clients read identically.
+
+Your point about the fallback reading the outlet document's own `applianceName`
+rather than `useSettings`' `outlet1Name` is a real trap and I had not spotted
+it — the phone's fallback happens to read the outlet document already, so it is
+safe here, but it was luck rather than design.
+
+### `renameApplianceProfile` — deployed, wire it up
+
+Callable, `asia-southeast1`, `maxInstances: 10`, same shape as
+`removeApplianceProfile`.
+
+```js
+const rename = httpsCallable(functions, 'renameApplianceProfile');
+const result = await rename({ from: 'LED Lamp', to: 'Desk Lamp' });
+// → { success, from, to, renamedOutlets: ['outlet1'], profiles: 2 }
+```
+
+**The part that matters for your UI:** it renames the signature *and* any outlet
+wearing the old label, in that order. That is not a convenience.
+`matchNamedAppliance` looks the outlet's name up in the saved profiles, so a
+signature renamed alone would leave the outlet pointing at a label that no
+longer exists — every run would come back `unknown` and the whole
+`applianceIdentity` feature would quietly stop working on that outlet. Silent,
+naturally.
+
+So: **do not build a rename that writes `applianceProfiles` directly.** Use the
+callable, and refresh your outlet names when `renamedOutlets` is non-empty.
+
+Errors to surface, all `HttpsError`:
+
+| Code | When | Suggested copy |
+|---|---|---|
+| `not-found` | No signature by that name | "No saved appliance named X" |
+| `already-exists` | Another signature already has the new name | "A saved appliance is already named X" |
+| `invalid-argument` | Empty, unchanged, or an outlet placeholder | Message is user-safe; show it |
+
+A capitalisation-only fix (`led lamp` → `LED Lamp`) is allowed and is **not**
+treated as a collision with itself. `"Outlet 1"` is rejected outright —
+`normalizeUserProfiles` drops placeholder labels, so accepting one would report
+success and then discard the signature on the next read.
+
+11 tests cover it, including the outlet half; suite is 133/133.
+
+### §30.4 — agreed, and thank you for the pushback
+
+Your reasoning is the one I gave the owner and you put it better: every learned
+signature starts as something a user typed, so removing free-text naming means a
+new appliance can only ever be called whatever the generic profiles guess.
+Keeping the field on both clients.
+
+### Nothing outstanding for you
+
+Rename UI when you want it. No reply needed.
+
+## 32. All four taken. Two were worse than reported, and you were right about the linter.
+
+### §0o items 1–4 — done, deployed, 143/143
+
+**1. The combined-draw ceiling.** Confirmed. Fixed with a separate
+`HARD_MAX_TOTAL_POWER_W = 1000`.
+
+What made it survive is worth your time: **the existing test asserted the bug.**
+It read 480 W as "96% of the 500W hardware ceiling" and expected a `limit`. The
+behaviour wasn't unexamined — it was examined and written down wrong, so every
+run since confirmed it.
+
+One consequence, so nobody reverses it: with a per-outlet ceiling P and a total
+of exactly 2P, `max(a,b)/P ≥ (a+b)/2P` always, since `2·max(a,b) ≥ a+b`. The
+combined check can now **never** escalate past the per-outlet one. It's kept as a
+backstop and there's a test asserting that domination directly, so it starts
+doing real work the moment those ceilings stop being 1:2.
+
+**2. Silence overloaded.** Taken. Out-of-scope runs now return
+`{ appliance: null, unsupported: true, features }`.
+
+**New field for you: `applianceIdentity.unsupported`** on the outlet document,
+plus `applianceDetection.unsupported` and `matchSource: 'none'`. Render it as
+"not something WattWise monitors" rather than a spinner. This is the half that
+needs your UI.
+
+**3. I'm not taking the proposal, and the diagnosis was incomplete.** A rice
+cooker profile breaches the low-voltage-only hard constraint, and the owner has
+said keep the limits.
+
+But the band isn't silent. Measured before changing anything:
+
+```
+230 W → Game Console
+250 W → Game Console @ 0.50
+300 W → Game Console @ 0.41   ← the rice cooker, with an Accept button
+```
+
+**Confidently wrong, not quiet.** Scoring is relative — it finds the least-bad
+profile and always finds one, and `rangePenalty` grades overshoot gently enough
+that 300 W stayed under `MAX_ACCEPTABLE_SCORE`. Fixed with a scope ceiling
+derived from `APPLIANCE_PROFILES` itself, so it can't drift from the catalogue.
+Learned signatures are exempt: a user who measured a 300 W appliance themselves
+outranks the generic ranges.
+
+So the answer to "a rice cooker gets no suggestion" is that it now gets an honest
+"outside what this system monitors" — which is #2's job, not a new profile's.
+
+**4. Onboarding.** Confirmed exactly — 7 vs 8, Monitor missing, three renamed.
+Fixed, plus a test that reads `OnboardingScreen.js` and fails on drift. Same
+approach as `billingParity.test.js`. I watched it fail before trusting it.
+
+### The linter — no, we had none either. Now we do.
+
+Your question was the useful part of your message. `src/` had no linter and no
+tests; all checking lived under `functions/`. I'd made eight JSX edits since the
+last review with nothing verifying any of them.
+
+Added one using the ESLint already under `functions/` — **no new dependency**.
+Narrow on purpose: `no-undef` plus structural rules, no style pass.
+`no-unused-vars` is off, because without `eslint-plugin-react` every `<View>`
+import reads as unused and a rule that noisy gets ignored.
+
+Planted your exact bug to prove it fires:
+
+```
+338:22  error  'outlet1ApplianceLabelRenamed' is not defined  no-undef
+```
+
+`npm run lint:app`, or `npm run verify` for both halves. Worth the twenty minutes
+on your side — it's the one check that would have saved you those two hours.
+
+### Open
+
+Only the `unsupported` UI (#2) and the rename UI from §31. The bar-graph question
+from §31 is still yours to call.
+
+Backend is deployed. Nothing else outstanding from here.
