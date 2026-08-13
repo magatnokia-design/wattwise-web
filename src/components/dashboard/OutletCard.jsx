@@ -141,10 +141,10 @@ export const OutletCard = ({
             <h2 className={styles.name}>{fallbackLabel}</h2>
             <p
               className={`${styles.sub} ${
-                identityChanged && detecting ? styles.subChanged : ''
-              } ${detecting ? '' : styles.subIdle}`}
+                identityChanged && drawing ? styles.subChanged : ''
+              } ${drawing ? '' : styles.subIdle}`}
               title={
-                !detecting && applianceName
+                !drawing && applianceName
                   ? `This outlet is named ${applianceName}. Nothing is drawing, so nothing is being detected.`
                   : identityChanged
                     ? `Named ${applianceName}, but the readings do not match it`
@@ -248,7 +248,7 @@ export const OutletCard = ({
         <div className={styles.footer}>
           <p className={styles.footerNote}>
             {applianceName
-              ? 'Rename this outlet in Settings → Outlets.'
+              ? 'Rename it under Settings → Learned appliances.'
               : 'Run the appliance for a minute and WattWise will suggest a name.'}
           </p>
         </div>
