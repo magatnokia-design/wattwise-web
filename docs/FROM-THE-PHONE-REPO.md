@@ -1875,3 +1875,102 @@ section and diff the files before claiming anything is outstanding. If I hand yo
 a list without having done that, treat it as unverified.
 
 Nothing outstanding here.
+
+## 34. Three backend changes since §33 — only one needs code from you
+
+I checked your source rather than guessing, so this is what your files actually
+read, not what I assumed they read.
+
+### 1. The device command queue — transparent to you, no change
+
+`devices/{id}.lastCommandId` was a single field every dispatch overwrote, and
+`getDeviceCommand` followed it. Two commands issued inside one poll interval left
+only the later reachable; the earlier was written, never fetched, timed out, and
+emailed the owner about a delivery failure the system caused itself.
+
+From his activity log, both outlets switched off a second apart:
+
+```
+07:46  Outlet 1  OFF  54.7 W
+07:47  Outlet 1  OFF  54.2 W    ← off again, no ON in between
+```
+
+Same race that cut the wrong outlet during an auto-cutoff. I'd worked that around
+in `handleSafetyAlerts` and written "one command in every realistic case" in the
+comment. Two taps a second apart is realistic — I patched the symptom and left
+the cause in the most common action in the app.
+
+Now `pendingCommandIds` is an array, `arrayUnion` on dispatch, `arrayRemove` on
+ack or timeout, oldest served first, bounded scan, no composite index.
+
+**You only read `deviceData.lastAckStatus`** (`useSettings.js:141`,
+`userService.js:556`), which is unchanged — so nothing to do. One thing for
+later: if you ever add a "command pending" indicator, read `pendingCommandIds`
+rather than comparing `lastCommandId` against `lastAckCommandId`. That comparison
+is now wrong whenever more than one command is queued.
+
+### 2. `recognised` and `suggestionPending` changed meaning — no change, but read this
+
+Your rendering is right; the values behind it were wrong. Both fixes came out of
+the owner's Firestore document: outlet named "Speaker" (a signature learned from
+an LED lamp in an earlier test), run measured as "LED Lamp" from a second saved
+signature.
+
+- **`recognised`** was `matchSource === 'learned'`, which says the best match
+  anywhere was learned — not that the outlet's own name held up. It rendered
+  "Speaker · recognised" for an LED lamp. It now also requires
+  `state === 'confirmed'`.
+- **`suggestionPending`** was gated on `state === 'changed'` alone, so `unknown`
+  — named, but with no signature to check against — offered nothing. Forgetting a
+  signature stranded the outlet: still labelled "Speaker", measuring "LED Lamp",
+  no prompt. `unknown` means unverified, not fine.
+
+**Expect prompts where there were none**, on outlets whose name has no learned
+signature behind it. That is the fix, not a regression.
+
+Extracted to `buildApplianceIdentity` in the detector lib with seven cases — it
+had been wrong twice and was inline on the telemetry path with nothing to test
+it.
+
+### 3. This one is yours: the swapped-appliance hint
+
+**You don't have this** — I grepped, there's no equivalent string in `src/`.
+
+A detection run only ends when the outlet is switched **off**, or the draw falls
+under 3 W for three samples. A sustained level shift does **not** end it. So
+swapping appliances on a live outlet keeps one run going across both, and every
+figure from it blends the two:
+
+```
+lamp alone       mean 14.0            → LED Lamp        correct
+after the swap   mean 23  stdDev 17.3 → Speaker @ 0.84  wrong
+same fan, clean  mean 56  stdDev 0.5  → Electric Fan    correct
+```
+
+The blend doesn't just move the mean — it pushes the spread from 0.5 to 17.3, and
+erratic draw is a Speaker's entire signature. That's why a steady fan came back
+as a Speaker at 84%. On screen the outlet correctly read "Not LED LAMP" while
+offering a replacement measured from an appliance that was no longer plugged in.
+
+The owner hit this and reasonably concluded signatures were outlet-bound. They
+aren't — the measurements were just stale, and nothing said so.
+
+**Please add, wherever you render the suggestion, when
+`applianceIdentity.state === 'changed'`:**
+
+> Different appliance detected. Switch this outlet off and on to measure it on
+> its own — otherwise this reading still includes the last one.
+
+Phone wording is identical (`ApplianceSuggestion.js`). It's a workaround, not a
+fix — the run should restart itself on a sustained level shift, which needs a
+rolling window because a laptop charger genuinely swings 15↔60 W. The difference
+is that a charger swings *both ways* while a swap steps one way and holds.
+Recorded as a KNOWN LIMITATION in `applianceDetector.js` and in `CLAUDE.md`.
+
+### Also
+
+The 48 W auto-cutoff **fired correctly on hardware for the first time** — cut
+outlet 1 only, left outlet 2 running, both clients notified. That was the last
+never-working path in the project.
+
+Nothing else needs anything from you.
