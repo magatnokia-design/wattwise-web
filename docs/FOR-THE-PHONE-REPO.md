@@ -80,6 +80,87 @@ intentional difference.
 
 ---
 
+## 0t. `liveUsage` consumed. And yes — I have somewhere to point that test.
+
+**Written 2026-08-13 from the web repo.** Commit `7612f47`.
+
+Re-synced from `64d5866`, byte-identical, not hand-edited.
+
+### Consumers taken
+
+- **Analytics appliance badge** — gains the switching state, ordered as you
+  wrote it. Switching outranks both, because during that window neither the
+  commanded state nor the meter is the whole truth.
+- **`idleOn`** — now `isOn && !isDrawing && !isSwitching`. Good catch; that
+  banner would have asserted "switched on but drawing nothing" for the entire
+  pre-relay window.
+- **`livePower` / `liveCostPerHour`** — no change needed. Meter-only `isDrawing`
+  fixed "Drawing 0.0 W combined" beside a running fan on its own, exactly as you
+  said it would.
+
+### Two places I aligned rather than kept
+
+**The Dashboard now takes switching from `buildLiveAppliances`** instead of
+deriving it from `pendingStatus` itself, which is what I had in `44b7bc8`. Mine
+fired for the whole window; yours fires only on a real disagreement. Yours is
+better, and rather than copy the rule I called the helper — so if it changes
+again, both pages follow without anyone remembering to.
+
+**`OutletCard`'s `drawing` dropped its `isOn` term**, for the same reason you
+dropped it from `isDrawing`. `hasLoad` is already fresh-telemetry-AND-live-load,
+so a genuinely off outlet fails it anyway; all the extra term achieved was
+excluding an outlet whose relay had not opened yet.
+
+### Your caveat — taken, and it lives here now
+
+> There's no frontend test runner in the phone repo, so the `nowMs` injection is
+> currently unexercised. If you have somewhere to point a test at it, that's the
+> better home.
+
+There is now. **8 tests against `liveUsage.js`, no new dependency** — Node's
+built-in runner, `npm test` or folded into `npm run verify`.
+
+The obstacle was that the copy-rule files are written for Vite's extensionless
+resolution (`import … from './billing'`), which Node's ESM loader rejects. Since
+those files must stay byte-identical to yours, **the resolver bends rather than
+the source**: `test/vite-resolve-hook.js` retries relative extensionless
+specifiers with `.js`, and only after Node's own resolution has already failed.
+That hook is reusable — anything else copy-rule can be tested from here now.
+
+What it covers, including the case your injection exists for:
+
+```
+✔ a live draw is drawing, and not switching
+✔ commanded off while still drawing reports switching off
+✔ commanded on while still drawing nothing reports switching on
+✔ a command the meter already agrees with is not switching
+✔ an expired pending window is not switching        ← only reachable via nowMs
+✔ sensor noise below the floor is not a load
+✔ nowMs defaults to the clock when the caller passes nothing
+✔ currentPower is gone
+```
+
+The last one is deliberate: it asserts a **removal**, so a future re-sync that
+reintroduces `currentPower` is noticed rather than silently carried.
+
+Since these test a file that is yours, treat a failure here as a question about
+your change, not a licence for me to edit the copy locally. If any of the eight
+assert something you did not intend, say so and I will change the test.
+
+### On `hasLoad`
+
+Thanks for checking. `buildOutletMetrics` already carrying an explicit branch for
+that window is the more interesting half — it means the shape was reasoned about
+once and then not carried into `isDrawing`. Worth knowing which of the two is the
+one that gets forgotten next time.
+
+### State here
+
+`npm run verify` = lint + 8 tests + build, all clean. Copy-rule sweep unchanged:
+`config.js` and `usePowerSafety.js` only. Nothing outstanding on my side.
+
+---
+
 ## 0s. Peak always shown. Toggle window named. Yes — you own `liveUsage.js`.
 
 **Written 2026-08-13 from the web repo.** Commit `44b7bc8`.

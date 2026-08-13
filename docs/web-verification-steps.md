@@ -3,7 +3,153 @@
 Companion to `C:\App\WattWise\docs\cross-client-verification.md`, which owns the
 phone side.
 
-Two rounds. **Round 2 is today's**; Round 1 is kept below as the closed record.
+Three rounds. **Round 3 is next**; Rounds 1–2 are kept below as the closed record.
+
+---
+
+# Round 3 — appliance identity and the toggle window
+
+**Written 2026-08-13 for the next session.** Everything here is new since Round 2
+and **none of it has been seen on hardware yet**. Round 2 proved the numbers were
+right; this round is about whether the app stops asserting things it cannot know.
+
+### Before you start
+
+- **Hard-refresh (Ctrl+Shift+R).** Live bundle is `index-CbySESLM.js`; if
+  DevTools → Network shows anything else, you are testing yesterday's build.
+- ESP32 powered and reporting.
+- **Have a 230–500 W appliance ready** for Phase 3. Nothing already tested
+  reaches that band — the fan is ~55 W. **Stay under 500 W**: the firmware opens
+  the relay after 3 seconds above it.
+- Phone app optional. Only step 5 compares the two.
+
+---
+
+## Phase 1 — The toggle window (⭐ start here)
+
+The one most likely to show a defect, because it lasts only seconds and has
+never been watched deliberately.
+
+### 1. "Switching off…" on the Dashboard
+
+With a fan **running** on outlet 1, switch it **off** in the browser and watch
+the badge — not the switch.
+
+| Expect | Not |
+|---|---|
+| `Switching off…` (amber) while the wattage is still real | `Off` beside a live wattage |
+| then `Off` once the reading drops to 0 | `Switching off…` stuck for more than ~15 s |
+
+The window is short. If you miss it, toggle back on and try again.
+
+### 2. The line under the badge
+
+During that same window, the appliance line should **keep naming the appliance**.
+It must not read "No appliance detected yet" while watts are still flowing —
+that was the same bug one row down.
+
+### 3. "Switching on…"
+
+Switch the outlet **on** with the appliance plugged in but the relay not yet
+closed. Expect `Switching on…`, then `Drawing power`.
+
+⚠️ If the appliance is unplugged, expect `Switching on…` then `On, idle` — both
+correct.
+
+### 4. Analytics agrees
+
+Repeat step 1 with **Analytics → Right now** open. The appliance row should show
+the same `Switching off…`, and:
+
+- **"Drawing … W combined" must not read 0.0** while the fan still runs. That
+  number went to zero during this window, and took the per-hour cost with it.
+- The banner **"switched on but drawing nothing" must not appear** during a
+  switching-on window.
+
+---
+
+## Phase 2 — Peak power
+
+### 5. The peak is visible while the device is online
+
+Run the fan a minute, switch it off, go to **Analytics → Daily**.
+
+| Expect | Not |
+|---|---|
+| `Peak power` showing the day's high (~56 W) | `Drawing now` |
+| caption `Highest so far today` | `0.0 W` |
+
+The number should **stay** after the outlet is off. This is the fix for "I can't
+see peak power" — previously it only appeared once telemetry went stale.
+
+### 6. History agrees
+
+**History** → today's row → the **Peak** column should show the same number, not
+a dash and not the instantaneous draw.
+
+---
+
+## Phase 3 — Appliance identity (needs the 230–500 W load)
+
+### 7. ⭐ Unsupported
+
+Plug the 230–500 W appliance into a **freshly switched-on** outlet and let it run
+~1 minute.
+
+| Expect | Not |
+|---|---|
+| `Not something WattWise monitors` | `Detecting…` forever |
+| footer says usage and cost are still recorded | a suggestion with an Accept button |
+
+**This is the one to report if it fails.** Before this shipped, a 300 W load was
+confidently named "Game Console" at 41%.
+
+### 8. The swap hint
+
+With a **known appliance running** (fan, named and learned), swap it for a
+different one **without switching the outlet off**.
+
+Expect `Not <old name>` plus an amber box:
+
+> Different appliance detected. Switch this outlet off and on to measure it on
+> its own — otherwise this reading still includes the last one.
+
+Then follow its advice — switch off, switch on — and confirm the next suggestion
+is sensible. Before, a steady fan came back as "Speaker @ 84%" because the run
+still contained the lamp.
+
+### 9. More prompts than before
+
+Suggestion prompts now also appear on outlets whose name has no learned signature
+behind it. **This is a fix, not a regression** — forgetting a signature used to
+strand an outlet with a wrong name and no way to correct it.
+
+---
+
+## Phase 4 — Regression
+
+### 10. Nothing blanked
+
+Visit **every** page: Dashboard, Analytics, History, Compare, Budget, Safety,
+Settings. A blank panel with a red console error is the failure mode that shipped
+once already.
+
+### 11. Rename still works
+
+**Settings → Learned appliances → Rename.** Confirm the outlet wearing that name
+follows it.
+
+---
+
+## Don't chase
+
+| Looks wrong | Actually |
+|---|---|
+| `Switching…` never appears | The relay beat the round trip. Only a real disagreement sets it. |
+| Peak hour missing for today | Deliberate — the nightly rollup fills it in. |
+| Analytics has no "Drawing now" tile | Removed on purpose; the Dashboard shows it three times. |
+| Outlet 2 says "No appliance detected yet" | Correct when nothing is plugged in. |
+| Email header shows ⚡ instead of the mark | Phone-side redeploy, unrelated. |
 
 ---
 
