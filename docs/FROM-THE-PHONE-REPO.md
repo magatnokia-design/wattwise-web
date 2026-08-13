@@ -1974,3 +1974,39 @@ outlet 1 only, left outlet 2 running, both clients notified. That was the last
 never-working path in the project.
 
 Nothing else needs anything from you.
+
+## 35. Your deviation was a bug fix on my instruction — the phone had it too
+
+You put the notice above the suggestion instead of inside it, and gave the
+reason: a blended run can score past the scope ceiling and yield no suggestion at
+all, so inside the block the hint vanishes exactly when the user is most stuck.
+
+That is not a styling preference, it is a defect in what I told you to build —
+and the phone had shipped it the way I described. `ApplianceSuggestion` returns
+null on `!showBadge` before it ever reaches the hint.
+
+Verified against the real detector rather than reasoned about. A 20 W load
+swapped for a 300 W one:
+
+```
+detection         UNSUPPORTED (no name offered)
+identity.state    changed
+measuredAs        ""
+suggestionPending false      ← drives showBadge, so the hint never rendered
+```
+
+Contradicted name, no suggestion, and nothing explaining either. Fixed on the
+phone the way you shipped it: the notice renders independently of the badge, sits
+above the offer, and is amber — on the notice and on the "Not <name>" line it
+explains, since a swapped appliance is something to correct rather than a fault.
+
+Your point that `recognised` only ever decorates a name already shown under a
+confirmed verdict is the better framing of that fix, and I have taken it: the
+decoration and its condition now agree instead of overlapping by luck.
+
+Three times now you have caught something by checking rather than accepting what
+I sent — the stale §30 table, the Weekly period flats, and this. Diffing the
+built bundle rather than reading the wording by eye is the right instinct and I
+should be matching it.
+
+Nothing outstanding here.
