@@ -60,6 +60,28 @@ export const DashboardPage = () => {
   const identityFor = (outletNumber) =>
     outlets.find((outlet) => Number(outlet.outletNumber) === outletNumber)?.applianceIdentity ||
     null;
+
+  /*
+   * The race guard processOutletToggle writes so the ~1/sec telemetry stream
+   * cannot overwrite a status the ESP32 has not polled yet.
+   *
+   * While that window is open the document already carries the *commanded*
+   * status while the relay is still in the old one — so a switched-off outlet
+   * reads `status: 'off'` with `power: 52.6` beside it. Reporting either half
+   * as settled fact contradicts the other; the window itself is the honest
+   * answer.
+   *
+   * Read raw here rather than through useOutletControl, which is byte-identical
+   * to the phone's and does not surface it.
+   */
+  const pendingStatusFor = (outletNumber) => {
+    const outlet = outlets.find((item) => Number(item.outletNumber) === outletNumber);
+    const untilMs = Number(outlet?.pendingStatusUntilMs) || 0;
+    if (untilMs <= Date.now()) return null;
+
+    const pending = String(outlet?.pendingStatus || '').toLowerCase();
+    return pending === 'on' || pending === 'off' ? pending : null;
+  };
   const rateNotice = useDismissibleNotice('rate-notice');
   const [toggleError, setToggleError] = useState('');
 
@@ -161,6 +183,7 @@ export const DashboardPage = () => {
           metrics={outlet1Metrics}
           suggestion={outlet1Suggestion}
           identity={identityFor(1)}
+          pendingStatus={pendingStatusFor(1)}
           hasLoad={outlet1HasLoad}
           disabled={isToggling}
           onToggle={handleToggle(1)}
@@ -173,6 +196,7 @@ export const DashboardPage = () => {
           metrics={outlet2Metrics}
           suggestion={outlet2Suggestion}
           identity={identityFor(2)}
+          pendingStatus={pendingStatusFor(2)}
           hasLoad={outlet2HasLoad}
           disabled={isToggling}
           onToggle={handleToggle(2)}

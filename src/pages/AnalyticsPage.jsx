@@ -115,23 +115,33 @@ export const AnalyticsPage = () => {
         {/* Daily shows watts, the other tabs kWh — so label, value and unit are
             set together rather than a shared unit that only fits one of them. */}
         <StatTile
-          label={tab === 'Daily' ? (showLive ? 'Drawing now' : 'Peak power') : 'Daily average'}
-          /* The label already switched on showLive; the value has to switch with
-             it. It did not, and read peakPowerW either way — harmless only while
-             peakPower *was* the instantaneous max. Now that the backend tracks a
-             real daily high, leaving this alone would put the day's peak under a
-             "Drawing now" heading. Two labels, two fields. */
+          /* Always the peak on this tab, never the live draw.
+             It used to switch to "Drawing now" whenever telemetry was fresh,
+             which meant the day's peak only ever rendered once the hardware went
+             quiet - the number this tile exists for was hidden for exactly as
+             long as the device was working. The peak is a property of the day,
+             and this is the page about the day.
+             Live draw is not lost: the Dashboard shows it three times over, in
+             the combined tile and on both outlet cards. */
+          label={tab === 'Daily' ? 'Peak power' : 'Daily average'}
           value={
             tab === 'Daily'
-              ? (showLive ? summary.currentPowerW : summary.peakPowerW).toFixed(1)
+              ? summary.peakPowerW.toFixed(1)
               : summary.averageUsage.toFixed(3)
           }
           unit={tab === 'Daily' ? 'W' : 'kWh'}
+          /* `isLive`, not `showLive`: a day still in progress has a peak that can
+             still be beaten, and that stays true while the hardware is quiet.
+             Gating on freshness would call today's running high final the moment
+             telemetry paused. Today's peak hour is deliberately unreported - the
+             nightly rollup fills it in from peakPowerTodayAtMs. */
           caption={
             tab === 'Daily'
-              ? summary.peakHour === 'N/A'
-                ? 'Highest of the two outlets'
-                : `Peak hour ${summary.peakHour}`
+              ? isLive
+                ? 'Highest so far today'
+                : summary.peakHour === 'N/A'
+                  ? 'Highest of the two outlets'
+                  : `Peak hour ${summary.peakHour}`
               : 'Across the period'
           }
         />

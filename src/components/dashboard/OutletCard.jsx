@@ -35,6 +35,9 @@ export const OutletCard = ({
   // through useOutletControl, which is byte-identical to the phone's copy and
   // does not surface `namedAs`.
   identity,
+  // 'on' | 'off' | null — a toggle the ESP32 has not picked up yet. See
+  // pendingStatusFor in DashboardPage.
+  pendingStatus,
   hasLoad,
   disabled,
   onToggle,
@@ -76,7 +79,22 @@ export const OutletCard = ({
    * after choosing Speaker. A verdict about a name the outlet no longer wears is
    * not evidence about the one it does.
    */
-  const drawing = isOn && hasLoad;
+  /*
+   * A toggle in flight. `status` already reads the commanded value while the
+   * relay is still in the old one, so for this window neither "On" nor "Off" is
+   * a true statement — the transition is.
+   */
+  const switching = pendingStatus === 'on' || pendingStatus === 'off' ? pendingStatus : null;
+
+  /*
+   * `|| switching === 'off'` covers the same window from the other side.
+   * `hasLoad` is fresh-telemetry-AND-live-load and never consulted `isOn`, so an
+   * outlet commanded off with the relay still closed reports a real 52.6 W while
+   * `isOn` is already false. Without this the appliance line reads "No appliance
+   * detected yet" directly above that number — the identical contradiction the
+   * badge had, one line further down.
+   */
+  const drawing = (isOn || switching === 'off') && hasLoad;
   const hasIdentity = typeof identity?.state === 'string';
 
   const identityIsCurrent =
@@ -201,8 +219,18 @@ export const OutletCard = ({
         </div>
 
         <div className={styles.controls}>
-          <Badge tone={isOn ? (hasLoad ? 'good' : 'warn') : 'neutral'}>
-            {isOn ? (hasLoad ? 'Drawing power' : 'On, idle') : 'Off'}
+          <Badge
+            tone={switching ? 'warn' : isOn ? (hasLoad ? 'good' : 'warn') : 'neutral'}
+          >
+            {switching
+              ? switching === 'on'
+                ? 'Switching on…'
+                : 'Switching off…'
+              : isOn
+                ? hasLoad
+                  ? 'Drawing power'
+                  : 'On, idle'
+                : 'Off'}
           </Badge>
           <Switch
             checked={isOn}
