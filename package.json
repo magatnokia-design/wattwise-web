@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint src",
+    "verify": "npm run lint && npm run build"
   },
   "dependencies": {
     "firebase": "^12.11.0",
@@ -18,6 +20,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.39.5",
+    "globals": "^17.11.0",
     "vite": "^6.0.7"
   }
 }

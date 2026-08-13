@@ -89,17 +89,33 @@ export const OutletCard = ({
   const verdict = !hasIdentity ? 'legacy' : identityIsCurrent ? identity.state : 'stale';
   const identityChanged = verdict === 'changed' && !!applianceName;
 
+  /*
+   * `unsupported` is the detector saying the run scored past the scope ceiling
+   * derived from APPLIANCE_PROFILES - it is not a low-voltage appliance this
+   * system monitors. Before it existed the run came back as a bare null, which
+   * rendered as "Detecting…" forever, and before *that* the scoring found the
+   * least-bad profile and called a 300 W load a Game Console at 41% with an
+   * Accept button under it. See FROM-THE-PHONE-REPO.md §32.2.
+   *
+   * It outranks `changed`: both say the stored name is wrong, but only this one
+   * says why, and "Not Speaker" invites the user to pick a replacement that does
+   * not exist in the catalogue.
+   */
+  const unsupported = drawing && identity?.unsupported === true;
+
   const applianceLine = !drawing
     ? 'No appliance detected yet'
-    : identityChanged
-      ? `Not ${applianceName}`
-      : verdict === 'confirmed' && applianceName
-        ? identity.recognised
-          ? `${applianceName} · recognised`
-          : applianceName
-        : verdict === 'legacy' && applianceName
-          ? applianceName
-          : 'Detecting…';
+    : unsupported
+      ? 'Not something WattWise monitors'
+      : identityChanged
+        ? `Not ${applianceName}`
+        : verdict === 'confirmed' && applianceName
+          ? identity.recognised
+            ? `${applianceName} · recognised`
+            : applianceName
+          : verdict === 'legacy' && applianceName
+            ? applianceName
+            : 'Detecting…';
 
   /*
    * Naming is suggestion-only, by the owner's decision.
@@ -141,14 +157,20 @@ export const OutletCard = ({
             <h2 className={styles.name}>{fallbackLabel}</h2>
             <p
               className={`${styles.sub} ${
-                identityChanged && drawing ? styles.subChanged : ''
+                unsupported
+                  ? styles.subUnsupported
+                  : identityChanged && drawing
+                    ? styles.subChanged
+                    : ''
               } ${drawing ? '' : styles.subIdle}`}
               title={
-                !drawing && applianceName
-                  ? `This outlet is named ${applianceName}. Nothing is drawing, so nothing is being detected.`
-                  : identityChanged
-                    ? `Named ${applianceName}, but the readings do not match it`
-                    : undefined
+                unsupported
+                  ? 'The readings do not match any appliance WattWise monitors. It covers low-voltage devices up to 500 W per outlet. Usage and cost are still recorded.'
+                  : !drawing && applianceName
+                    ? `This outlet is named ${applianceName}. Nothing is drawing, so nothing is being detected.`
+                    : identityChanged
+                      ? `Named ${applianceName}, but the readings do not match it`
+                      : undefined
               }
             >
               {applianceLine}
@@ -191,7 +213,11 @@ export const OutletCard = ({
 
       {/* Suggestion-first: the detector proposes, the user confirms. Nothing
           here renames anything on its own. */}
-      {suggestion?.showBadge ? (
+      {/* `&& !unsupported` is belt-and-braces: the backend sets appliance to
+          null for an out-of-scope run, so suggestionPending should already be
+          false. Offering "This looks like X" directly under "Not something
+          WattWise monitors" would contradict itself, so guard it here too. */}
+      {suggestion?.showBadge && !unsupported ? (
         <div className={styles.suggestion}>
           <div className={styles.suggestionHead}>
             <span aria-hidden="true">💡</span>
@@ -247,9 +273,14 @@ export const OutletCard = ({
            waits for one rather than inviting a name the app cannot verify. */
         <div className={styles.footer}>
           <p className={styles.footerNote}>
-            {applianceName
-              ? 'Rename it under Settings → Learned appliances.'
-              : 'Run the appliance for a minute and WattWise will suggest a name.'}
+            {/* Naming advice would be wrong here: there is no profile to offer
+                and no signature worth learning. Say what is still true instead
+                — metering is unaffected, only identification is. */}
+            {unsupported
+              ? 'WattWise identifies low-voltage appliances up to 500 W. Usage and cost are still being recorded.'
+              : applianceName
+                ? 'Rename it under Settings → Learned appliances.'
+                : 'Run the appliance for a minute and WattWise will suggest a name.'}
           </p>
         </div>
       )}

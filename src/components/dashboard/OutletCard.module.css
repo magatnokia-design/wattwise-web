@@ -76,6 +76,15 @@
   font-weight: 600;
 }
 
+/* Out of scope for the detector. Deliberately NOT amber: nothing is wrong and
+   nothing needs fixing - the appliance is simply outside the catalogue, and
+   metering carries on regardless. Muted and italic reads as a statement of
+   scope rather than a fault the user is expected to act on. */
+.subUnsupported {
+  color: var(--ww-text-light);
+  font-style: italic;
+}
+
 .controls {
   display: flex;
   align-items: center;
