@@ -1,15 +1,194 @@
-# Web verification — the six untested paths
+# Web verification
 
-Companion to `C:\App\WattWise\docs\cross-client-verification.md`. That file owns
-the two cross-client checks; this one owns the web side and the four web-only
-paths nobody has run.
+Companion to `C:\App\WattWise\docs\cross-client-verification.md`, which owns the
+phone side.
 
-Order is from `FROM-THE-PHONE-REPO.md` §22 and is not arbitrary — 1 proves the
-premise of the project, 6 only matters after something else has already broken.
+Two rounds. **Round 2 is today's**; Round 1 is kept below as the closed record.
 
-**Before you start.** Sign in at `www.wattwise.site`, ESP32 powered, phone app
-open beside you. Open the browser console (**F12** → Console) and leave it open
-for all six — three of these fail silently in the UI and say so only there.
+---
+
+# Round 2 — load testing with real appliances
+
+**2026-08-13.** The first run against genuine current draw. Everything before
+this was verified on a near-idle device, which means the paths that only exist
+under load — stage escalation, auto-cutoff, rollup pricing — have never
+executed with real numbers.
+
+Run the phases in order; each assumes the one before it passed.
+
+### Before you start
+
+- **Hard-refresh `www.wattwise.site`** (**Ctrl+Shift+R**). Yesterday's bundle
+  may still be cached, and every UI check below is against the new one.
+- ESP32 powered and reporting.
+- **Rebuild and reinstall the phone app first** — see step 11 for why the bill
+  check fails without it.
+- Browser console open (**F12** → Console). Several of these fail silently in
+  the UI and say so only there.
+
+---
+
+## Phase 1 — Baseline
+
+### 1. Live telemetry
+
+Sit on the Dashboard and touch nothing.
+
+- **Pass:** wattage changes on its own.
+- **Fail:** frozen numbers → `onSnapshot` is down, and nothing below this line
+  means anything until it is fixed.
+
+### 2. ⭐ Power Safety shows real readings
+
+**The highest-value check of the day.** This page shipped last night and has
+never once been observed working. Every previous look at it happened while the
+device was quiet, so the only state anyone has seen is `—`.
+
+- **Pass:** real V / A / W with green "Normal" chips.
+- **Fail:** still `—` while the Dashboard shows live data → the 12-second
+  freshness window is wrong, and the page is now hiding readings that exist.
+
+Expect the numbers to **step every ~15 s** rather than flow. That is correct —
+see the don't-chase list.
+
+### 3. Cross-client toggle
+
+Toggle **Outlet 1** from the browser.
+
+- **Pass:** the switch moves instantly, the relay clicks within 1–3 s, the phone
+  follows within about a second of the relay.
+- This is the check that proves the premise of the whole project.
+
+---
+
+## Phase 2 — Last night's UI, on real data
+
+### 4. Compare Months
+
+Drag the **August** chip into the **left** slot.
+
+- **Pass:** the rail assigns it, and the PELCO III bill check reappears below.
+- The bill check only ever grades whichever month sits in **Month**, so with
+  August on the right it stays hidden. That is inherited behaviour, not a rail
+  bug.
+
+### 5. Analytics width
+
+Monthly tab.
+
+- **Pass:** noticeably wider and taller than the Power Safety page — Analytics
+  and Compare Months are capped at 1680px, everything else at 1400px.
+
+---
+
+## Phase 3 — Safety stages
+
+**Do not test these by adding load.** Lower the threshold instead. It is the
+same code path, and trying to trip a 500 W limit with real appliances means
+deliberately pushing heavy current through the setup to learn nothing extra.
+
+### 6. Setup
+
+Plug the fan into Outlet 1, let the reading settle, and **note its actual draw**
+— call it `D`. Auto cut-off **on**.
+
+### 7. Walk the ladder
+
+Stages are **ratio-based**, not absolute, so one threshold will not produce the
+sequence. `stageFromRatio` in `functions/src/lib/powerSafety.js`:
+
+| Stage | Fires at | Threshold to set for a draw of `D` | 45 W fan |
+|---|---|---|---|
+| ⚠️ Power Warning | ratio ≥ **0.80** | `D / 0.8` | **56 W** |
+| ⚡ Safety Limit Reached | ratio ≥ **0.95** | `D / 0.95` | **47 W** |
+| 🔴 Auto-Cutoff | ratio ≥ **1.00** | just under `D` | **44 W** |
+
+Step the threshold **down** through those three values, pausing at each for the
+stage to settle.
+
+A single 40 W max against a 45 W fan is ratio 1.125 — it jumps **straight to
+cutoff** and you never see the two stages in between.
+
+- **Pass:** each stage announces itself, and 🔴 opens the relay.
+- **You have never seen 🔴.** Cut-off is a separate stage from "limit reached",
+  which is why the two carry different icons.
+- Over-**voltage** escalates to `limit` and never to `cutoff`, deliberately: a
+  supply problem is not fixed by switching the load off.
+
+---
+
+## Phase 4 — ⭐ The cross-repo fix
+
+The bug that spanned both projects. Only two clients can prove it.
+
+### 8. Alert history survives the phone app
+
+With an alert showing on the web, **open the phone app**, then return and reload
+Power Safety.
+
+- **Pass:** the history is still there.
+- **Fail:** empty → the phone's `initializePowerSafety` fix did not make it into
+  the installed build.
+
+### 9. No phantom "Back to Normal"
+
+With the device sitting at **limit**, open the phone app.
+
+- **Pass:** no "Back to Normal" alert, and **no email**.
+- **Fail:** a phantom one arrives → `currentStage` is still being reset on
+  launch, which is the louder half of the same bug.
+
+---
+
+## Phase 5 — Load and money
+
+### 10. Rollups under real usage
+
+Run an appliance for 30+ minutes.
+
+- **Pass:** kWh accumulates on Analytics and the cost tracks it.
+
+### 11. Bill parity — rebuild the phone first
+
+**This will fail against a stale APK, and that failure is not billing.js
+diverging.**
+
+`comparisonHelpers.js` was re-synced here at `4e2d8da`, which stopped
+`summarizeDailyEntries` from summing stored daily costs. An installed build
+predating that commit still sums them, drops the once-a-month ₱5.00 metering
+charge, and reads **₱5.60 low**. Rebuild and reinstall before comparing.
+
+- **Pass:** web and phone agree **to the centavo**.
+- **Fail after a rebuild:** then it is a real divergence — `billing.js` exists
+  in three copies that must agree.
+
+### 12. Budget threshold
+
+- **Pass:** the notification fires and appears on both clients.
+
+---
+
+## Don't chase these — all correct
+
+| Looks wrong | Why it isn't |
+|---|---|
+| Power Safety readings step every ~15 s while the Dashboard flows | `READING_WRITE_INTERVAL_MS` — the safety document persists readings at most every 15 s, because writing per telemetry post would re-fire `handleSafetyAlerts` once a second |
+| Settings says "Online", Analytics says "not reporting" | Health tracks *command polling*; Analytics tracks *telemetry*. Both true |
+| 240 V with 0.00 A while the relay is off | The PZEM sits on the mains side. A real measurement |
+| Auto-cutoff does not fire at "Limit Reached" | Cut-off is the next stage up, at ratio ≥ 1.0 |
+| Per-day costs smaller than they used to be | Daily costs are marginal now; the metering charge belongs to the month |
+| History rows from before the deploy keep inflated costs | They were written under the old maths and are not rewritten |
+| Power Safety shows `—` | Correct whenever the device is genuinely quiet |
+| Emails show ⚡ instead of the bolt mark | `MAIL_LOGO_URL` is set in `functions/.env` but the deployed revision predates it. Cosmetic, and the fallback is deliberate — redeploy functions to fix |
+| `usePowerSafety.js` differs from the phone | The documented §22 divergence: 12 s here on `metricsUpdatedAtMs`, 40 s there on `lastReadingWriteMs` |
+
+---
+
+# Round 1 — the six untested paths
+
+**Closed 2026-08-12. All six passed.** Order was from `FROM-THE-PHONE-REPO.md`
+§22 — 1 proves the premise of the project, 6 only matters after something else
+has already broken.
 
 ---
 
