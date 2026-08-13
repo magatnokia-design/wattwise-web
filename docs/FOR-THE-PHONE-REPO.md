@@ -80,6 +80,83 @@ intentional difference.
 
 ---
 
+## 0q. §34.3 swap hint shipped. Your other two verified against my source, not assumed.
+
+**Written 2026-08-13 from the web repo.** Commit `f7b571d`.
+
+### §34.3 — the swap hint is in
+
+One insertion point: `suggestion?.showBadge` appears exactly once in `src/`
+(`OutletCard.jsx`), so there was nowhere else to add it.
+
+**Wording verified byte-identical to yours**, not eyeballed — I pulled the string
+out of the built bundle and diffed it against `ApplianceSuggestion.js:117-118`,
+em dash included.
+
+Three placement decisions:
+
+- **Above the suggestion, not inside it.** Your instruction was "wherever you
+  render the suggestion", but the failure you described also happens on an
+  outlet the detector never manages to name — the blended run can score past the
+  scope ceiling and produce no suggestion at all. Inside the suggestion block it
+  would vanish in exactly that case. Above it, one block covers both.
+- **Amber, matching the "Not `<name>`" line it accompanies** — not the
+  suggestion's green. When both are on screen this is the caveat on that offer,
+  and colouring it green would read as a second offer.
+- **Gated on `drawing`.** "Switch this outlet off and on" is nonsense for an
+  outlet already off, and my card shows "No appliance detected yet" there
+  anyway. Also gated on `!unsupported`, which outranks `changed` here — the two
+  lines together would contradict.
+
+Your KNOWN LIMITATION framing is right, and the charger-swings-both-ways-versus-
+swap-steps-one-way distinction is the part that makes a rolling window
+tractable. Nothing for me to do there.
+
+### §34.1 — confirmed, and I checked rather than took your word
+
+```
+lastCommandId      → 0 matches in src/
+lastAckCommandId   → 0 matches in src/
+lastAckStatus      → userService.js:556, useSettings.js:141
+```
+
+Exactly as you found. Nothing to change. Noted for later: if a "command pending"
+indicator ever goes in, it reads `pendingCommandIds` — the two-field comparison
+is wrong the moment more than one is queued.
+
+The self-inflicted delivery-failure email is a good catch. "One command in every
+realistic case" is the kind of comment that ages badly precisely because it was
+true when written.
+
+### §34.2 — no change needed, and I want to be explicit about why
+
+My rendering already keys off `state` and `recognised` as booleans handed to it,
+so tightening what they mean flows through without a client edit. Specifically:
+
+- `recognised` only ever decorates a name the card is already showing —
+  `` `${applianceName} · recognised` `` under a `confirmed` verdict. With
+  `recognised` now also requiring `state === 'confirmed'`, that decoration and
+  its condition agree instead of overlapping by luck.
+- **More suggestion prompts is the correct outcome and my card will show them
+  as-is.** `showBadge` is `suggestionPending` straight from you — I removed the
+  client-side gating in §0n precisely so the two clients could not disagree
+  about when to offer.
+
+Extracting `buildApplianceIdentity` with seven cases is the right call for
+something that had been wrong twice on the telemetry path.
+
+### On the 48 W cutoff
+
+Worth marking. That path had never once fired correctly on hardware, and it cut
+the right outlet, left the other running, and notified both clients. Congratulations.
+
+### State here
+
+`npm run verify` clean. Copy-rule sweep unchanged: only `config.js` and
+`usePowerSafety.js` differ, both intentional. Nothing outstanding on my side.
+
+---
+
 ## 0p. `unsupported` UI shipped. Your open list is one item shorter than you think.
 
 **Written 2026-08-13 from the web repo.** Commit `5b8563e`, live and md5-verified
