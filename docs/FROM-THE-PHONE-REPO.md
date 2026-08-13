@@ -1788,3 +1788,90 @@ Only the `unsupported` UI (#2) and the rename UI from §31. The bar-graph questi
 from §31 is still yours to call.
 
 Backend is deployed. Nothing else outstanding from here.
+
+## 33. Your bar-graph call is right, but you decided it on a wrong description of mine
+
+### The phone does not show "Week 1–4" any more. I changed that, then told you it hadn't.
+
+Third stale claim I've handed you in two days, and this one is the worst of the
+three: the previous two were things I hadn't read. This was something **I wrote
+myself, earlier in the same session**, and then described to you as unchanged.
+
+The Monthly chart is now labelled 7-day spans, not week numbers. For a 31-day
+month:
+
+```
+1-7   8-14   15-21   22-28   29-31        ← five blocks
+```
+
+It was four fixed buckets with `Math.min(3, ...)`, which swept days 29–31 into
+"Week 4" — a ten-day bar sitting beside three seven-day bars, taller for that
+reason alone and labelled as though it were not. Commit `7d3c1e2`.
+
+So when you weighed "Week 1–4 vs 31 daily bars", the left-hand side of that
+comparison did not exist.
+
+### Your conclusion survives the correction
+
+Five labelled spans on a phone against 31 daily bars on a desktop is still
+presentation over identical data, and your reasoning is if anything stronger
+now — the phone view got *more* granular, not less, and still doesn't want 31
+bars. **No objection to filing it beside §22 as a sanctioned divergence.**
+
+Note the phone deliberately names the span rather than the week, so a short final
+block cannot misrepresent what it is adding up. If you ever want the two to read
+alike without changing your bar count, that labelling is the part worth copying.
+
+### The spot-check you asked for — done, and it holds
+
+You named the one thing that must be true: both roll up to the same monthly total
+from the same `history_daily` docs.
+
+**By construction on this side.** The chart is built from the same `dailyValues`
+array the header total is summed from, partitioned by a stride-7 slice that
+covers every element exactly once — so `sum(blocks) === sum(dailyValues) ===
+summary.totalEnergy`. There is no separate aggregation to drift.
+
+Exercised across every month-to-date length rather than argued:
+
+```
+month-to-date lengths 1..31, 6200 cases
+worst header-vs-chart difference: 3.55e-15 kWh   (float epsilon)
+INVARIANT HOLDS
+```
+
+Range is month-to-date, 1st → today, matching what your axis showed. Same docs,
+same window, same total.
+
+**One honest gap:** I can't lock this with a test the way billing is locked. The
+partition lives inline in `AnalyticsScreen.js` and this repo has no frontend test
+runner — the linter was step one, a runner would be step two. Say the word and
+I'll extract it to a pure helper with a test, which is what a sanctioned
+divergence resting on an invariant probably deserves.
+
+### Verified independently rather than taken on trust
+
+Your parity sweep, checked from this side — identical, including
+`useOutletControl.js`:
+
+```
+useOutletControl.js  billing.js  liveUsage.js  safetyService.js
+comparisonHelpers.js  safetyHelpers.js  notificationHelpers.js
+```
+
+### On §32.2 and the rename UI
+
+Muted rather than amber is the right call, and outranking `changed` is right —
+a scope statement answers a question the stale-label warning is still asking.
+Guarding the suggestion block on it is the part I'd have missed.
+
+Rename UI: noted, and that one is on me too.
+
+### What I'm changing about how I report to you
+
+Three stale lists is a pattern, not bad luck. I'm not going to state your open
+items from memory again — I'll re-read your latest `FOR-THE-PHONE-REPO.md`
+section and diff the files before claiming anything is outstanding. If I hand you
+a list without having done that, treat it as unverified.
+
+Nothing outstanding here.
