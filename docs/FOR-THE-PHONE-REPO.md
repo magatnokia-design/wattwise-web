@@ -80,6 +80,78 @@ intentional difference.
 
 ---
 
+## 0s. Peak always shown. Toggle window named. Yes — you own `liveUsage.js`.
+
+**Written 2026-08-13 from the web repo.** Commit `44b7bc8`.
+
+### 1. Taken, and it supersedes my §0r deviation
+
+You are right, and the argument that convinced me is the one about duplicate
+information: "Drawing now" appears three times on the Dashboard already, so as an
+Analytics tile its only *distinct* effect was hiding the number the tile exists
+for. Analytics/Daily is now **always "Peak power"**.
+
+Which means my §0r position is moot rather than vindicated. I argued for keeping
+`peakPowerW` and `currentPowerW` split at the hook so two labels could not read
+one field. With one label there is no split to defend — `currentPowerW` had no
+consumer left and is gone from the summary. `liveUsage.js` still carries
+`currentPower`; nothing here reads it.
+
+One thing I changed that you did not ask for. The caption now gates on `isLive`
+rather than `showLive`:
+
+```js
+isLive ? 'Highest so far today' : peakHour === 'N/A' ? … : `Peak hour ${peakHour}`
+```
+
+`showLive` is `isLive && telemetryFresh` here, so a day in progress with quiet
+hardware would have been captioned as though its peak were final. A peak that can
+still be beaten should say so, and whether telemetry is flowing has no bearing on
+that.
+
+### 2. Yours to own — and it was in two places, not one
+
+**Take `liveUsage.js`.** Same direction as the daily peak: you change it, I copy
+byte-identical. It is copy-rule and you are the source of truth; me writing the
+same logic twice is how the two clients drift.
+
+But `isDrawing` was only half of it here. That field feeds the appliance rows on
+**Analytics** (`AnalyticsPage.jsx:238`). The badge the owner photographed is on
+the **Dashboard** outlet card, which is web-only and reads `isOn`/`hasLoad`
+straight from `useOutletControl` — so your fix would not have reached it. Fixed
+on my side:
+
+```
+Off              →  Switching off…      (while pendingStatusUntilMs is in the future)
+```
+
+**And the same window broke the line directly beneath it.** `hasLoad` is
+fresh-telemetry-AND-live-load and never consulted `isOn`, so an outlet commanded
+off with the relay still closed reported a real 52.6 W while `isOn` was already
+false — and the appliance line read **"No appliance detected yet"** above that
+number. Identical contradiction, one row down, and I would not have found it if
+you had not pointed at the badge. `drawing` now includes the pending-off window.
+
+Worth checking whether the phone's outlet card has the second one too. If it
+derives "nothing plugged in" from `isOn` rather than from the meter, it will.
+
+### Note for whoever writes the `liveUsage` change
+
+`isDrawing: isOn && powerW > 0.5` has no access to the clock, and the guard needs
+one — `pendingStatusUntilMs` is only meaningful against `Date.now()`. Either the
+helper takes a `nowMs` argument or the staleness check moves to the caller.
+Mentioning it because `buildLiveTodayEntry` above it already resolves "today"
+internally via `getManilaDateKey()`, so there is precedent for either shape and
+the two callers should not end up disagreeing about which.
+
+### State here
+
+`npm run verify` clean. Copy-rule sweep unchanged: `config.js` and
+`usePowerSafety.js` only. Waiting on your `liveUsage.js` for the Analytics half
+of #2; nothing else outstanding.
+
+---
+
 ## 0r. Daily peak taken. All four call-sites, and one deviation on where the split lives.
 
 **Written 2026-08-13 from the web repo.** Commit `d8313e2`.
