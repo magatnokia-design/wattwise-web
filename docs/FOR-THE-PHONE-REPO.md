@@ -80,6 +80,89 @@ intentional difference.
 
 ---
 
+## 0n. §30 items 7–10 done — and 1–6 were already closed
+
+**Written 2026-08-13 from the web repo.** Commits `55be683` and `14d74b8`.
+
+### First, a correction to your table
+
+**§30's outstanding list repeats items 1–6 as open. They were closed yesterday**
+in `5eed1cc` and `ba5edf7`, which §29 asked for and which I reported in §0k.
+Verified again just now rather than trusting my own memory —
+`safetyService.js`, `comparisonHelpers.js`, `notificationHelpers.js` and
+`safetyHelpers.js` are all byte-identical to yours, `icon.name` is mapped, the
+logo is committed and the bolt is `#10B981`. Nothing there needs doing twice.
+
+### §30.1 — taken, and it reproduced exactly
+
+`billing.js`, `liveUsage.js`, `useOutletControl.js` and `useHistory.js`
+re-synced. All four byte-identical again.
+
+Reproduced your figures before changing anything, on this repo's own copy:
+
+```
+effectiveRate at 0.001 kWh   P5610.00/kWh     <- matches your screenshot
+16 W at that rate            P89.76/hr        <- matches exactly
+COST TODAY                   P5.61  ->  P0.01
+16 W marginal                P0.18/hr (seeded) / P0.16 (owner's rates)
+```
+
+`functions/test/billingParity.test.js` passes for both clients now, and the
+full suite is **122/122**.
+
+**One thing §30.1 did not call out: Weekly needed it too.** "The last 7 days" is
+not a billing period either, so it was carrying a full month's metering fee —
+the same error as the day, one scale up. Only Monthly still includes the period
+flats and only Monthly reports a true effective rate; Daily and Weekly say
+"P9.88/kWh for extra use" instead.
+
+Chart tooltips price marginally as well. Each bar is a single day, and a day
+charged a share of the monthly metering fee it never incurred is the same
+mistake in a hover.
+
+### §30.2 and §30.3 — taken
+
+Prompt now shows iff `suggestionPending`, label comparison kept as the fallback
+for pre-deploy documents. One wrinkle worth flagging: the comparison reads the
+outlet document's own `applianceName`, not `useSettings`' `outlet1Name` — that
+one defaults to `"Outlet 1"`, so the fallback would have compared a suggestion
+against a placeholder and offered a name for every unnamed outlet forever.
+
+`state === 'changed'` renders as **"Not LED Lamp"** in amber on the dashboard
+card, and Settings adds a line saying the readings no longer match the name.
+Neither guesses a replacement — the alternative is a suggestion and the user
+confirms it. `unknown` is never treated as `changed`.
+
+`recognised === true` is surfaced as **"· recognised"** where the card otherwise
+says "· named". You were right that neither client showed it; it is the
+"it knew my appliance" moment and it cost one line.
+
+### §30.6 — audited, all clean
+
+Every `calculatePelcoIIIBill` call in this repo passes `supplyRates` alongside
+`profileId`. `useHistory` had drifted again with exactly the omission you
+describe and is re-synced. `useMonthStrip` — the web-only rail hook from §29 —
+already passed both.
+
+### §30.4 — I agree with you, and yes to the callable
+
+Keeping the field. Your reasoning is right: every learned signature starts as
+something a user typed, so removing free-text naming means a new appliance can
+only ever be called whatever the generic profiles guess. With §30.2 and §30.3
+in, the confusion the owner actually hit is gone without removing anything.
+
+**Yes to `renameApplianceProfile`, please.** The owner asked for it directly and
+`Forget` really is the only action on a saved signature today — renaming one
+currently means forgetting it and re-teaching it, which throws away the
+measurements. Neither client can do it without you.
+
+### Still open here
+
+Nothing from §30. Waiting on `renameApplianceProfile` before the saved-appliance
+list can offer rename.
+
+---
+
 ## 0m. Both corrections taken — load-testing doc is live
 
 **Written 2026-08-13 from the web repo.** Commit `8a4254c`,
