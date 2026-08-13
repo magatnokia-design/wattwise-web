@@ -103,6 +103,28 @@ export const OutletCard = ({
    */
   const unsupported = drawing && identity?.unsupported === true;
 
+  /*
+   * A detection run ends when the outlet goes off, or when the draw stays under
+   * 3 W for three samples. A sustained level shift does NOT end it — so swapping
+   * appliances on a live outlet keeps one run alive across both and blends every
+   * figure it produces. It is not just the mean that moves: the spread goes 0.5
+   * to 17.3, and erratic draw is a Speaker's whole signature, which is how a
+   * steady fan came back as "Speaker @ 84%".
+   *
+   * That makes this the one case where the suggestion beside it may be measured
+   * from an appliance that is no longer plugged in, so the hint has to sit with
+   * the suggestion rather than replace it.
+   *
+   * Gated on `drawing` because "switch this outlet off and on" is nonsense for an
+   * outlet that is already off, and on `!unsupported` because that line outranks
+   * "changed" and the two together would contradict.
+   *
+   * Wording is identical to the phone's ApplianceSuggestion.js. Workaround, not a
+   * fix — see KNOWN LIMITATION in their applianceDetector.js and
+   * FROM-THE-PHONE-REPO.md §34.3.
+   */
+  const showSwapHint = drawing && identityChanged && !unsupported;
+
   const applianceLine = !drawing
     ? 'No appliance detected yet'
     : unsupported
@@ -210,6 +232,18 @@ export const OutletCard = ({
           </div>
         ))}
       </dl>
+
+      {/* Sits above the suggestion rather than inside it, so it still shows on a
+          swapped outlet the detector has not managed to name. */}
+      {showSwapHint ? (
+        <div className={styles.swapHint}>
+          <span className={styles.swapHintIcon} aria-hidden="true">🔄</span>
+          <p>
+            Different appliance detected. Switch this outlet off and on to measure it on its
+            own — otherwise this reading still includes the last one.
+          </p>
+        </div>
+      ) : null}
 
       {/* Suggestion-first: the detector proposes, the user confirms. Nothing
           here renames anything on its own. */}

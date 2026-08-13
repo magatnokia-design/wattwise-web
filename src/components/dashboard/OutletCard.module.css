@@ -156,6 +156,35 @@
   color: var(--ww-text-light);
 }
 
+/* Amber, matching .subChanged above it — same fact, stated twice: the label no
+   longer describes what is plugged in. Deliberately not the suggestion's green,
+   because when both are on screen this is the caveat on that offer, not a second
+   offer. */
+.swapHint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: var(--ww-space-4);
+  padding: var(--ww-space-3) var(--ww-space-4);
+  background: var(--ww-tint-warning);
+  border: 1px solid #fcd34d;
+  border-radius: var(--ww-radius-sm);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ww-text);
+}
+
+.swapHintIcon {
+  flex-shrink: 0;
+  line-height: 1.35;
+}
+
+/* Directly under .swapHint the green offer needs its own top edge, or the two
+   panels read as one block. */
+.swapHint + .suggestion {
+  margin-top: var(--ww-space-3);
+}
+
 .suggestion {
   margin-top: var(--ww-space-4);
   padding: var(--ww-space-3) var(--ww-space-4);
