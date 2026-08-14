@@ -1,12 +1,43 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { resolveApplianceLine } from '../src/components/dashboard/applianceLine.js';
+import { resolveApplianceLine, isDrawingPower } from '../src/components/dashboard/applianceLine.js';
 
-const line = (args) => resolveApplianceLine({ hasLoad: true, applianceName: '', identity: null, ...args });
+test('residual current on a switched-off outlet is not a load', () => {
+  /*
+   * The regression. useOutletControl's hasLiveLoad is
+   * `power >= 0.5 || current >= 0.01`, and this PZEM's residual on a
+   * switched-off outlet reads 0.02 A at 0.0 W - double that threshold with
+   * nothing consuming. Observed as "Nokia's Fan · recognised" under an outlet
+   * that was off, and it came and went exactly as the current flickered
+   * 0.02 -> 0.00 -> 0.02.
+   *
+   * Real power is the only thing that means consumption.
+   */
+  assert.equal(isDrawingPower({ power: 0, current: 0.02 }), false);
+  assert.equal(isDrawingPower({ power: 0, current: 0.03 }), false);
+
+  assert.equal(isDrawingPower({ power: 57.2, current: 0.24 }), true);
+});
+
+test('the power floor rejects meter noise but not a small real load', () => {
+  assert.equal(isDrawingPower({ power: 0.5 }), false);
+  assert.equal(isDrawingPower({ power: 0.6 }), true);
+  // A phone charger sits at the bottom of the catalogue and must still count.
+  assert.equal(isDrawingPower({ power: 3 }), true);
+});
+
+test('missing or malformed metrics are not a load', () => {
+  assert.equal(isDrawingPower(undefined), false);
+  assert.equal(isDrawingPower({}), false);
+  assert.equal(isDrawingPower({ power: null }), false);
+  assert.equal(isDrawingPower({ power: 'abc' }), false);
+});
+
+const line = (args) => resolveApplianceLine({ isDrawing: true, applianceName: '', identity: null, ...args });
 
 test('nothing drawing reports nothing, even on a named outlet', () => {
-  const result = line({ hasLoad: false, applianceName: "Nokia's Fan", identity: { state: 'confirmed', namedAs: "Nokia's Fan" } });
+  const result = line({ isDrawing: false, applianceName: "Nokia's Fan", identity: { state: 'confirmed', namedAs: "Nokia's Fan" } });
 
   assert.equal(result.text, 'No appliance detected yet');
   assert.equal(result.tone, 'idle');

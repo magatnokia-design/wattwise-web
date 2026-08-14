@@ -35,8 +35,6 @@ export const DashboardPage = () => {
     outlet2Metrics,
     outlet1Suggestion,
     outlet2Suggestion,
-    outlet1HasLoad,
-    outlet2HasLoad,
     isLoadingOutlets,
     totalEnergyKwh,
     totalPowerW,
@@ -192,7 +190,6 @@ export const DashboardPage = () => {
           suggestion={outlet1Suggestion}
           identity={identityFor(1)}
           switchingTo={switchingFor(1)}
-          hasLoad={outlet1HasLoad}
           disabled={isToggling}
           onToggle={handleToggle(1)}
           onRename={handleRename(1)}
@@ -205,7 +202,6 @@ export const DashboardPage = () => {
           suggestion={outlet2Suggestion}
           identity={identityFor(2)}
           switchingTo={switchingFor(2)}
-          hasLoad={outlet2HasLoad}
           disabled={isToggling}
           onToggle={handleToggle(2)}
           onRename={handleRename(2)}

@@ -3,7 +3,7 @@ import { Card } from '../ui/Card';
 import { Switch } from '../ui/Switch';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Feedback';
-import { resolveApplianceLine } from './applianceLine';
+import { resolveApplianceLine, isDrawingPower } from './applianceLine';
 import styles from './OutletCard.module.css';
 
 const METRICS = [
@@ -39,7 +39,6 @@ export const OutletCard = ({
   // 'on' | 'off' | null — a toggle the ESP32 has not picked up yet, resolved by
   // the shared buildLiveAppliances. See switchingFor in DashboardPage.
   switchingTo,
-  hasLoad,
   disabled,
   onToggle,
   onRename,
@@ -97,11 +96,19 @@ export const OutletCard = ({
    * excluding an outlet commanded off whose relay had not opened yet — which
    * put "No appliance detected yet" directly above a live 52.6 W.
    */
-  const drawing = hasLoad;
+  /*
+   * Derived from real power rather than the `hasLoad` prop.
+   *
+   * useOutletControl's hasLiveLoad also accepts `current >= 0.01 A`, and this
+   * meter's residual on a switched-off outlet is 0.02 A at 0.0 W — enough to
+   * pass that test with nothing consuming, which is what put "Nokia's Fan ·
+   * recognised" under an outlet that was off.
+   */
+  const drawing = isDrawingPower(metrics);
 
   // Every branch of this lives in applianceLine.js, tested — it is the line that
   // has been wrong more often than anything else on this page.
-  const line = resolveApplianceLine({ hasLoad, applianceName, identity });
+  const line = resolveApplianceLine({ isDrawing: drawing, applianceName, identity });
   const identityChanged = line.tone === 'changed';
   const unsupported = line.tone === 'unsupported';
 
@@ -192,14 +199,14 @@ export const OutletCard = ({
 
         <div className={styles.controls}>
           <Badge
-            tone={switching ? 'warn' : isOn ? (hasLoad ? 'good' : 'warn') : 'neutral'}
+            tone={switching ? 'warn' : isOn ? (drawing ? 'good' : 'warn') : 'neutral'}
           >
             {switching
               ? switching === 'on'
                 ? 'Switching on…'
                 : 'Switching off…'
               : isOn
-                ? hasLoad
+                ? drawing
                   ? 'Drawing power'
                   : 'On, idle'
                 : 'Off'}

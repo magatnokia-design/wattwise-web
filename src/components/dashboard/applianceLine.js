@@ -15,20 +15,40 @@
  * conclusion drawn from evidence that was not about the load in front of it.
  */
 
+/*
+ * Real power, not current.
+ *
+ * `useOutletControl`'s hasLiveLoad is `power >= 0.5 || current >= 0.01`, and the
+ * PZEM's residual on a switched-off outlet reads 0.02 A — double that threshold
+ * — while real power sits at 0.0 W. That put "Nokia's Fan · recognised" under an
+ * outlet that was off, consuming nothing.
+ *
+ * Current alone is not consumption. The phone's own newer code agrees: liveUsage
+ * uses `isDrawing = powerW > LIVE_LOAD_FLOOR_W` with no current term at all.
+ * That file is copy-rule and useOutletControl is too, so the correction lives
+ * here rather than in either of them.
+ *
+ * Freshness needs no separate guard: buildOutletMetrics already returns zeros
+ * when telemetry is stale, so a quiet device cannot read as drawing.
+ */
+export const LIVE_POWER_FLOOR_W = 0.5;
+
+export const isDrawingPower = (metrics) => Number(metrics?.power) > LIVE_POWER_FLOOR_W;
+
 /**
  * @param {object} args
- * @param {boolean} args.hasLoad   Fresh telemetry AND a live draw. The meter decides.
+ * @param {boolean} args.isDrawing  Real power above the floor. The meter decides.
  * @param {string}  args.applianceName  The name stored on the outlet.
  * @param {object|null} args.identity   Raw `applianceIdentity` from the document.
  * @returns {{ text: string, tone: 'idle'|'unsupported'|'changed'|'named' }}
  */
-export const resolveApplianceLine = ({ hasLoad, applianceName, identity }) => {
+export const resolveApplianceLine = ({ isDrawing, applianceName, identity }) => {
   const name = String(applianceName || '').trim();
 
   // Nothing is drawing, so there is nothing to report. The absence of a
   // detection is not a fact about an appliance, and the stored name is not
   // evidence that it is the thing plugged in right now.
-  if (!hasLoad) {
+  if (!isDrawing) {
     return { text: 'No appliance detected yet', tone: 'idle' };
   }
 
