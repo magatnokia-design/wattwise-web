@@ -208,6 +208,17 @@
   color: #047857;
 }
 
+/* Quieter than the suggestion above it: standing guidance, not this run's
+   verdict. Sits last so it does not push the names it is talking about down. */
+.suggestionHint {
+  margin-top: var(--ww-space-3);
+  padding-top: var(--ww-space-3);
+  border-top: 1px solid #a7f3d0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #047857;
+}
+
 .suggestionActions {
   display: flex;
   flex-wrap: wrap;

@@ -40,11 +40,24 @@ export const SupportedAppliances = () => (
       ))}
     </ul>
 
+    <div className={styles.guidance}>
+      <p className={styles.guidanceTitle}>Not seeing your appliance?</p>
+      <p className={styles.guidanceBody}>
+        These eight are the only names WattWise can guess from wattage alone.
+        <strong> Pick whichever is closest, then rename it.</strong> The
+        signature it saves is measured from <em>your</em> appliance, so the name
+        it started from stops mattering — a 14 W ceiling fan will suggest LED
+        Lamp, and once renamed it is a ceiling fan every time it comes back.
+      </p>
+    </div>
+
     <p className={styles.note}>
       The wattages are what the detector expects on average over a run, not a
-      nameplate rating. Anything else in range still gets measured and billed —
-      it is only the <em>name</em> WattWise cannot guess, and it will say so
-      rather than pick the closest match.
+      nameplate rating. Anything in range gets measured and billed correctly
+      whatever it ends up called. A load outside every range is told so rather
+      than guessed at — but <em>inside</em> the ranges, two appliances at the
+      same wattage can be the same measurement, which is why the name is yours
+      to correct and the reading never needs correcting.
     </p>
 
     <div className={styles.limits}>
@@ -87,10 +100,10 @@ export const SupportedAppliances = () => (
     </div>
 
     <p className={styles.note}>
-      <strong>Your own appliances go further than this list.</strong> Accept a
-      suggestion once and WattWise saves that appliance&rsquo;s signature, then
-      recognises it whenever it comes back — including ones the generic list has
-      no name for. Those live under Learned appliances above.
+      Everything you have named this way collects under{' '}
+      <strong>Learned appliances</strong> above, and one appliance can hold
+      several signatures — a phone charger draws quite differently at 20% than
+      at 90%, and both belong to the same name.
     </p>
   </Card>
 );

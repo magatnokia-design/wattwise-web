@@ -380,6 +380,21 @@ export const OutletCard = ({
                 ))}
             </div>
           ) : null}
+
+          {/*
+            The instruction that was missing at the moment it is needed.
+
+            The owner plugged in a ceiling fan, was offered LED Lamp, scanned the
+            list for "Ceiling Fan", did not find it, and asked whether picking
+            LED Lamp was allowed. It was — he did the right thing on instinct —
+            but nothing on screen said so, and hesitating there is the difference
+            between naming an appliance and abandoning the flow.
+          */}
+          <p className={styles.suggestionHint}>
+            Not one of these? Pick the closest anyway, then rename it under
+            Settings. WattWise saves how <em>this</em> appliance draws power, not
+            the name it started from.
+          </p>
         </div>
       ) : (
         /* No suggestion to show. Nothing to offer either — naming happens by

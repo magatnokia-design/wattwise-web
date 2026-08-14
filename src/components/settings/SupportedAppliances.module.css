@@ -53,6 +53,34 @@
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * Sits directly under the list, because that is where the question is asked.
+ * The same guidance used to live at the foot of the card below the deny block,
+ * where it was read after the decision rather than during it — the owner
+ * scanned the eight names for "Ceiling Fan", did not find it, and had nothing
+ * on screen telling him that picking the closest was the correct move.
+ */
+.guidance {
+  margin-top: var(--ww-space-4);
+  padding: var(--ww-space-4);
+  background: var(--ww-tint-success);
+  border: 1px solid #a7f3d0;
+  border-radius: var(--ww-radius-sm);
+}
+
+.guidanceTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #065f46;
+}
+
+.guidanceBody {
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ww-text);
+}
+
 .limits {
   display: flex;
   flex-wrap: wrap;
