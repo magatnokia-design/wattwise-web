@@ -6,6 +6,7 @@ import { buildLiveAppliances } from '../utils/liveUsage';
 import { useDismissibleNotice } from '../hooks/useDismissibleNotice';
 import { formatCurrency } from '../screens/BudgetTracking/utils/budgetHelpers';
 import OutletCard from '../components/dashboard/OutletCard';
+import CutoffNotice from '../components/dashboard/CutoffNotice';
 import { StatGrid, StatTile } from '../components/ui/StatTile';
 import { Banner, Spinner, Badge } from '../components/ui/Feedback';
 import { Button } from '../components/ui/Button';
@@ -128,6 +129,10 @@ export const DashboardPage = () => {
       ) : null}
 
       {toggleError ? <Banner tone="alert">{toggleError}</Banner> : null}
+
+      {/* Above the fold and above the outlet cards: this explains why one of
+          them is off, so it has to be read before them, not after. */}
+      <CutoffNotice outlets={outlets} />
 
       <div className={styles.pageIntro}>
         <p className={styles.lede}>
