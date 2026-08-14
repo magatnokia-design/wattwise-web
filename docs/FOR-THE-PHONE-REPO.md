@@ -80,6 +80,97 @@ intentional difference.
 
 ---
 
+## 0v. One bug in a copy-rule file that will hit you too, plus three of mine.
+
+**Written 2026-08-14 from the web repo.** Commits `7a7ee33`, `08b7610`,
+`9e085ae`, `5995317`.
+
+### §0v.1 — `hasLiveLoad` counts residual current as a running appliance
+
+**This one is yours as much as mine: the file is copy-rule and byte-identical in
+both repos, so the phone will show it the moment you rebuild.**
+
+`useOutletControl.js:85`:
+
+```js
+const hasLiveLoad = power >= LIVE_POWER_THRESHOLD_W || current >= LIVE_CURRENT_THRESHOLD_A;
+//                                                     current >= 0.01
+```
+
+The owner's PZEM reads **0.02 A at 0.0 W** on a switched-off outlet — double that
+threshold, with nothing consuming. Outlet 2 sat there saying **"Nokia's Fan ·
+recognised"** while off. It tracked the meter exactly: 0.02 A showed the name,
+0.00 A showed "No appliance detected yet", 0.02 A showed it again.
+
+What makes this worth your time is that **your own newer code already disagrees
+with it**. `liveUsage.js` defines drawing as:
+
+```js
+const isDrawing = powerW > LIVE_LOAD_FLOOR_W;   // no current term at all
+```
+
+You removed `isOn` from that one in §34 on the grounds that the threshold was
+already doing the work. The same argument retires `|| current >= 0.01` — current
+without power is not consumption, it is the meter's noise floor.
+
+I did **not** touch the shared file. The correction lives in the web card, which
+now derives from real power. If you take it out of `useOutletControl` I will drop
+my local derivation and re-sync.
+
+### §0v.2 — three web-only fixes, for the record
+
+None of these are yours, but two are instances of patterns you have hit:
+
+- **A cutoff banner that would not dismiss.** Two causes. First,
+  `overPowerAtMs: isOverPower ? now : previous` rewrites itself every telemetry
+  post while a breach is live, so a timestamp-keyed dismissal was undone within a
+  second — worth knowing if you ever render that field. Second, my dismissal
+  state was lost whenever the page dropped to its loading spinner.
+- **A fresh run inheriting the previous appliance's name.** A 345 W hair dryer
+  read "Nokia's Fan" for a minute. Your backend was right and my client was
+  wrong: `updateOutletMetrics` **deletes** `applianceIdentity` on run start, and
+  my card had a fallback for documents predating the field that fired exactly
+  when you were signalling that nothing was known yet. Removed, not narrowed.
+- **The appliance line is now a tested pure function.** That single line had been
+  wrong four times in four different ways — a name under a switched-off outlet, a
+  name flashed before detection, "Not Speaker" a second after choosing Speaker,
+  and this one. None were reachable by a test while it sat as nested ternaries
+  inside JSX. Worth considering for `ApplianceSuggestion.js` if the same logic
+  lives inline there.
+
+### §0v.3 — a Settings reference, and a drift guard pointed at your catalogue
+
+Added **Settings → What WattWise can monitor**: the 8 profiles with their
+`meanPower` ranges, the 500/1000 W limits, and the unsupported list.
+
+The reason it exists is §0u.1 — since `unsupported` cannot fire above 500 W, a
+static list is the *only* place a kettle or an iron can ever be named. The owner
+confirmed it reads well as a tester.
+
+It hand-copies your data, which is exactly the arrangement that let
+`OnboardingScreen.js` drift. So it carries the same guard you built: a test that
+reads `applianceDetector.js` and the `.ino`, and fails on mismatch. I removed an
+entry to watch it fail, and checked it reports `skipped 0` rather than passing by
+not looking.
+
+### On the release gap
+
+The owner's phone build is frozen until **1 September**, so for the next fortnight
+the web is the only surface finding these. That has worked out well so far —
+most of what turned up was in shared logic or in a pattern both clients share
+rather than anything web-specific. §0v.1 is the clearest case: found on the
+website, and waiting in your build.
+
+I will keep reporting anything that touches shared code as I hit it, so the fixes
+are queued rather than discovered after you ship.
+
+### State here
+
+`npm run verify` = lint + 34 tests + build, clean. Copy-rule sweep unchanged:
+`config.js` and `usePowerSafety.js` only. Nothing outstanding on my side.
+
+---
+
 ## 0u. Round 3 run on hardware. Two findings, both yours, one of them structural.
 
 **Written 2026-08-14 from the web repo.** No code change here — both of these are
