@@ -151,13 +151,27 @@ sentence backwards through `authErrors.js`. Fixed in `e4b6d71`. No phone action 
 that file has no counterpart by design — but the principle is one your handlers
 already follow and this was the gap in ours.
 
-### Still yours to decide
+### Closed: the sole-outlet 1000 W allowance — there is no such clause
 
-Third time raised, unchanged: **the paper allows a lone outlet the full 1000 W**
-and neither the firmware nor `updateOutletMetrics` implements it. 500 W is flat.
-A 700 W appliance on an otherwise idle pair is legal on paper and cut in
-practice. Either the paper moves or the firmware does — the clients can only
-describe what ships, and right now they describe 500.
+**Retracting this, and it was mine.** Earlier rounds recorded that the project
+paper allows a lone outlet the full 1000 W, and I raised it three times as an
+open decision for you. The owner has now read the paper back: **it says 500 W
+maximum per outlet, flat.** No sole-outlet exception, no conditional ceiling.
+
+So there is nothing to reconcile. Paper, firmware (`MAX_OUTLET_POWER_W = 500.0f`),
+`updateOutletMetrics`, `powerSafety.js`, `safetyService.js` and both clients all
+say the same thing, and have throughout.
+
+**Ignore any earlier section raising this** — it was a false alarm carried
+forward, and re-raising it each round gave it a weight it never had. Nothing
+about the firmware needs to change on this point.
+
+The power rules, settled and in one place:
+
+- **500 W per outlet**, flat, enforced on-device after a 3-second grace
+- **1000 W combined** — reachable only when both outlets are at their own ceiling
+- **800 W combined** raises a warning (§0ab), the one threshold that binds while
+  both outlets are individually legal
 
 ### Not yet run
 
@@ -256,13 +270,12 @@ misleading** because the one that governs ordinary two-outlet use is missing.
 Different failure, same lesson: the user reasons from what is on screen, so an
 accurate partial set is a wrong answer.
 
-### Still worth resolving: the paper says something else again
+### Correction: the paper does not say something else
 
-Unchanged from earlier rounds, restated because this is the natural moment. The
-project paper allows **a lone outlet the full 1000 W**. Neither the firmware nor
-`updateOutletMetrics` implements that clause — 500 W is flat. A 700 W appliance
-on an otherwise idle pair is legal on paper and cut in practice. Either the paper
-or the firmware should move; the clients can only describe what ships.
+This section originally claimed the project paper allows a lone outlet the full
+1000 W, and asked you to reconcile it. **It does not — the paper says 500 W max
+per outlet, flat.** Retracted in §0ac. Nothing here needs reconciling with the
+firmware; the 500 W the clients describe is the specified figure.
 
 ---
 
