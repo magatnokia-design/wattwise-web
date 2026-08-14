@@ -80,6 +80,93 @@ intentional difference.
 
 ---
 
+## 0ac. `source: 'device'` verified on hardware. Full sweep passed. Nothing is blocking you.
+
+**Written 2026-08-14 from the web repo.** Commits `79c4549` and `e4b6d71`,
+deployed. **70 tests**, lint and build clean.
+
+### §0z.6a is closed for real now — not just deployed, observed
+
+You shipped `source: 'device'` in `988f5fa` and we both marked it done. It had
+never actually been run against a power-cycle. It has now, and it works.
+
+Both outlets on at 20:59 (Manual). ESP32 unplugged. Replugged ~30 s later. The
+activity log:
+
+```
+21:01  Nokia's Fan             OFF   Device
+21:01  Nokia's Phone Charger   OFF   Device
+20:59  Nokia's Phone Charger   ON    Manual
+20:59  Nokia's Fan             ON    Manual
+```
+
+Two rows, one per outlet, correctly attributed. Previously this produced nothing
+at all — the owner's words on the last attempt were *"when I plug the ESP32 power
+back, nothing shows completely turned off."* That gap is gone.
+
+### The two behaviours composed correctly, which is the better result
+
+During the outage the dashboard read **"No telemetry · last seen 36s ago"** and
+both cards showed **"On · no reading"** — last known status, openly marked as
+unbacked. After the replug it read **"Hardware reporting · 10s ago"** with both
+outlets **Off**, matching the relays, which boot open.
+
+So the client never claimed the outlets were off while it merely could not see
+them, and never claimed they were on once it could see they were not. That is the
+staleness work and the device-source work meeting in the one scenario that
+exercises both. Worth knowing your 40 s `readingsAreStale` window is solving the
+same problem on your side — see §22 in `FROM-THE-PHONE-REPO.md` for why the two
+windows legitimately differ.
+
+### Everything else on this client passed
+
+| Test | Result |
+|---|---|
+| Limits card (§0ab) | renders correctly |
+| Power-cycle → `source: 'device'` | **passed — above** |
+| Both clients open at once | passed |
+| Hard refresh on every route | passed |
+| Password reset, end to end | passed |
+| Recurring schedules | passed — four `System` rows at 13:12–13:19 |
+| Auto-cutoff | passed — `Auto-cutoff · 1376.2 W` at 15:39 |
+
+### Your `sendPasswordResetEmail` callable is healthy
+
+One request produced exactly one email, from `WattWise <support@wattwise.site>`,
+delivered in under two minutes, branded, with both the button and the paste-able
+URL intact. `verifyPasswordResetCode` accepted the code and the password changed.
+The Brevo pipeline in `docs/email-senders.md` is doing what it says.
+
+One false alarm worth recording so nobody re-investigates it: a bare `400` from
+`identitytoolkit` in the console looked like a send failure and was not. The send
+goes through your callable, not identitytoolkit; the 400 was
+`verifyPasswordResetCode` rejecting a **superseded** `oobCode` from an older
+email, and it followed the user to `/forgot-password` because that navigation is
+React Router, which does not clear the console. A clean single-request run
+produced no console error at all.
+
+`verifyResetCode` was the only action-code path in `authActions.js` not logging
+its raw error, so the failure had to be identified by reading the rendered
+sentence backwards through `authErrors.js`. Fixed in `e4b6d71`. No phone action —
+that file has no counterpart by design — but the principle is one your handlers
+already follow and this was the gap in ours.
+
+### Still yours to decide
+
+Third time raised, unchanged: **the paper allows a lone outlet the full 1000 W**
+and neither the firmware nor `updateOutletMetrics` implements it. 500 W is flat.
+A 700 W appliance on an otherwise idle pair is legal on paper and cut in
+practice. Either the paper moves or the firmware does — the clients can only
+describe what ships, and right now they describe 500.
+
+### Not yet run
+
+Overnight rollup and the summary email (tonight); the 800 W combined warning
+(needs two ~400 W loads); learned appliances near the 20-profile ceiling. None
+block you.
+
+---
+
 ## 0ab. The owner read the limits card and asked a question neither client can answer: what happens at 800 W?
 
 **Written 2026-08-14 from the web repo.** Client-side, no deploy needed on your
