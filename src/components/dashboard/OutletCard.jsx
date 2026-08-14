@@ -4,6 +4,7 @@ import { Switch } from '../ui/Switch';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Feedback';
 import { resolveApplianceLine, isDrawingPower } from './applianceLine';
+import { resolveOutletBadge } from './outletBadge';
 import styles from './OutletCard.module.css';
 
 const METRICS = [
@@ -39,6 +40,7 @@ export const OutletCard = ({
   // 'on' | 'off' | null — a toggle the ESP32 has not picked up yet, resolved by
   // the shared buildLiveAppliances. See switchingFor in DashboardPage.
   switchingTo,
+  telemetryFresh,
   disabled,
   onToggle,
   onRename,
@@ -136,6 +138,16 @@ export const OutletCard = ({
 
   const applianceLine = line.text;
 
+  // Tested in outletBadge.js. It reports the commanded state and the measured
+  // state, which are known under different conditions — "On, idle" claimed both
+  // at once and kept claiming the second one after readings stopped.
+  const badge = resolveOutletBadge({
+    isOn,
+    isDrawing: drawing,
+    telemetryFresh,
+    switchingTo: switching,
+  });
+
   /*
    * Naming is suggestion-only, by the owner's decision.
    *
@@ -198,19 +210,7 @@ export const OutletCard = ({
         </div>
 
         <div className={styles.controls}>
-          <Badge
-            tone={switching ? 'warn' : isOn ? (drawing ? 'good' : 'warn') : 'neutral'}
-          >
-            {switching
-              ? switching === 'on'
-                ? 'Switching on…'
-                : 'Switching off…'
-              : isOn
-                ? drawing
-                  ? 'Drawing power'
-                  : 'On, idle'
-                : 'Off'}
-          </Badge>
+          <Badge tone={badge.tone}>{badge.text}</Badge>
           <Switch
             checked={isOn}
             disabled={disabled}

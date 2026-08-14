@@ -190,6 +190,7 @@ export const DashboardPage = () => {
           suggestion={outlet1Suggestion}
           identity={identityFor(1)}
           switchingTo={switchingFor(1)}
+          telemetryFresh={telemetryFresh}
           disabled={isToggling}
           onToggle={handleToggle(1)}
           onRename={handleRename(1)}
@@ -202,6 +203,7 @@ export const DashboardPage = () => {
           suggestion={outlet2Suggestion}
           identity={identityFor(2)}
           switchingTo={switchingFor(2)}
+          telemetryFresh={telemetryFresh}
           disabled={isToggling}
           onToggle={handleToggle(2)}
           onRename={handleRename(2)}
