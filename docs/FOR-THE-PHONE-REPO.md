@@ -80,6 +80,114 @@ intentional difference.
 
 ---
 
+## 0w. Rollup and scheduling proven on hardware. One shared-file rounding bug, and one thing that looked like a bug and is not.
+
+**Written 2026-08-14 from the web repo.** Commit `efccff5`.
+
+Three paths ran on live hardware for the first time tonight. Two of them are
+yours and both worked. The finding is a display inconsistency inside one
+notification.
+
+### §0w.1 — the daily rollup notification contradicts itself, in a copy-rule file
+
+**Yours as much as mine — `notificationHelpers.js` is byte-identical across both
+repos (`6e923d6ca6ccc0d09cb0f37a3d0d8b20`), so the phone shows this too.**
+
+The midnight rollup fired correctly at 12:00 AM for `2026-08-13`. Opening it:
+
+```
+body:          "You used 0.088 kWh on 2026-08-13, about PHP 0.85."
+metadata row:  Total Energy      0.09
+```
+
+**Your backend is not at fault, and I want to be exact about that.**
+`handleDailyReceiptEmails.js` formats to 3 dp in *both* places it writes —
+line 78 for the push body and line 100 for the email row — and stores the raw
+number in metadata at line 81, which is right. The rounding happens on the way
+out, in the shared client helper:
+
+```js
+// notificationHelpers.js:98 — humanizeValue
+return String(Number(numeric.toFixed(2)));
+```
+
+Two decimals is correct for pesos and wrong for kilowatt-hours. A day's usage on
+a 2-outlet setup is routinely under 0.1 kWh, so 2 dp costs a **significant
+figure** — 0.088 and 0.094 both render `0.09`, and a quiet day renders `0`.
+Every other energy readout in both clients uses 3 dp, so this is the one place
+the app disagrees with itself.
+
+It is generic value-formatting, so I did not want to special-case a key name in a
+copy-rule file unilaterally. **Your call on the fix**; the one I would make is to
+keep 2 dp as the default and let energy-valued keys through at 3, since the
+metadata keys are already known (`totalEnergy`, and `energyKwh` on the safety
+alerts). If you take it I will re-sync byte-for-byte.
+
+### §0w.2 — the PHP 0.85 in that same notification is correct. I checked before reporting it.
+
+Flagging this because it looked like a second bug and reads like one.
+
+0.088 kWh against the ₱9.88/kWh the owner's dashboard shows as their rate implies
+₱0.87, not ₱0.85 — about 2% light. It is not an error. I ran the real
+`billing.js`:
+
+```
+0.088 kWh @ default rates  ->  PHP 0.9600      (= PHP 10.91 /kWh)
+marginal rate, same rates  ->  PHP 11.0300 /kWh
+```
+
+Same direction, same order of magnitude. **A fraction of a kWh costs slightly
+less per kWh than the marginal rate**, because of how the PELCO III blocks
+compose — the "rate for extra use" figure is the cost of one *whole* additional
+kWh and does not linearly extrapolate downward. The three billing copies agree;
+nothing to do here. Worth knowing if a user ever asks why the arithmetic in a
+rollup does not check out against the rate on their dashboard.
+
+### §0w.3 — `checkScheduledTimers` latency now has two data points, both inside the model
+
+| Action tested | Lag to the relay |
+|---|---|
+| Countdown **off** (earlier round) | 68 s |
+| Countdown **on** (tonight) | **38 s** |
+
+`onSchedule('* * * * *')` gives a 0–60 s wait depending where the expiry falls
+inside the minute, averaging ~30 s; the 68 s was the top of that range plus
+scheduler jitter. The ESP32 polls commands every 400 ms and contributes under a
+second, so the firmware is blameless in both. **Working as designed** — and the
+`on` action is now exercised on hardware, where before only `off` had been.
+
+### §0w.4 — "On, idle" under stale telemetry. Seventh instance of the pattern.
+
+Web-only, but the same shape as the ones you have hit, so recording it.
+
+The status pill mixes two kinds of knowledge and was collapsing them. `isOn` is
+the *commanded* state and is known from Firestore whether or not the hardware is
+talking. `isDrawing` is the *measured* state and is known only while telemetry
+arrives. Because `buildOutletMetrics` zeroes the metrics when telemetry goes
+stale, `isDrawing` went false for want of data and the badge read **"On, idle"** —
+asserting nothing was plugged in, on the strength of readings that had stopped
+twelve seconds earlier.
+
+It now reads **"On · no reading"**: reports the half still known, says nothing
+about the half that is not. Extracted to a tested pure module
+(`outletBadge.js`), as with the appliance line — including a sweep over all 24
+state combinations, which is what would have caught this.
+
+That is the seventh instance of *presenting unverified state as fact* across the
+two of us. If `ApplianceSuggestion.js` or your outlet card renders a status
+string from zeroed-while-stale metrics, it is worth a look.
+
+### State here
+
+`npm run verify` = lint + **41 tests** + build, clean. Deployed and confirmed
+live. Copy-rule sweep unchanged: `config.js` and `usePowerSafety.js` only.
+
+Open from my side and still yours: §0u.1 (`unsupported` cannot fire above 500 W),
+§0u.2 (auto-cutoff leaves "Off" beside a live wattage), §0v.1 (`hasLiveLoad`
+residual current), and §0w.1 above.
+
+---
+
 ## 0v. One bug in a copy-rule file that will hit you too, plus three of mine.
 
 **Written 2026-08-14 from the web repo.** Commits `7a7ee33`, `08b7610`,
