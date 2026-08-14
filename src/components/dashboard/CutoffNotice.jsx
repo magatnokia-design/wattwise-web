@@ -16,15 +16,43 @@ import { collectCutoffEvents, formatWatts, formatClock } from './cutoffEvents';
  * this needs no backend change and no extra read: DashboardPage is subscribed to
  * those documents already.
  */
+/*
+ * Dismissal is by timestamp rather than useDismissibleNotice, whose flag is
+ * permanent per key: a cutoff is an event, not a standing notice, so dismissing
+ * one must not suppress the next.
+ *
+ * It IS persisted, which reverses what this file said when it shipped. The
+ * reasoning then was that after a reload you would want to be told again. In
+ * practice the component remounts whenever DashboardPage drops to its loading
+ * spinner — which happens on any telemetry gap — and each remount resurrected a
+ * banner the user had already dismissed. A dismissal is a decision, and losing
+ * it because the hardware went quiet for a moment is worse than the reload case
+ * it was protecting.
+ */
+const STORAGE_KEY = 'wattwise_cutoff_dismissed_through_ms';
+
+const readDismissedThroughMs = () => {
+  try {
+    const stored = Number(window.localStorage.getItem(STORAGE_KEY));
+    return Number.isFinite(stored) && stored > 0 ? stored : 0;
+  } catch {
+    // Storage blocked (private mode, third-party cookie rules). Failing open
+    // shows the banner, which is the safer direction for a safety notice.
+    return 0;
+  }
+};
+
 export const CutoffNotice = ({ outlets }) => {
-  /*
-   * Dismissal is by timestamp rather than useDismissibleNotice, which stores a
-   * permanent flag per key: a cutoff is an event, not a standing notice, so
-   * dismissing this one must not suppress the next. Deliberately not persisted
-   * either — after a reload, "this outlet was cut off" is exactly what you want
-   * to be told again.
-   */
-  const [dismissedThroughMs, setDismissedThroughMs] = useState(0);
+  const [dismissedThroughMs, setDismissedThroughMs] = useState(readDismissedThroughMs);
+
+  const dismissThrough = (ms) => {
+    setDismissedThroughMs(ms);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, String(ms));
+    } catch {
+      // Dismissed for this mount either way.
+    }
+  };
 
   const events = collectCutoffEvents(outlets, Date.now()).filter(
     (event) => event.atMs > dismissedThroughMs
@@ -32,6 +60,7 @@ export const CutoffNotice = ({ outlets }) => {
 
   if (events.length === 0) return null;
 
+  // Both banners describe one incident, so Dismiss on either clears both.
   const newestMs = events[0].atMs;
 
   return (
@@ -41,14 +70,12 @@ export const CutoffNotice = ({ outlets }) => {
           key={event.key}
           tone="alert"
           title={
-            event.live
-              ? `${event.label} is over the ${formatWatts(event.limitW)} W limit`
-              : event.scope === 'combined'
-                ? 'Both outlets went over the combined limit'
-                : `${event.label} was switched off automatically`
+            event.scope === 'combined'
+              ? 'Both outlets went over the combined limit'
+              : `${event.label} was switched off automatically`
           }
           action={
-            <Button size="sm" variant="secondary" onClick={() => setDismissedThroughMs(newestMs)}>
+            <Button size="sm" variant="secondary" onClick={() => dismissThrough(newestMs)}>
               Dismiss
             </Button>
           }
@@ -65,14 +92,8 @@ export const CutoffNotice = ({ outlets }) => {
               {formatWatts(event.limitW)} W limit for one outlet, at {formatClock(event.atMs)}.
             </>
           )}{' '}
-          {event.live ? (
-            <>The ESP32 opens the relay itself a few seconds after the limit is passed.</>
-          ) : (
-            <>
-              The ESP32 did this on its own — the cutoff runs on the device and does not wait
-              on the network. Unplug or swap the appliance before switching the outlet back on.
-            </>
-          )}
+          The ESP32 did this on its own — the cutoff runs on the device and does not wait on
+          the network. Unplug or swap the appliance before switching the outlet back on.
         </Banner>
       ))}
     </>

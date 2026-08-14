@@ -37,16 +37,23 @@ export const collectCutoffEvents = (outlets, nowMs) => {
   const events = [];
 
   list.forEach((outlet) => {
+    // Only settled breaches are reported.
+    //
+    // updateOutletMetrics writes `overPowerAtMs: isOverPower ? now : previous`,
+    // so while the breach is live that timestamp is rewritten on EVERY telemetry
+    // post - roughly once a second. Reporting it then gives every post a new
+    // identity, and since dismissal is by timestamp the banner reappeared within
+    // a second of being dismissed. Waiting for `overPower` to go false freezes
+    // the timestamp at the moment of the cut, which is the number worth showing
+    // anyway. The firmware's grace is 3 seconds, so nothing is lost but noise.
+    if (outlet?.safety?.overPower === true) return;
+
     const atMs = toMs(outlet?.safety?.overPowerAtMs);
     if (!atMs || nowMs - atMs > RECENT_WINDOW_MS) return;
 
     events.push({
       key: `outlet-${outlet.outletNumber}-${atMs}`,
       atMs,
-      // Still over the limit as of the last reading. The firmware allows a
-      // 3-second grace, so there is a window where this is about to happen
-      // rather than having happened.
-      live: outlet?.safety?.overPower === true,
       scope: 'outlet',
       label: `Outlet ${outlet.outletNumber}`,
       drawW: outlet?.safety?.overPowerW,
@@ -60,11 +67,11 @@ export const collectCutoffEvents = (outlets, nowMs) => {
   }, null);
 
   const combinedAtMs = toMs(newestCombined?.safety?.totalOverPowerAtMs);
-  if (combinedAtMs && nowMs - combinedAtMs <= RECENT_WINDOW_MS) {
+  const combinedSettled = newestCombined?.safety?.totalOverPower !== true;
+  if (combinedSettled && combinedAtMs && nowMs - combinedAtMs <= RECENT_WINDOW_MS) {
     events.push({
       key: `combined-${combinedAtMs}`,
       atMs: combinedAtMs,
-      live: newestCombined?.safety?.totalOverPower === true,
       scope: 'combined',
       label: 'Both outlets together',
       drawW: newestCombined?.safety?.totalOverPowerW,

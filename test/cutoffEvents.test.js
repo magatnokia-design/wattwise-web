@@ -36,8 +36,6 @@ test('the iron: one outlet over its own limit', () => {
   assert.equal(events[0].label, 'Outlet 1');
   assert.equal(events[0].drawW, 1028.3);
   assert.equal(events[0].limitW, 500);
-  // Already cut by the time it is rendered - past tense, not a warning.
-  assert.equal(events[0].live, false);
 });
 
 test('a combined breach is reported once, not once per outlet', () => {
@@ -85,13 +83,37 @@ test('events older than the window are dropped', () => {
   assert.equal(justInside.length, 1);
 });
 
-test('still over the limit reads as live, for the 3 s grace before the relay opens', () => {
+test('a breach still in progress is not reported yet', () => {
+  /*
+   * The regression this exists for. updateOutletMetrics writes
+   * `overPowerAtMs: isOverPower ? now : previous`, so while the breach is live
+   * the timestamp is rewritten on every telemetry post - about once a second.
+   * Since dismissal is by timestamp, reporting a live breach gave every post a
+   * fresh identity and the banner reappeared within a second of being dismissed.
+   * Observed on hardware: 10:07/1052.9 W became 10:08/1051.3 W.
+   */
   const events = collectCutoffEvents(
     [outlet(1, { overPower: true, overPowerAtMs: NOW, overPowerW: 1028.3 })],
     NOW
   );
 
-  assert.equal(events[0].live, true);
+  assert.deepEqual(events, []);
+});
+
+test('a combined breach still in progress is not reported either', () => {
+  const live = { totalOverPower: true, totalOverPowerAtMs: NOW, totalOverPowerW: 1052.9 };
+  assert.deepEqual(collectCutoffEvents([outlet(1, live), outlet(2, live)], NOW), []);
+});
+
+test('the same breach keeps one identity once it has settled', () => {
+  // What makes dismissal stick: two renders a minute apart see the same key.
+  const settled = outlet(1, { overPowerAtMs: NOW - 120_000, overPowerW: 1051.3 });
+
+  const first = collectCutoffEvents([settled], NOW);
+  const later = collectCutoffEvents([settled], NOW + 60_000);
+
+  assert.equal(first[0].key, later[0].key);
+  assert.equal(first[0].atMs, later[0].atMs);
 });
 
 test('a missing safety block is not an event', () => {
