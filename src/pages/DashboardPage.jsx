@@ -87,6 +87,13 @@ export const DashboardPage = () => {
     outlets.find((outlet) => Number(outlet.outletNumber) === outletNumber)?.applianceIdentity ||
     null;
 
+  // applianceDetection, which is a different field and needed separately: the
+  // over-power case since the phone's 988f5fa writes `unsupportedReason` and
+  // `measuredPowerW` here, and leaves applianceIdentity.unsupported false.
+  const detectionFor = (outletNumber) =>
+    outlets.find((outlet) => Number(outlet.outletNumber) === outletNumber)?.applianceDetection ||
+    null;
+
   /*
    * A toggle the ESP32 has not polled yet. During that window the document
    * already carries the *commanded* status while the relay is still in the old
@@ -106,60 +113,24 @@ export const DashboardPage = () => {
   const liveAppliances = buildLiveAppliances(outlets, {});
 
   /*
-   * Gated on readings, which buildLiveAppliances cannot do for itself — it is
-   * handed raw documents and never sees a clock.
+   * Both local corrections that used to sit here are gone, taken upstream in the
+   * phone's `988f5fa` / `91a5925` and re-synced:
    *
-   * `isSwitchingOff` is `!isOn && isDrawing`, and `isDrawing` reads the power
-   * field straight off the document. When the ESP32 stops posting, that field
-   * freezes at its last value, so an outlet commanded off while a fan was
-   * running reports a transition **forever** — observed reading "Switching off…"
-   * against a 27-second-old wattage, and it would never have cleared on its own.
+   *   - the readings gate on this, because `liveUsage` now derives `isDrawing`
+   *     as `hasReading && powerW > floor`, so a frozen power field can no longer
+   *     report a transition that ended minutes ago;
+   *   - the ungated commanded state, because `useOutletControl` stopped forcing
+   *     `status` to false under stale telemetry (§0y.2).
    *
-   * A transition is a claim about right now and needs evidence from right now.
-   * Without readings the badge falls through to the commanded state, which is
-   * known from Firestore regardless, and the "Nothing is reporting" notice below
-   * explains the rest.
+   * Which is the arrangement working as intended: correct it here, report it,
+   * delete it when the shared file catches up. Third time now, after
+   * `isDrawingPower` and the residual-current threshold.
    */
-  const switchingFor = (outletNumber, hasReading) => {
-    if (!hasReading) return null;
+  const switchingFor = (outletNumber) => {
     const appliance = liveAppliances.find(
       (item) => Number(item.outletNumber) === outletNumber
     );
     return appliance?.isSwitching ? appliance.switchingTo : null;
-  };
-  /*
-   * On/off, without letting a telemetry gap manufacture an answer.
-   *
-   * useOutletControl forces `status` to false whenever telemetry is stale
-   * (`hasFreshTelemetry ? resolveOutletStatus(outlet) : false`). That does not
-   * degrade to "unknown" — it substitutes a confident *off* for a value that was
-   * never telemetry-derived. `status` is the commanded state: written by
-   * processOutletToggle and by the ESP32's ack, and the shared helper already
-   * reads it ungated (`liveUsage.js:215`).
-   *
-   * It also made the badge's stale branch unreachable. The card's
-   * `telemetryFresh` IS that same flag, so `!telemetryFresh` implied `!isOn` and
-   * resolveOutletBadge could only ever return "Off" — "On · no reading" was dead
-   * code from the day it shipped.
-   *
-   * Falling back only while stale, rather than replacing the hook's value
-   * outright, is what keeps the optimistic toggle: `outletNStatus` carries the
-   * override the moment the switch is clicked, and that path is untouched while
-   * readings are arriving. Losing optimism when the device is unreachable is
-   * correct rather than a compromise — an optimistic update promises the relay
-   * is about to move, and for a device that is not polling, that promise is
-   * false.
-   *
-   * Reported as §0y.2. The real fix belongs in the copy-rule hook, so this comes
-   * out on the re-sync that takes it — same arrangement as the isDrawingPower
-   * derivation in §0v.1.
-   */
-  const commandedOn = (outletNumber, hookStatus, hasReading) => {
-    if (hasReading) return hookStatus;
-    const appliance = liveAppliances.find(
-      (item) => Number(item.outletNumber) === outletNumber
-    );
-    return appliance?.isOn === true;
   };
 
   const rateNotice = useDismissibleNotice('rate-notice');
@@ -262,13 +233,14 @@ export const DashboardPage = () => {
       <div className={styles.pair}>
         <OutletCard
           outletNumber={1}
-          isOn={commandedOn(1, outlet1Status, outlet1HasReading)}
+          isOn={outlet1Status}
           applianceName={outlet1ApplianceName}
           metrics={outlet1Metrics}
           hasLoad={outlet1HasLoad}
           suggestion={outlet1Suggestion}
           identity={identityFor(1)}
-          switchingTo={switchingFor(1, outlet1HasReading)}
+          detection={detectionFor(1)}
+          switchingTo={switchingFor(1)}
           telemetryFresh={outlet1HasReading}
           disabled={isToggling}
           onToggle={handleToggle(1)}
@@ -276,13 +248,14 @@ export const DashboardPage = () => {
         />
         <OutletCard
           outletNumber={2}
-          isOn={commandedOn(2, outlet2Status, outlet2HasReading)}
+          isOn={outlet2Status}
           applianceName={outlet2ApplianceName}
           metrics={outlet2Metrics}
           hasLoad={outlet2HasLoad}
           suggestion={outlet2Suggestion}
           identity={identityFor(2)}
-          switchingTo={switchingFor(2, outlet2HasReading)}
+          detection={detectionFor(2)}
+          switchingTo={switchingFor(2)}
           telemetryFresh={outlet2HasReading}
           disabled={isToggling}
           onToggle={handleToggle(2)}

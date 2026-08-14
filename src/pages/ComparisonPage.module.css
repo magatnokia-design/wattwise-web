@@ -102,3 +102,19 @@
   line-height: 1.55;
   color: var(--ww-text-light);
 }
+
+/* The tariff grade, boxed off from the scope rows above it. The two answer
+   different questions and only this one is allowed to go amber, so it should
+   not read as a continuation of the running total. */
+.modelCheck {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--ww-border);
+  border-radius: 10px;
+  background: #f9fafb;
+}

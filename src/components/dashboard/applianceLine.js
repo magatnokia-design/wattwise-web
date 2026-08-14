@@ -26,9 +26,21 @@
  * @param {boolean} args.telemetryFresh  Readings arriving inside the 12 s window.
  * @param {string}  args.applianceName  The name stored on the outlet.
  * @param {object|null} args.identity   Raw `applianceIdentity` from the document.
+ * @param {object|null} args.detection  Raw `applianceDetection` from the document.
+ *   A separate field, and it has to be: `unsupportedReason` and `measuredPowerW`
+ *   live here, and in the pure over-power case `applianceIdentity.unsupported`
+ *   is *false*. `buildApplianceIdentity` derives it from `detection.unsupported`,
+ *   which the detector never sets when the load was rejected on wattage alone —
+ *   the run is cut before it has the four samples needed to score anything.
  * @returns {{ text: string, tone: 'idle'|'unsupported'|'changed'|'named' }}
  */
-export const resolveApplianceLine = ({ isDrawing, telemetryFresh, applianceName, identity }) => {
+export const resolveApplianceLine = ({
+  isDrawing,
+  telemetryFresh,
+  applianceName,
+  identity,
+  detection,
+}) => {
   const name = String(applianceName || '').trim();
 
   /*
@@ -72,20 +84,43 @@ export const resolveApplianceLine = ({ isDrawing, telemetryFresh, applianceName,
    * build, and if it is drawing then updateOutletMetrics is writing the current
    * shape right now.
    */
-  if (!hasIdentity) {
-    return { text: 'Detecting…', tone: 'idle' };
+  /*
+   * Out of scope, and now able to say which kind.
+   *
+   * Checked before `hasIdentity` because the over-power case may have no
+   * identity at all: the run is cut after two samples and `matchNamedAppliance`
+   * needs an evaluated state to produce one. Reading only applianceIdentity here
+   * would leave a 900 W kettle stuck on "Detecting…" until it was unplugged.
+   *
+   * `no_match` is the old case — measured, scored against every profile, matched
+   * by none. `over_power` is newly reachable since the phone's 988f5fa, which
+   * sets it from the over-power path rather than the detector, and it is the
+   * more useful message of the two: "not recognised" invites the user to try
+   * again, and trying again with a kettle will not help.
+   *
+   * Both outrank `changed`. Those also say the stored name is wrong, but only
+   * these say why, and "Not Speaker" invites picking a replacement that does not
+   * exist in the catalogue.
+   */
+  const outOfScope = detection?.unsupported === true || identity?.unsupported === true;
+
+  if (outOfScope) {
+    const watts = Number(detection?.measuredPowerW);
+
+    if (detection?.unsupportedReason === 'over_power') {
+      return {
+        text: Number.isFinite(watts) && watts > 0
+          ? `Draws more than WattWise supports · ${watts.toFixed(0)} W`
+          : 'Draws more than WattWise supports',
+        tone: 'unsupported',
+      };
+    }
+
+    return { text: 'Not something WattWise monitors', tone: 'unsupported' };
   }
 
-  /*
-   * Measured, scored against every profile, matched by none — a load outside
-   * what this system monitors.
-   *
-   * Outranks `changed`: both say the stored name is wrong, but only this one
-   * says why, and "Not Speaker" invites the user to pick a replacement that
-   * does not exist in the catalogue.
-   */
-  if (identity.unsupported === true) {
-    return { text: 'Not something WattWise monitors', tone: 'unsupported' };
+  if (!hasIdentity) {
+    return { text: 'Detecting…', tone: 'idle' };
   }
 
   /*

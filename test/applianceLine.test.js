@@ -120,6 +120,73 @@ test('unsupported outranks changed', () => {
   assert.equal(result.tone, 'unsupported');
 });
 
+test('an over-power load says it draws too much, with the wattage', () => {
+  /*
+   * Newly reachable since the phone's 988f5fa. Until then `unsupported` could
+   * never fire above 500 W at all: the firmware posts every 1500 ms and cuts
+   * after 3000 ms, so an over-limit run produced two samples where the detector
+   * needs four, and it returned before reaching the catalogue check. It is now
+   * set from the over-power path instead, independent of the detector.
+   *
+   * "Not recognised" would be the wrong message for it. That invites the user to
+   * try again, and trying again with a kettle will not help.
+   */
+  const result = line({
+    applianceName: '',
+    identity: null,
+    detection: { unsupported: true, unsupportedReason: 'over_power', measuredPowerW: 912.4 },
+  });
+
+  assert.equal(result.text, 'Draws more than WattWise supports · 912 W');
+  assert.equal(result.tone, 'unsupported');
+});
+
+test('over-power is read from applianceDetection, which may be the only source', () => {
+  /*
+   * The trap. `applianceIdentity.unsupported` comes from
+   * `buildApplianceIdentity`, which derives it from `detection.unsupported` -
+   * and the detector never sets that when the load was rejected on wattage
+   * alone. The identity may not be written at all, since matchNamedAppliance
+   * needs an evaluated state.
+   *
+   * Reading only applianceIdentity here left a 900 W kettle on "Detecting…"
+   * until it was unplugged, which is the exact silence §0u.1 was raised to end.
+   */
+  const result = line({
+    applianceName: "Nokia's Fan",
+    identity: null,
+    detection: { unsupported: true, unsupportedReason: 'over_power', measuredPowerW: 900 },
+  });
+
+  assert.notEqual(result.text, 'Detecting…');
+  assert.equal(result.tone, 'unsupported');
+});
+
+test('no_match keeps the original wording, and a missing wattage does not print NaN', () => {
+  const noMatch = line({
+    detection: { unsupported: true, unsupportedReason: 'no_match' },
+  });
+  assert.equal(noMatch.text, 'Not something WattWise monitors');
+
+  // measuredPowerW is only written on the over-power case, so the other branch
+  // must not assume it.
+  const noWatts = line({
+    detection: { unsupported: true, unsupportedReason: 'over_power' },
+  });
+  assert.equal(noWatts.text, 'Draws more than WattWise supports');
+  assert.ok(!/NaN|undefined/.test(noWatts.text));
+});
+
+test('out of scope still ranks under a telemetry gap', () => {
+  // It is a conclusion drawn from readings, so it cannot outlive them.
+  const result = line({
+    telemetryFresh: false,
+    detection: { unsupported: true, unsupportedReason: 'over_power', measuredPowerW: 912 },
+  });
+
+  assert.equal(result.text, 'No recent readings');
+});
+
 test('a verdict about a name the outlet no longer wears is not used', () => {
   // Accepting a suggestion renames the outlet immediately, but the stored
   // verdict still describes the old name until the next evaluation. This is

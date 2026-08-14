@@ -23,6 +23,11 @@ const outlet = (overrides = {}) => ({
   power: 52.6,
   current: 0.23,
   energy: 0.4,
+  // Required since the phone's 988f5fa: `isDrawing` is now
+  // `hasReading && powerW > floor`, so an outlet with no telemetry timestamp
+  // reads as drawing nothing however much power the document claims. Every
+  // fixture here is meant to be a live outlet unless it says otherwise.
+  metricsUpdatedAtMs: NOW,
   ...overrides,
 });
 
@@ -132,15 +137,61 @@ test('sensor noise below the floor is not a load', () => {
 });
 
 test('nowMs defaults to the clock when the caller passes nothing', () => {
-  // DashboardPage calls buildLiveAppliances(outlets, {}) with no clock, which
-  // must still resolve a live pending window.
+  /*
+   * DashboardPage calls buildLiveAppliances(outlets, {}) with no clock, so the
+   * default has to serve two comparisons now, not one: the pending window, and
+   * the telemetry freshness `isDrawing` gained in the phone's 988f5fa. Both
+   * timestamps are real-clock here for that reason - the fixed NOW the rest of
+   * this file uses would read as telemetry from months ago.
+   */
+  const realNow = Date.now();
   const appliance = buildLiveAppliances(
-    [outlet({ status: 'off', pendingStatus: 'off', pendingStatusUntilMs: Date.now() + 5000 })],
+    [outlet({
+      status: 'off',
+      metricsUpdatedAtMs: realNow,
+      pendingStatus: 'off',
+      pendingStatusUntilMs: realNow + 5000,
+    })],
     {}
   )[0];
 
+  assert.equal(appliance.isDrawing, true);
   assert.equal(appliance.isSwitching, true);
   assert.equal(appliance.switchingTo, 'off');
+});
+
+test('a frozen power field cannot report a transition that already ended', () => {
+  /*
+   * This was a local gate in DashboardPage until the phone's 988f5fa moved it
+   * into `isDrawing`, so the test moves here with it — the behaviour is now the
+   * shared file's to keep, and this is where a re-sync that drops it gets caught.
+   *
+   * `isSwitchingOff` is `!isOn && isDrawing`, and `power` freezes at its last
+   * value when the ESP32 stops posting. An outlet commanded off while a fan ran
+   * therefore reported "Switching off…" against a 27-second-old wattage and
+   * would have said it forever. It also had a cost beyond the wording: it is
+   * what convinced the owner a countdown timer had failed when it had fired
+   * correctly.
+   */
+  const frozen = first([
+    outlet({ status: 'off', power: 57.2, current: 0.24, metricsUpdatedAtMs: NOW - 27_000 }),
+  ]);
+
+  assert.equal(frozen.hasReading, false);
+  assert.equal(frozen.isDrawing, false);
+  assert.equal(frozen.isSwitching, false);
+  assert.equal(frozen.switchingTo, null);
+  // The command itself is still known — only the meter went quiet.
+  assert.equal(frozen.isOn, false);
+});
+
+test('hasReading separates "nothing is drawing" from "we cannot see"', () => {
+  // Collapsed together the two always read as the confident one, which is the
+  // whole family of bugs this pair exists to end.
+  assert.equal(first([outlet()]).hasReading, true);
+  assert.equal(first([outlet({ power: 0, current: 0 })]).hasReading, true);
+  assert.equal(first([outlet({ metricsUpdatedAtMs: NOW - 13_000 })]).hasReading, false);
+  assert.equal(first([outlet({ metricsUpdatedAtMs: 0 })]).hasReading, false);
 });
 
 test('currentPower is gone', () => {

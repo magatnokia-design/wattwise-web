@@ -7,7 +7,6 @@ import {
   getSafetyStageConfig,
   getStatusColor,
 } from '../screens/PowerSafetyManagement/utils/safetyHelpers';
-import { resolveSafetyStage } from '../components/safety/safetyStage';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Switch } from '../components/ui/Switch';
@@ -153,15 +152,12 @@ export const SafetyPage = () => {
   };
 
   /*
-   * Not graded at all while nothing is reporting. getSafetyStageConfig ends
-   * `configs[stage] || configs.normal`, so a stale document renders the greenest
-   * element on the page as "All systems operating within safe parameters" —
-   * directly above six chips reading "No reading". See safetyStage.js.
+   * The staleness argument is the phone's `91a5925`, which took this into
+   * getSafetyStageConfig itself. It was a local module here until the re-sync —
+   * fourth correction to make that round trip, after isDrawingPower, the
+   * residual-current threshold and the ungated commanded state.
    */
-  const stage = resolveSafetyStage({
-    stageConfig: getSafetyStageConfig(safetyStage),
-    telemetryFresh,
-  });
+  const stage = getSafetyStageConfig(safetyStage, !telemetryFresh);
 
   /*
    * Clear-on-edit, same as the auth forms. "Minimum voltage must be below the

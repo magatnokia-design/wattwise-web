@@ -251,18 +251,64 @@ export const ComparisonPage = () => {
                   <span>PELCO III billed</span>
                   <strong className="ww-num">{formatCurrency(accuracy.actualCost)}</strong>
                 </div>
+                {/*
+                  The scope gap, stated as a fact and given no colour.
+
+                  This row used to carry the 5% badge, which made it a permanent
+                  false alarm: it grades pesos measured over different energy —
+                  a whole-apartment bill against two outlets — so it could never
+                  pass for anyone. The owner's card read "−₱1173.85 (99.2%) ·
+                  Outside the expected 5% band" directly above a paragraph
+                  explaining the gap was expected.
+
+                  Relabelled rather than removed. The number is real and worth
+                  seeing; what was wrong was calling it an inaccuracy.
+                */}
                 <div className={`${comparisonStyles.accuracyRow} ${comparisonStyles.accuracyTotal}`}>
-                  <span>Difference</span>
+                  <span>
+                    {accuracy.measuresLessThanBill ? 'Not measured by WattWise' : 'Difference'}
+                  </span>
                   <strong className="ww-num">
                     {accuracy.direction === 'over' ? '+' : '−'}
                     {formatCurrency(accuracy.absolute)} ({accuracy.absolutePercent.toFixed(1)}%)
                   </strong>
                 </div>
-                <Badge tone={accuracy.isClose ? 'good' : 'warn'}>
-                  {accuracy.isClose
-                    ? 'Within the 5% band the billing model expects'
-                    : 'Outside the expected 5% band'}
-                </Badge>
+
+                {/*
+                  The grade, on its own terms: the bill's own kWh priced by the
+                  same tariff, against what the bill charged. This is the row
+                  allowed to go amber, because it is the only one here that can
+                  fail for a reason worth acting on.
+
+                  Null when the stored bill carries no kWh — no check to report,
+                  which is not the same as a failed one, so no badge at all.
+                */}
+                {accuracy.modelCheck ? (
+                  <div className={comparisonStyles.modelCheck}>
+                    <div className={comparisonStyles.accuracyRow}>
+                      <span>
+                        WattWise&apos;s rates on the bill&apos;s own{' '}
+                        {accuracy.modelCheck.billedKWh.toFixed(0)} kWh
+                      </span>
+                      <strong className="ww-num">
+                        {formatCurrency(accuracy.modelCheck.modelledCost)}
+                      </strong>
+                    </div>
+                    <div className={comparisonStyles.accuracyRow}>
+                      <span>Rate accuracy</span>
+                      <strong className="ww-num">
+                        {accuracy.modelCheck.direction === 'over' ? '+' : '−'}
+                        {formatCurrency(accuracy.modelCheck.absolute)} (
+                        {accuracy.modelCheck.absolutePercent.toFixed(1)}%)
+                      </strong>
+                    </div>
+                    <Badge tone={accuracy.modelCheck.isClose ? 'good' : 'warn'}>
+                      {accuracy.modelCheck.isClose
+                        ? 'Within the 5% band the billing model expects'
+                        : 'Outside the expected 5% band'}
+                    </Badge>
+                  </div>
+                ) : null}
 
                 {/*
                   The badge states the verdict; this states why, which is the
