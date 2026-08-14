@@ -87,13 +87,6 @@ export const DashboardPage = () => {
     outlets.find((outlet) => Number(outlet.outletNumber) === outletNumber)?.applianceIdentity ||
     null;
 
-  // applianceDetection, which is a different field and needed separately: the
-  // over-power case since the phone's 988f5fa writes `unsupportedReason` and
-  // `measuredPowerW` here, and leaves applianceIdentity.unsupported false.
-  const detectionFor = (outletNumber) =>
-    outlets.find((outlet) => Number(outlet.outletNumber) === outletNumber)?.applianceDetection ||
-    null;
-
   /*
    * A toggle the ESP32 has not polled yet. During that window the document
    * already carries the *commanded* status while the relay is still in the old
@@ -239,7 +232,6 @@ export const DashboardPage = () => {
           hasLoad={outlet1HasLoad}
           suggestion={outlet1Suggestion}
           identity={identityFor(1)}
-          detection={detectionFor(1)}
           switchingTo={switchingFor(1)}
           telemetryFresh={outlet1HasReading}
           disabled={isToggling}
@@ -254,7 +246,6 @@ export const DashboardPage = () => {
           hasLoad={outlet2HasLoad}
           suggestion={outlet2Suggestion}
           identity={identityFor(2)}
-          detection={detectionFor(2)}
           switchingTo={switchingFor(2)}
           telemetryFresh={outlet2HasReading}
           disabled={isToggling}

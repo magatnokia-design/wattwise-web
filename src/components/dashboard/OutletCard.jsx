@@ -40,9 +40,6 @@ export const OutletCard = ({
   // through useOutletControl, which is byte-identical to the phone's copy and
   // does not surface `namedAs`.
   identity,
-  // Raw applianceDetection. Carries unsupportedReason and measuredPowerW, which
-  // applianceIdentity does not — see applianceLine.js.
-  detection,
   // 'on' | 'off' | null — a toggle the ESP32 has not picked up yet, resolved by
   // the shared buildLiveAppliances. See switchingFor in DashboardPage.
   switchingTo,
@@ -123,7 +120,7 @@ export const OutletCard = ({
     telemetryFresh,
     applianceName,
     identity,
-    detection,
+    scope: suggestion,
   });
   const identityChanged = line.tone === 'changed';
   const unsupported = line.tone === 'unsupported';

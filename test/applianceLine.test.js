@@ -53,7 +53,7 @@ test('no readings outranks an unsupported verdict', () => {
   // it cannot outlive them.
   const result = line({
     telemetryFresh: false,
-    identity: { state: 'confirmed', unsupported: true, namedAs: '' },
+    scope: { unsupported: true, unsupportedReason: 'no_match' },
   });
 
   assert.equal(result.text, 'No recent readings');
@@ -113,11 +113,33 @@ test('unsupported outranks changed', () => {
   // the user to pick a replacement that is not in the catalogue.
   const result = line({
     applianceName: 'LED LAMP',
-    identity: { state: 'changed', namedAs: 'LED LAMP', unsupported: true },
+    identity: { state: 'changed', namedAs: 'LED LAMP' },
+    scope: { unsupported: true, unsupportedReason: 'no_match' },
   });
 
   assert.equal(result.text, 'Not something WattWise monitors');
   assert.equal(result.tone, 'unsupported');
+});
+
+test('applianceIdentity.unsupported is ignored — it is the wrong source', () => {
+  /*
+   * Not defensive redundancy; deliberately dropped in favour of the suggestion's
+   * scope fields, which the phone's 5073396 carries through every early return.
+   *
+   * Keeping identity as a fallback would have looked harmless and been the same
+   * class of mistake as the hair-dryer fallback: a second source that agrees
+   * with the first in every case it can see, and is silently absent in the one
+   * that matters. For `no_match` both are true, so it adds nothing; for
+   * `over_power` the identity is false or missing entirely, so it answers wrong.
+   */
+  const result = line({
+    applianceName: 'LED LAMP',
+    identity: { state: 'changed', namedAs: 'LED LAMP', unsupported: true },
+    scope: { unsupported: false },
+  });
+
+  assert.equal(result.text, 'Not LED LAMP');
+  assert.equal(result.tone, 'changed');
 });
 
 test('an over-power load says it draws too much, with the wattage', () => {
@@ -134,14 +156,14 @@ test('an over-power load says it draws too much, with the wattage', () => {
   const result = line({
     applianceName: '',
     identity: null,
-    detection: { unsupported: true, unsupportedReason: 'over_power', measuredPowerW: 912.4 },
+    scope: { unsupported: true, unsupportedReason: 'over_power', measuredPowerW: 912.4 },
   });
 
   assert.equal(result.text, 'Draws more than WattWise supports · 912 W');
   assert.equal(result.tone, 'unsupported');
 });
 
-test('over-power is read from applianceDetection, which may be the only source', () => {
+test('over-power survives an absent identity, which is its normal state', () => {
   /*
    * The trap. `applianceIdentity.unsupported` comes from
    * `buildApplianceIdentity`, which derives it from `detection.unsupported` -
@@ -155,7 +177,7 @@ test('over-power is read from applianceDetection, which may be the only source',
   const result = line({
     applianceName: "Nokia's Fan",
     identity: null,
-    detection: { unsupported: true, unsupportedReason: 'over_power', measuredPowerW: 900 },
+    scope: { unsupported: true, unsupportedReason: 'over_power', measuredPowerW: 900 },
   });
 
   assert.notEqual(result.text, 'Detecting…');
@@ -164,14 +186,14 @@ test('over-power is read from applianceDetection, which may be the only source',
 
 test('no_match keeps the original wording, and a missing wattage does not print NaN', () => {
   const noMatch = line({
-    detection: { unsupported: true, unsupportedReason: 'no_match' },
+    scope: { unsupported: true, unsupportedReason: 'no_match' },
   });
   assert.equal(noMatch.text, 'Not something WattWise monitors');
 
   // measuredPowerW is only written on the over-power case, so the other branch
   // must not assume it.
   const noWatts = line({
-    detection: { unsupported: true, unsupportedReason: 'over_power' },
+    scope: { unsupported: true, unsupportedReason: 'over_power' },
   });
   assert.equal(noWatts.text, 'Draws more than WattWise supports');
   assert.ok(!/NaN|undefined/.test(noWatts.text));
@@ -181,7 +203,7 @@ test('out of scope still ranks under a telemetry gap', () => {
   // It is a conclusion drawn from readings, so it cannot outlive them.
   const result = line({
     telemetryFresh: false,
-    detection: { unsupported: true, unsupportedReason: 'over_power', measuredPowerW: 912 },
+    scope: { unsupported: true, unsupportedReason: 'over_power', measuredPowerW: 912 },
   });
 
   assert.equal(result.text, 'No recent readings');
@@ -214,6 +236,13 @@ test('an unnamed outlet mid-run is still detecting', () => {
 });
 
 test('unsupported wins even before the outlet has a name', () => {
-  const result = line({ applianceName: '', identity: { state: 'unnamed', namedAs: '', unsupported: true } });
+  // The usual case, in fact: an out-of-scope verdict arrives precisely when
+  // there is no name, no candidates and no identity to go with it.
+  const result = line({
+    applianceName: '',
+    identity: { state: 'unnamed', namedAs: '' },
+    scope: { unsupported: true, unsupportedReason: 'no_match' },
+  });
+
   assert.equal(result.text, 'Not something WattWise monitors');
 });

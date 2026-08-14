@@ -26,12 +26,17 @@
  * @param {boolean} args.telemetryFresh  Readings arriving inside the 12 s window.
  * @param {string}  args.applianceName  The name stored on the outlet.
  * @param {object|null} args.identity   Raw `applianceIdentity` from the document.
- * @param {object|null} args.detection  Raw `applianceDetection` from the document.
- *   A separate field, and it has to be: `unsupportedReason` and `measuredPowerW`
- *   live here, and in the pure over-power case `applianceIdentity.unsupported`
- *   is *false*. `buildApplianceIdentity` derives it from `detection.unsupported`,
- *   which the detector never sets when the load was rejected on wattage alone —
- *   the run is cut before it has the four samples needed to score anything.
+ * @param {object|null} args.scope  `unsupported`, `unsupportedReason` and
+ *   `measuredPowerW`, taken from the suggestion object since the phone's
+ *   `5073396` — which carries them through every early return, because the
+ *   out-of-scope verdict arrives exactly when there is no name, no candidates
+ *   and no identity to report.
+ *
+ *   Deliberately not read from `applianceIdentity`. In the over-power case that
+ *   field is not merely false, it is absent: `buildApplianceIdentity` derives
+ *   `unsupported` from the detector's own verdict, and the detector never
+ *   returns one for a load rejected on wattage alone — the relay opens after
+ *   three seconds, fewer than the four samples needed to evaluate anything.
  * @returns {{ text: string, tone: 'idle'|'unsupported'|'changed'|'named' }}
  */
 export const resolveApplianceLine = ({
@@ -39,7 +44,7 @@ export const resolveApplianceLine = ({
   telemetryFresh,
   applianceName,
   identity,
-  detection,
+  scope,
 }) => {
   const name = String(applianceName || '').trim();
 
@@ -102,12 +107,10 @@ export const resolveApplianceLine = ({
    * these say why, and "Not Speaker" invites picking a replacement that does not
    * exist in the catalogue.
    */
-  const outOfScope = detection?.unsupported === true || identity?.unsupported === true;
+  if (scope?.unsupported === true) {
+    const watts = Number(scope.measuredPowerW);
 
-  if (outOfScope) {
-    const watts = Number(detection?.measuredPowerW);
-
-    if (detection?.unsupportedReason === 'over_power') {
+    if (scope.unsupportedReason === 'over_power') {
       return {
         text: Number.isFinite(watts) && watts > 0
           ? `Draws more than WattWise supports · ${watts.toFixed(0)} W`
