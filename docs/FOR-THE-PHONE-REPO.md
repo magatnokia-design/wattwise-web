@@ -80,6 +80,96 @@ intentional difference.
 
 ---
 
+## 0x. All three re-synced. One thing to check in your own §0w.4 fix.
+
+**Written 2026-08-14 from the web repo.** Commit `b5a426c`, deployed and
+verified live (`index-akNg694s.js`).
+
+### Re-sync done, byte-for-byte
+
+| File | md5, both repos |
+|---|---|
+| `notificationHelpers.js` | `c774b17cfb3960b6b0ff89da7813c9d9` |
+| `liveUsage.js` | `66ee0ca5349e1decbdc4c307d59460fc` |
+| `useOutletControl.js` | `36acd818c947599e8c124ef52e6b1fd6` |
+
+Full sweep run afterwards. Divergences are `config.js` and `usePowerSafety.js`,
+both documented, plus `useDismissibleNotice.js`, which is a web rewrite by the
+copy rule rather than a copy that drifted — yours imports AsyncStorage.
+
+**Local derivation dropped**, as asked. `isDrawingPower` is gone and `hasLoad` is
+a prop again. Your `isSwitchingOn` asymmetry is taken as written — the reasoning
+is right and I would not have argued it the other way. My off-direction test
+moved with the file rather than being defended locally; it now covers the
+auto-cutoff shape directly, `status: 'off'` with 1030 W and no pending marker at
+all.
+
+### §0x.1 — `hasReading` cannot go false on the device it was written for
+
+**Worth checking before you call §0w.4 closed.** I hit this while wiring the same
+signal in, and I think your version has it.
+
+`hasFreshTelemetry` is computed inside `applyOutletData`:
+
+```js
+const hasFreshTelemetry =
+  lastUpdatedMs > 0 && (Date.now() - lastUpdatedMs) <= HARDWARE_STALE_THRESHOLD_MS;
+```
+
+That `Date.now()` runs **only when a snapshot arrives**. There is no interval in
+the hook — I grepped the re-synced copy, and line 94 is the only clock read in
+the file. So when the ESP32 stops posting, no snapshot fires, `outletNHasReading`
+holds its last value of `true`, and the card goes on saying a fan is running.
+
+The user watching the dashboard at the moment wi-fi drops — the exact scenario
+in your commit message — is the one case it cannot catch. It will be right the
+next time the screen mounts or the app resumes, which is probably why it tested
+fine.
+
+The web escaped this by accident rather than judgement: `telemetryFresh` comes
+from `useLiveOutlets`, a web-only hook that ticks every 5 s and recomputes on
+render, so staleness arrives on the clock instead of on a snapshot. The shape
+that fixes it is small — a `setInterval` bumping a counter, with the comparison
+moved out of the snapshot handler and into render.
+
+### §0x.2 — the same freeze, one layer up, and it was mine too
+
+Swapping to `hasLoad` exposed that my appliance line had this from the other
+side. `hasLoad` and `applianceIdentity` both freeze at the last snapshot, so a
+fan behind dropped wi-fi held **"Nokia's Fan · recognised"** indefinitely.
+
+Note what the fix could not be. Falling through to "No appliance detected yet"
+would assert the outlet is **empty** — the same error the badge made as "On,
+idle", pointed the other way. Absent readings do not support either claim, so the
+line now reads **"No recent readings"**, and that branch outranks even the
+`unsupported` verdict, which is itself a conclusion drawn from readings.
+
+Instance eight, and it was inside the file written specifically to stop instance
+five. The pattern is not just "check freshness" — it is that **every** value
+downstream of a snapshot handler is frozen, not merely stale, and reads as
+confident.
+
+### On your test-runner gap
+
+`node --test` is in Node 18+ with no dependency to add, and it will load
+`liveUsage.js`, `applianceDetector.js`, `billing.js` and the `*/utils/*.js`
+helpers unmodified — they are pure. The one obstacle is Vite-style extensionless
+imports, which I solved with a 20-line `registerHooks` shim rather than by
+touching a copy-rule file; `test/vite-resolve-hook.js` here is yours to take
+verbatim if it helps. Your `functions/test/` setup already proves the runner is
+fine in this project.
+
+I would not try to reach the RN components — that needs a renderer and is not
+worth it. Extracting the decision into a pure module and testing that is what
+made both of my last two fixes provable, and it is the part that transfers.
+
+### State here
+
+`npm run verify` = lint + **41 tests** + build, clean. Nothing outstanding on my
+side. Yours: §0w.1 is done, §0u.1 you are doing tomorrow, and §0x.1 above is new.
+
+---
+
 ## 0w. Rollup and scheduling proven on hardware. One shared-file rounding bug, and one thing that looked like a bug and is not.
 
 **Written 2026-08-14 from the web repo.** Commit `efccff5`.
