@@ -104,7 +104,24 @@ export const DashboardPage = () => {
    * than reading preferences a second time.
    */
   const liveAppliances = buildLiveAppliances(outlets, {});
-  const switchingFor = (outletNumber) => {
+
+  /*
+   * Gated on readings, which buildLiveAppliances cannot do for itself — it is
+   * handed raw documents and never sees a clock.
+   *
+   * `isSwitchingOff` is `!isOn && isDrawing`, and `isDrawing` reads the power
+   * field straight off the document. When the ESP32 stops posting, that field
+   * freezes at its last value, so an outlet commanded off while a fan was
+   * running reports a transition **forever** — observed reading "Switching off…"
+   * against a 27-second-old wattage, and it would never have cleared on its own.
+   *
+   * A transition is a claim about right now and needs evidence from right now.
+   * Without readings the badge falls through to the commanded state, which is
+   * known from Firestore regardless, and the "Nothing is reporting" notice below
+   * explains the rest.
+   */
+  const switchingFor = (outletNumber, hasReading) => {
+    if (!hasReading) return null;
     const appliance = liveAppliances.find(
       (item) => Number(item.outletNumber) === outletNumber
     );
@@ -251,7 +268,7 @@ export const DashboardPage = () => {
           hasLoad={outlet1HasLoad}
           suggestion={outlet1Suggestion}
           identity={identityFor(1)}
-          switchingTo={switchingFor(1)}
+          switchingTo={switchingFor(1, outlet1HasReading)}
           telemetryFresh={outlet1HasReading}
           disabled={isToggling}
           onToggle={handleToggle(1)}
@@ -265,7 +282,7 @@ export const DashboardPage = () => {
           hasLoad={outlet2HasLoad}
           suggestion={outlet2Suggestion}
           identity={identityFor(2)}
-          switchingTo={switchingFor(2)}
+          switchingTo={switchingFor(2, outlet2HasReading)}
           telemetryFresh={outlet2HasReading}
           disabled={isToggling}
           onToggle={handleToggle(2)}
