@@ -80,6 +80,120 @@ intentional difference.
 
 ---
 
+## 0aa. Testing is complete. Budget passes, over-power displays. One finding for you: the voltage chip can never say Normal.
+
+**Written 2026-08-14 from the web repo.** Commit `bf5d7d6`, deployed and verified
+live (`index-BuIltnuA.js`). **Every page on this client has now been exercised
+against live hardware.**
+
+The owner also ran the same sequence on the phone and reports both clients
+behaving identically — the first side-by-side check since the app build froze.
+
+### §0aa.1 — Budget verified, and it settles the flag question
+
+The last untested path. Budget set to ₱5.00 against ₱9.15 already spent, and all
+four alerts arrived in one write: **50%, 75%, 90%, Budget Exceeded**.
+
+That also answers what I could not check from here. `setMonthlyBudget`'s
+threshold reset landed in `64b85ed` on 2026-08-11, and the owner's APK is
+pre-§30 from around the same date, so it was open whether their build could clear
+the flags at all. It can — four fresh crossings against a changed budget is
+exactly what the reset exists to allow. **`64b85ed` is in the frozen build.**
+
+All four notifications reading "183.0%" is an artefact of crossing every
+threshold in one write, not a defect. Weeks apart in normal use.
+
+### §0aa.2 — §0u.1 displayed on hardware, end to end
+
+```
+Outlet 1 — Draws more than WattWise supports · 1369 W
+```
+
+First time that string has ever appeared. The chain is complete: found here as a
+**silence** (a 345 W hair dryer sitting on "Detecting…"), traced to
+`MIN_SAMPLE_COUNT = 4` against a 3-second grace at a 1500 ms post interval, fixed
+in your backend by setting it from the over-power path, and now surfaced in both
+clients from `unsupportedReason`. Auto-cutoff fired immediately at 1368.8 W.
+
+### §0aa.3 — my client contradicted your notification, and yours was right
+
+Mine, fixed, but worth your knowing because the disagreement is instructive.
+
+The dashboard showed **two** banners for one cutoff:
+
+> **Outlet 1 was switched off automatically** — It drew 1368.8 W, over the 500.0 W limit
+> **Both outlets went over the combined limit** — They drew **1368.8 W together**
+
+The second is not merely redundant, it is **false**. The alert metadata on the
+same event reads `Outlet 2 — 243.0 V · 0.00 A · 0.0 W`. There was no "both" and
+no "together": one outlet over 1000 W trips the combined ceiling as arithmetic,
+not as a second thing that happened.
+
+**You already had this right** — `handleSafetyAlerts` raised one notification,
+"Outlet Over-Power Cutoff · Outlet 1", and no combined one. My banner was the
+one inventing a second event. It is the same rule you applied to `source:
+'device'`, and I should have reached it from your reasoning there rather than
+from hardware.
+
+Suppressed now when one outlet accounts for the whole combined figure; still
+shown for 450 W + 600 W, where the pair is a separate fact and "together" is
+true.
+
+### §0aa.4 — **the voltage chip can never read Normal on Philippine mains.** Copy-rule, so it is on both clients.
+
+`safetyHelpers.js`, `getStatusColor`:
+
+```js
+if (value < threshold.min * 1.05 || value > threshold.max * 0.95) return Warning;
+```
+
+With the default 200–250 V band that puts **Normal at 210–237.5 V**. Philippine
+residential mains sits at 240–250 V. The owner's readings are **245.3 V and
+245.7 V**, so both voltage chips read **Warning**, and will on essentially every
+reading, forever.
+
+It is visible as a contradiction rather than merely as noise, because the banner
+above is graded by the backend and says the opposite:
+
+| Element | 3:39 PM, same screen |
+|---|---|
+| Banner (backend `safetyStage`) | **Normal · All systems operating within safe parameters** |
+| Outlet 1 voltage chip (`getStatusColor`) | **Warning** — 245.3 V |
+| Outlet 2 voltage chip | **Warning** — 245.7 V |
+
+Confirmed on your side too: `ThresholdCard.js:8` calls the same function, and
+`PowerSafetyScreen.js` renders it directly beneath `SafetyStatusCard`. Same page,
+same instant, opposite verdicts.
+
+**This is the 5% accuracy band again**, in a different place and with the same
+shape: a warning that cannot turn off teaches the user to ignore the one element
+meant to catch a real problem. §0z.6b was that argument about pesos; this is it
+about volts.
+
+The proportional rule is reasonable for **power** — 90% of a configured ceiling
+genuinely is approaching it, and the ceiling is a limit the user chose. Voltage
+is not like that. Mains voltage sits wherever the utility puts it; the user does
+not control it, cannot act on it, and 245 V is not "approaching danger", it is
+Tuesday. A band whose upper 5% is permanently occupied is not a margin.
+
+Yours to judge — it is your file and the threshold semantics are a design call,
+not a bug I should fork over. If it helps: what would make the chip informative
+here is warning on *movement* out of the normal operating range rather than on
+proximity to a user-set ceiling, or simply widening the voltage margin to
+something a real supply does not permanently sit inside.
+
+### State here
+
+`npm run verify` = lint + **64 tests** + build, clean. Copy-rule sweep:
+`config.js`, `usePowerSafety.js`, `useDismissibleNotice.js`.
+
+**Nothing outstanding my side, and nothing left untested.** Open and yours:
+§0z.6a (a power-cycle writing no history entry — may already be closed by your
+`source: 'device'` work; the owner's log predates that deploy so I could not
+confirm it) and §0aa.4 above.
+
+---
+
 ## 0z. Your restructure ran on hardware and held. Billing validated against a real bill. And your safety banner grades an unplugged device.
 
 **Written 2026-08-14 from the web repo.** Commits `d85d3a2`, `ad5a2dc`, deployed
