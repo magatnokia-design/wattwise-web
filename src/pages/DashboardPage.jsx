@@ -110,6 +110,41 @@ export const DashboardPage = () => {
     );
     return appliance?.isSwitching ? appliance.switchingTo : null;
   };
+  /*
+   * On/off, without letting a telemetry gap manufacture an answer.
+   *
+   * useOutletControl forces `status` to false whenever telemetry is stale
+   * (`hasFreshTelemetry ? resolveOutletStatus(outlet) : false`). That does not
+   * degrade to "unknown" — it substitutes a confident *off* for a value that was
+   * never telemetry-derived. `status` is the commanded state: written by
+   * processOutletToggle and by the ESP32's ack, and the shared helper already
+   * reads it ungated (`liveUsage.js:215`).
+   *
+   * It also made the badge's stale branch unreachable. The card's
+   * `telemetryFresh` IS that same flag, so `!telemetryFresh` implied `!isOn` and
+   * resolveOutletBadge could only ever return "Off" — "On · no reading" was dead
+   * code from the day it shipped.
+   *
+   * Falling back only while stale, rather than replacing the hook's value
+   * outright, is what keeps the optimistic toggle: `outletNStatus` carries the
+   * override the moment the switch is clicked, and that path is untouched while
+   * readings are arriving. Losing optimism when the device is unreachable is
+   * correct rather than a compromise — an optimistic update promises the relay
+   * is about to move, and for a device that is not polling, that promise is
+   * false.
+   *
+   * Reported as §0y.2. The real fix belongs in the copy-rule hook, so this comes
+   * out on the re-sync that takes it — same arrangement as the isDrawingPower
+   * derivation in §0v.1.
+   */
+  const commandedOn = (outletNumber, hookStatus, hasReading) => {
+    if (hasReading) return hookStatus;
+    const appliance = liveAppliances.find(
+      (item) => Number(item.outletNumber) === outletNumber
+    );
+    return appliance?.isOn === true;
+  };
+
   const rateNotice = useDismissibleNotice('rate-notice');
   const [toggleError, setToggleError] = useState('');
 
@@ -210,7 +245,7 @@ export const DashboardPage = () => {
       <div className={styles.pair}>
         <OutletCard
           outletNumber={1}
-          isOn={outlet1Status}
+          isOn={commandedOn(1, outlet1Status, outlet1HasReading)}
           applianceName={outlet1ApplianceName}
           metrics={outlet1Metrics}
           hasLoad={outlet1HasLoad}
@@ -224,7 +259,7 @@ export const DashboardPage = () => {
         />
         <OutletCard
           outletNumber={2}
-          isOn={outlet2Status}
+          isOn={commandedOn(2, outlet2Status, outlet2HasReading)}
           applianceName={outlet2ApplianceName}
           metrics={outlet2Metrics}
           hasLoad={outlet2HasLoad}

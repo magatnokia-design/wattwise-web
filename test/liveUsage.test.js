@@ -149,3 +149,32 @@ test('currentPower is gone', () => {
   const appliance = first([outlet()]);
   assert.equal('currentPower' in appliance, false);
 });
+
+test('isOn reports the command and does not decay with the readings', () => {
+  /*
+   * The Dashboard leans on this. useOutletControl forces status to false when
+   * telemetry is stale, which made resolveOutletBadge's "On · no reading" branch
+   * unreachable - the card's telemetryFresh IS that flag, so !telemetryFresh
+   * implied !isOn and the badge could only ever say "Off".
+   *
+   * The fallback is this helper, and it is only sound because status is the
+   * *commanded* state: processOutletToggle writes it, the ESP32 acks it, and it
+   * lives in Firestore whether or not the hardware is talking. Nothing here may
+   * ever gate it on a timestamp. Reported as §0y.2.
+   */
+  const stale = first([
+    outlet({
+      status: 'on',
+      power: 0,
+      current: 0,
+      metricsUpdatedAtMs: NOW - 10 * 60 * 1000,
+    }),
+  ]);
+
+  assert.equal(stale.isOn, true);
+  // And the meter is still allowed to disagree - that pairing is the point.
+  assert.equal(stale.isDrawing, false);
+
+  const off = first([outlet({ status: 'off', metricsUpdatedAtMs: NOW - 10 * 60 * 1000 })]);
+  assert.equal(off.isOn, false);
+});
