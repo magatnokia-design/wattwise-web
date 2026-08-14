@@ -12,7 +12,9 @@
 // nobody saw within a quarter of an hour is history, and History has it.
 export const RECENT_WINDOW_MS = 15 * 60 * 1000;
 
-const toMs = (value) => {
+// Positive finite value or 0. Used for both epoch milliseconds and wattages —
+// same coercion, and naming it for one of them made the other read as a bug.
+const toPositiveNumber = (value) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 };
@@ -48,7 +50,7 @@ export const collectCutoffEvents = (outlets, nowMs) => {
     // anyway. The firmware's grace is 3 seconds, so nothing is lost but noise.
     if (outlet?.safety?.overPower === true) return;
 
-    const atMs = toMs(outlet?.safety?.overPowerAtMs);
+    const atMs = toPositiveNumber(outlet?.safety?.overPowerAtMs);
     if (!atMs || nowMs - atMs > RECENT_WINDOW_MS) return;
 
     events.push({
@@ -62,13 +64,39 @@ export const collectCutoffEvents = (outlets, nowMs) => {
   });
 
   const newestCombined = list.reduce((newest, outlet) => {
-    const atMs = toMs(outlet?.safety?.totalOverPowerAtMs);
-    return atMs > toMs(newest?.safety?.totalOverPowerAtMs) ? outlet : newest;
+    const atMs = toPositiveNumber(outlet?.safety?.totalOverPowerAtMs);
+    return atMs > toPositiveNumber(newest?.safety?.totalOverPowerAtMs) ? outlet : newest;
   }, null);
 
-  const combinedAtMs = toMs(newestCombined?.safety?.totalOverPowerAtMs);
+  const combinedAtMs = toPositiveNumber(newestCombined?.safety?.totalOverPowerAtMs);
   const combinedSettled = newestCombined?.safety?.totalOverPower !== true;
-  if (combinedSettled && combinedAtMs && nowMs - combinedAtMs <= RECENT_WINDOW_MS) {
+
+  /*
+   * A combined breach one outlet caused on its own is not a second event.
+   *
+   * Observed on hardware: outlet 1 drew 1368.8 W with outlet 2 at 0.00 A, and
+   * this reported both a per-outlet breach and "Both outlets went over the
+   * combined limit — they drew 1368.8 W together". The second banner is not
+   * merely redundant, it is false: outlet 2 drew nothing, so there is no "both"
+   * and no "together". One outlet over 1000 W trips the combined ceiling as a
+   * matter of arithmetic, not as a separate thing that happened.
+   *
+   * The backend already agrees — it raised one notification, "Outlet
+   * Over-Power Cutoff · Outlet 1", and no combined one. This is the same rule
+   * the phone applied to `source: 'device'`: a single failure reported twice
+   * under two names is worse than reporting it once.
+   *
+   * Kept when no single outlet accounts for it, e.g. 450 W plus 600 W. Then the
+   * combined limit is a genuinely separate fact about the pair, and the wording
+   * is true.
+   */
+  const combinedLimitW = toPositiveNumber(newestCombined?.safety?.totalLimitW);
+  const causedByOneOutlet = list.some(
+    (outlet) => combinedLimitW > 0 && toPositiveNumber(outlet?.safety?.overPowerW) >= combinedLimitW
+  );
+
+  if (combinedSettled && combinedAtMs && !causedByOneOutlet
+    && nowMs - combinedAtMs <= RECENT_WINDOW_MS) {
     events.push({
       key: `combined-${combinedAtMs}`,
       atMs: combinedAtMs,

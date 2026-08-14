@@ -51,11 +51,20 @@ test('a combined breach is reported once, not once per outlet', () => {
 });
 
 test('an outlet breach and a combined breach are both reported, newest first', () => {
+  /*
+   * This test is about ordering, but its fixture used to put 1028.3 W on outlet
+   * 1 - over the 1000 W combined ceiling on its own, which is now suppressed as
+   * one event reported twice. The figure was invented; the ordering it checks is
+   * not, so the fixture moved rather than the assertion.
+   *
+   * 620 W plus a 1030 W total means outlet 2 contributed 410 W. Both facts are
+   * then true and separate, which is exactly when both should show.
+   */
   const events = collectCutoffEvents(
     [
       outlet(1, {
         overPowerAtMs: NOW - 10_000,
-        overPowerW: 1028.3,
+        overPowerW: 620,
         totalOverPowerAtMs: NOW - 90_000,
         totalOverPowerW: 1030,
       }),
@@ -114,6 +123,78 @@ test('the same breach keeps one identity once it has settled', () => {
 
   assert.equal(first[0].key, later[0].key);
   assert.equal(first[0].atMs, later[0].atMs);
+});
+
+test('a combined breach one outlet caused alone is not a second event', () => {
+  /*
+   * From hardware. Outlet 1 drew 1368.8 W with outlet 2 at 0.00 A, and the
+   * dashboard showed two banners: the per-outlet cut, and "Both outlets went
+   * over the combined limit - they drew 1368.8 W together".
+   *
+   * The second is not merely redundant, it is false. Outlet 2 drew nothing, so
+   * there is no "both" and no "together". One outlet over 1000 W trips the
+   * combined ceiling arithmetically, not as a separate thing that happened - and
+   * the backend agrees, raising one notification for outlet 1 and no combined
+   * one.
+   */
+  const events = collectCutoffEvents(
+    [
+      outlet(1, {
+        overPower: false,
+        overPowerAtMs: NOW - 1000,
+        overPowerW: 1368.8,
+        limitW: 500,
+        totalOverPower: false,
+        totalOverPowerAtMs: NOW - 1000,
+        totalOverPowerW: 1368.8,
+        totalLimitW: 1000,
+      }),
+      outlet(2, {
+        totalOverPower: false,
+        totalOverPowerAtMs: NOW - 1000,
+        totalOverPowerW: 1368.8,
+        totalLimitW: 1000,
+      }),
+    ],
+    NOW
+  );
+
+  assert.equal(events.length, 1);
+  assert.equal(events[0].scope, 'outlet');
+  assert.equal(events[0].label, 'Outlet 1');
+  assert.ok(!events.some((event) => event.scope === 'combined'));
+});
+
+test('a combined breach no single outlet accounts for is still reported', () => {
+  // 450 W plus 600 W: only outlet 2 breaks its own limit, but the pair breaks
+  // the ceiling. Here "together" is true and the fact is genuinely separate.
+  const events = collectCutoffEvents(
+    [
+      outlet(1, {
+        overPower: false,
+        overPowerW: 450,
+        limitW: 500,
+        totalOverPower: false,
+        totalOverPowerAtMs: NOW - 1000,
+        totalOverPowerW: 1050,
+        totalLimitW: 1000,
+      }),
+      outlet(2, {
+        overPower: false,
+        overPowerAtMs: NOW - 1000,
+        overPowerW: 600,
+        limitW: 500,
+        totalOverPower: false,
+        totalOverPowerAtMs: NOW - 1000,
+        totalOverPowerW: 1050,
+        totalLimitW: 1000,
+      }),
+    ],
+    NOW
+  );
+
+  assert.equal(events.filter((event) => event.scope === 'combined').length, 1);
+  assert.equal(events.filter((event) => event.scope === 'outlet').length, 1);
 });
 
 test('a missing safety block is not an event', () => {
