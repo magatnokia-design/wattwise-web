@@ -1,40 +1,63 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { resolveApplianceLine, isDrawingPower } from '../src/components/dashboard/applianceLine.js';
+import { resolveApplianceLine } from '../src/components/dashboard/applianceLine.js';
 
-test('residual current on a switched-off outlet is not a load', () => {
+/*
+ * `isDrawing` now arrives from useOutletControl's hasLoad rather than being
+ * re-derived here from real power. The residual-current case those derivation
+ * tests covered - this PZEM reads 0.02 A at 0.0 W on a switched-off outlet,
+ * double the old `current >= 0.01` term, which put "Nokia's Fan · recognised"
+ * under an outlet that was off - is fixed at the source in the phone's b90e529
+ * and guarded by their tests. Re-testing a value this file no longer computes
+ * would assert nothing.
+ */
+const line = (args) =>
+  resolveApplianceLine({
+    isDrawing: true,
+    telemetryFresh: true,
+    applianceName: '',
+    identity: null,
+    ...args,
+  });
+
+test('no readings never claims the outlet is empty, or that it is running', () => {
   /*
-   * The regression. useOutletControl's hasLiveLoad is
-   * `power >= 0.5 || current >= 0.01`, and this PZEM's residual on a
-   * switched-off outlet reads 0.02 A at 0.0 W - double that threshold with
-   * nothing consuming. Observed as "Nokia's Fan · recognised" under an outlet
-   * that was off, and it came and went exactly as the current flickered
-   * 0.02 -> 0.00 -> 0.02.
+   * Both inputs freeze at the last snapshot when the ESP32 stops posting:
+   * hasLoad is computed inside the snapshot handler and applianceIdentity
+   * arrives with it. So a fan behind dropped wi-fi held "Nokia's Fan ·
+   * recognised" indefinitely, on readings minutes old.
    *
-   * Real power is the only thing that means consumption.
+   * The fix must not overshoot in the other direction either. Falling through
+   * to "No appliance detected yet" would assert the outlet is empty, which is
+   * equally unsupported - it is the same error the badge made as "On, idle".
    */
-  assert.equal(isDrawingPower({ power: 0, current: 0.02 }), false);
-  assert.equal(isDrawingPower({ power: 0, current: 0.03 }), false);
+  const running = line({
+    telemetryFresh: false,
+    isDrawing: true,
+    applianceName: "Nokia's Fan",
+    identity: { state: 'confirmed', namedAs: "Nokia's Fan", recognised: true },
+  });
 
-  assert.equal(isDrawingPower({ power: 57.2, current: 0.24 }), true);
+  assert.equal(running.text, 'No recent readings');
+  assert.notEqual(running.text, "Nokia's Fan · recognised");
+  assert.notEqual(running.text, 'No appliance detected yet');
+
+  // Frozen the other way: last snapshot said nothing was drawing.
+  const quiet = line({ telemetryFresh: false, isDrawing: false, applianceName: "Nokia's Fan" });
+  assert.equal(quiet.text, 'No recent readings');
 });
 
-test('the power floor rejects meter noise but not a small real load', () => {
-  assert.equal(isDrawingPower({ power: 0.5 }), false);
-  assert.equal(isDrawingPower({ power: 0.6 }), true);
-  // A phone charger sits at the bottom of the catalogue and must still count.
-  assert.equal(isDrawingPower({ power: 3 }), true);
-});
+test('no readings outranks an unsupported verdict', () => {
+  // "Not something WattWise monitors" is a conclusion drawn from readings, so
+  // it cannot outlive them.
+  const result = line({
+    telemetryFresh: false,
+    identity: { state: 'confirmed', unsupported: true, namedAs: '' },
+  });
 
-test('missing or malformed metrics are not a load', () => {
-  assert.equal(isDrawingPower(undefined), false);
-  assert.equal(isDrawingPower({}), false);
-  assert.equal(isDrawingPower({ power: null }), false);
-  assert.equal(isDrawingPower({ power: 'abc' }), false);
+  assert.equal(result.text, 'No recent readings');
 });
-
-const line = (args) => resolveApplianceLine({ isDrawing: true, applianceName: '', identity: null, ...args });
 
 test('nothing drawing reports nothing, even on a named outlet', () => {
   const result = line({ isDrawing: false, applianceName: "Nokia's Fan", identity: { state: 'confirmed', namedAs: "Nokia's Fan" } });

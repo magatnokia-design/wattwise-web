@@ -15,35 +15,36 @@
  * conclusion drawn from evidence that was not about the load in front of it.
  */
 
-/*
- * Real power, not current.
- *
- * `useOutletControl`'s hasLiveLoad is `power >= 0.5 || current >= 0.01`, and the
- * PZEM's residual on a switched-off outlet reads 0.02 A — double that threshold
- * — while real power sits at 0.0 W. That put "Nokia's Fan · recognised" under an
- * outlet that was off, consuming nothing.
- *
- * Current alone is not consumption. The phone's own newer code agrees: liveUsage
- * uses `isDrawing = powerW > LIVE_LOAD_FLOOR_W` with no current term at all.
- * That file is copy-rule and useOutletControl is too, so the correction lives
- * here rather than in either of them.
- *
- * Freshness needs no separate guard: buildOutletMetrics already returns zeros
- * when telemetry is stale, so a quiet device cannot read as drawing.
- */
-export const LIVE_POWER_FLOOR_W = 0.5;
-
-export const isDrawingPower = (metrics) => Number(metrics?.power) > LIVE_POWER_FLOOR_W;
-
 /**
  * @param {object} args
  * @param {boolean} args.isDrawing  Real power above the floor. The meter decides.
+ *   Supplied by `useOutletControl`'s `hasLoad`, which is power-only since the
+ *   phone's b90e529. This file used to re-derive it, purely because that hook
+ *   also accepted `current >= 0.01 A` as evidence of a load and this meter's
+ *   residual on a switched-off outlet is 0.02 A at 0.0 W. Fixed upstream and
+ *   re-synced, so there is no longer anything to work around.
+ * @param {boolean} args.telemetryFresh  Readings arriving inside the 12 s window.
  * @param {string}  args.applianceName  The name stored on the outlet.
  * @param {object|null} args.identity   Raw `applianceIdentity` from the document.
  * @returns {{ text: string, tone: 'idle'|'unsupported'|'changed'|'named' }}
  */
-export const resolveApplianceLine = ({ isDrawing, applianceName, identity }) => {
+export const resolveApplianceLine = ({ isDrawing, telemetryFresh, applianceName, identity }) => {
   const name = String(applianceName || '').trim();
+
+  /*
+   * No readings, so nothing below is currently knowable.
+   *
+   * Both inputs freeze at the last snapshot when the ESP32 stops posting -
+   * `hasLoad` is computed inside the snapshot handler and `applianceIdentity`
+   * arrives with it - so without this the line went on reading "Nokia's Fan -
+   * recognised" indefinitely, asserting a live recognised load from readings
+   * minutes old. Falling through to "No appliance detected yet" would be no
+   * better: that is a positive claim the outlet is empty, the same mistake
+   * pointed the other way.
+   */
+  if (telemetryFresh === false) {
+    return { text: 'No recent readings', tone: 'idle' };
+  }
 
   // Nothing is drawing, so there is nothing to report. The absence of a
   // detection is not a fact about an appliance, and the stored name is not

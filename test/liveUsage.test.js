@@ -91,17 +91,39 @@ test('a command the meter already agrees with is not switching', () => {
   assert.equal(settled.switchingTo, null);
 });
 
-test('an expired pending window is not switching', () => {
+test('an expired pending window still governs the `on` direction', () => {
   // This is what nowMs was made injectable for - without it the case can only be
   // reached by waiting on the wall clock.
   const appliance = first([
-    outlet({ status: 'off', pendingStatus: 'off', pendingStatusUntilMs: NOW - 1 }),
+    outlet({ status: 'on', power: 0, current: 0, pendingStatus: 'on', pendingStatusUntilMs: NOW - 1 }),
   ]);
 
   assert.equal(appliance.isSwitching, false);
   assert.equal(appliance.switchingTo, null);
-  // Still drawing, though - the contradiction the badge has to survive.
-  assert.equal(appliance.isDrawing, true);
+});
+
+test('off while drawing is switching off with no pending marker at all', () => {
+  /*
+   * Changed deliberately in the phone's b90e529, so this test moved with it
+   * rather than being a local expectation to defend.
+   *
+   * It used to require a live pending window, which an auto-cutoff never opens -
+   * updateOutletMetrics references pendingStatus only to delete it. The result
+   * was a dashboard reading "Off" beside 1030 W. Current running through an
+   * outlet the document calls off cannot be a resting state whatever caused it,
+   * so the contradiction alone is now the signal.
+   */
+  const cutoff = first([outlet({ status: 'off', power: 1030, current: 4.31 })]);
+
+  assert.equal(cutoff.isSwitching, true);
+  assert.equal(cutoff.switchingTo, 'off');
+  assert.equal(cutoff.isDrawing, true);
+
+  // And an expired window no longer suppresses it either.
+  const expired = first([
+    outlet({ status: 'off', pendingStatus: 'off', pendingStatusUntilMs: NOW - 1 }),
+  ]);
+  assert.equal(expired.switchingTo, 'off');
 });
 
 test('sensor noise below the floor is not a load', () => {

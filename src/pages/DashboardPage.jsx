@@ -33,6 +33,11 @@ export const DashboardPage = () => {
     outlet2ApplianceName,
     outlet1Metrics,
     outlet2Metrics,
+    // Fresh-telemetry-AND-drawing, per outlet. The card re-derived this from
+    // real power while the hook still counted `current >= 0.01 A` as a load;
+    // that term is gone upstream, so the shared value is authoritative again.
+    outlet1HasLoad,
+    outlet2HasLoad,
     outlet1Suggestion,
     outlet2Suggestion,
     isLoadingOutlets,
@@ -187,6 +192,7 @@ export const DashboardPage = () => {
           isOn={outlet1Status}
           applianceName={outlet1ApplianceName}
           metrics={outlet1Metrics}
+          hasLoad={outlet1HasLoad}
           suggestion={outlet1Suggestion}
           identity={identityFor(1)}
           switchingTo={switchingFor(1)}
@@ -200,6 +206,7 @@ export const DashboardPage = () => {
           isOn={outlet2Status}
           applianceName={outlet2ApplianceName}
           metrics={outlet2Metrics}
+          hasLoad={outlet2HasLoad}
           suggestion={outlet2Suggestion}
           identity={identityFor(2)}
           switchingTo={switchingFor(2)}

@@ -3,7 +3,7 @@ import { Card } from '../ui/Card';
 import { Switch } from '../ui/Switch';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Feedback';
-import { resolveApplianceLine, isDrawingPower } from './applianceLine';
+import { resolveApplianceLine } from './applianceLine';
 import { resolveOutletBadge } from './outletBadge';
 import styles from './OutletCard.module.css';
 
@@ -32,6 +32,9 @@ export const OutletCard = ({
   isOn,
   applianceName,
   metrics,
+  // Fresh telemetry AND real power over 0.5 W, from useOutletControl. Power
+  // only since the phone's b90e529 — see `drawing` below.
+  hasLoad,
   suggestion,
   // Raw applianceIdentity from the outlet document. Read here rather than
   // through useOutletControl, which is byte-identical to the phone's copy and
@@ -99,18 +102,25 @@ export const OutletCard = ({
    * put "No appliance detected yet" directly above a live 52.6 W.
    */
   /*
-   * Derived from real power rather than the `hasLoad` prop.
+   * Back on the shared `hasLoad` prop.
    *
-   * useOutletControl's hasLiveLoad also accepts `current >= 0.01 A`, and this
-   * meter's residual on a switched-off outlet is 0.02 A at 0.0 W — enough to
-   * pass that test with nothing consuming, which is what put "Nokia's Fan ·
-   * recognised" under an outlet that was off.
+   * This was re-derived locally from real power for one reason: hasLiveLoad also
+   * accepted `current >= 0.01 A`, and this meter's residual on a switched-off
+   * outlet is 0.02 A at 0.0 W — enough to pass with nothing consuming, which is
+   * what put "Nokia's Fan · recognised" under an outlet that was off. The phone
+   * dropped the current term in b90e529 and the file is re-synced, so the
+   * divergence has nothing left to defend.
    */
-  const drawing = isDrawingPower(metrics);
+  const drawing = hasLoad === true;
 
   // Every branch of this lives in applianceLine.js, tested — it is the line that
   // has been wrong more often than anything else on this page.
-  const line = resolveApplianceLine({ isDrawing: drawing, applianceName, identity });
+  const line = resolveApplianceLine({
+    isDrawing: drawing,
+    telemetryFresh,
+    applianceName,
+    identity,
+  });
   const identityChanged = line.tone === 'changed';
   const unsupported = line.tone === 'unsupported';
 
