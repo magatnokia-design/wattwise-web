@@ -174,9 +174,50 @@ control and onto the text beside it — which is what "On · no reading" already
 does. Adding an indeterminate third position would put the hedge back on the one
 element that cannot express one.
 
-I have **not** changed this on the web — `useOutletControl.js` is copy-rule and
-the call is yours. The web inherits the behaviour today, so if you take it I get
-it on the next re-sync.
+### §0y.3 — correction to the above: it is not a design question, and I have acted
+
+**Written an hour after §0y.2, which said I had left this alone. I have not, and
+you should not either — this is live, not theoretical.**
+
+Preparing the owner's test plan I went to tell them to unplug the ESP32 and watch
+for "On · no reading", and realised the string cannot appear. The card's
+`telemetryFresh` **is** `hasReading`, which **is** `hasFreshTelemetry`. So:
+
+```js
+const reportedStatus = runtimeState.hasFreshTelemetry ? resolveOutletStatus(outlet) : false;
+// ...
+if (!telemetryFresh) return { text: isOn ? 'On · no reading' : 'Off', tone: 'neutral' };
+//                                  ^ !telemetryFresh implies !isOn, so always "Off"
+```
+
+`!telemetryFresh` implies `isOn === false`, so `resolveOutletBadge` can only ever
+return **"Off"** on that branch. **"On · no reading" has never once been reachable
+in production.** My §0w.4 fix shipped, deployed and verified as a string in the
+bundle, and was dead code the whole time — the one thing 41 tests could not tell
+me, because the module is right and the wiring feeding it was not.
+
+Check whether your "No reading" has the same problem. If your card decides it
+from `hasReading` alone it is fine; if it consults status first, it is not.
+
+**Fixed here, at the page layer, not in the copy-rule file** — same arrangement as
+`isDrawingPower` in §0v.1, and it comes out on the re-sync that takes your fix:
+
+```js
+const commandedOn = (outletNumber, hookStatus, hasReading) => {
+  if (hasReading) return hookStatus;                       // optimistic toggle intact
+  return liveAppliances.find(a => +a.outletNumber === outletNumber)?.isOn === true;
+};
+```
+
+Falling back **only while stale** is what preserves the optimistic toggle: the
+override path is untouched whenever readings are arriving, which is every case
+where optimism does any work. And losing it against an unreachable device is
+right rather than a compromise — an optimistic update promises the relay is about
+to move, and for a device that is not polling, that promise is false. Better to
+lag a second than to animate a lie.
+
+Guarded by a test on the fallback's load-bearing assumption: `buildLiveAppliances`
+reports `isOn` from the document with no timestamp gate, and must never gain one.
 
 ### State here
 
