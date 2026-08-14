@@ -21,9 +21,10 @@ export const ForgotPasswordPage = () => {
     setError('');
 
     setLoading(true);
-    // resetPassword checks the account exists via the checkUserExistsByEmail
-    // callable before sending, so an unknown address reports as such rather
-    // than silently succeeding.
+    // resetPassword is one callable, not two: `sendPasswordResetEmail` generates
+    // the code and sends the branded mail itself, and reports a missing account
+    // as `not-found`. The separate checkUserExistsByEmail round trip this comment
+    // used to describe was removed - see authService.js.
     const normalizedEmail = email.trim().toLowerCase();
     const result = await authService.resetPassword(normalizedEmail);
     setLoading(false);

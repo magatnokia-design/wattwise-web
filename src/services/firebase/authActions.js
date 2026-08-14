@@ -35,6 +35,13 @@ export const verifyResetCode = async (oobCode) => {
     const email = await verifyPasswordResetCode(auth, oobCode);
     return { success: true, email };
   } catch (error) {
+    // Logged for the same reason confirmPasswordReset below is: the sentence on
+    // screen is a lookup on this code, so "This link didn't work" is not evidence
+    // of which failure occurred. This was the one action-code path without the
+    // log, and it is the one that failed in testing - leaving an invalid code and
+    // an expired one indistinguishable from the console, which is precisely the
+    // position the first report of this left us in.
+    console.warn('[auth/action] verifyPasswordResetCode failed:', error?.code, error?.message);
     return { success: false, code: error?.code, error: error?.message };
   }
 };
