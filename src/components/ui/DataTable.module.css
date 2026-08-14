@@ -69,3 +69,54 @@
 .sortActive .sortIcon {
   opacity: 1;
 }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 4px 2px;
+  border-top: 1px solid var(--ww-border);
+  margin-top: 4px;
+}
+
+.pageInfo {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ww-text-light);
+}
+
+.pageControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pageCount {
+  font-size: 13px;
+  color: var(--ww-text-light);
+  min-width: 96px;
+  text-align: center;
+}
+
+.pageButton {
+  border: 1px solid var(--ww-border);
+  background: #fff;
+  color: var(--ww-text-dark);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.pageButton:hover:not(:disabled) {
+  border-color: var(--ww-primary);
+  color: var(--ww-primary-dark);
+}
+
+.pageButton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

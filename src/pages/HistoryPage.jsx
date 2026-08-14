@@ -108,6 +108,10 @@ export const HistoryPage = () => {
             <DataTable
               rowKey={(row) => row.date}
               defaultSort={{ key: 'date', direction: 'desc' }}
+              // One row per day, so a 90-day range is the only one that overruns
+              // a screen. Same page size keeps the two tabs feeling alike.
+              pageSize={15}
+              resetKey={range}
               empty={
                 <EmptyState icon="📋" title="No days recorded in this range">
                   A day appears here after the midnight rollup, or immediately once the hardware
@@ -187,6 +191,19 @@ export const HistoryPage = () => {
             <DataTable
               rowKey={(row) => row.id}
               defaultSort={{ key: 'timestamp', direction: 'desc' }}
+              /*
+               * A busy day puts 30-odd switches in here and the listener pulls
+               * 50, so the log ran well past a screen. Paged rather than capped:
+               * every entry is still reachable, which matters because this table
+               * is the record of what the hardware actually did.
+               *
+               * resetKey is the filter pair, so changing range or outlet starts
+               * at the top. A log arriving live does not — this listener streams,
+               * and being pulled back to page 1 mid-read is worse than a stale
+               * page number, which resolvePage clamps.
+               */
+              pageSize={15}
+              resetKey={`${range}:${outlet}`}
               empty={
                 <EmptyState icon="🕓" title="No activity in this range">
                   Toggling an outlet writes a log entry here.

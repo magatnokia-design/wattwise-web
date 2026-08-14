@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { resolvePage, describeRange } from './pagination';
 import styles from './DataTable.module.css';
 
 /**
@@ -7,9 +8,31 @@ import styles from './DataTable.module.css';
  * real tables rather than stacked cards.
  *
  * columns: [{ key, header, align?, width?, sortable?, sortValue?, render? }]
+ *
+ * `pageSize` is opt-in: without it the table renders every row exactly as before.
+ * `resetKey` is what the caller is listing — change it and paging returns to the
+ * first page. Row arrivals deliberately do not, because the Activity log streams
+ * live and being pulled back to the top mid-read is worse than a stale page
+ * number, which resolvePage clamps anyway.
  */
-export const DataTable = ({ columns, rows, rowKey, empty = null, defaultSort = null }) => {
+export const DataTable = ({
+  columns,
+  rows,
+  rowKey,
+  empty = null,
+  defaultSort = null,
+  pageSize = null,
+  resetKey = null,
+}) => {
   const [sort, setSort] = useState(defaultSort); // { key, direction }
+  const [page, setPage] = useState(1);
+
+  // A different filter is a different list, so start it at the top. Sorting
+  // reorders the same list and gets the same treatment: page 3 of a descending
+  // sort has nothing to do with page 3 of an ascending one.
+  useEffect(() => {
+    setPage(1);
+  }, [resetKey, sort]);
 
   const sorted = useMemo(() => {
     if (!sort?.key) return rows;
@@ -39,11 +62,17 @@ export const DataTable = ({ columns, rows, rowKey, empty = null, defaultSort = n
     });
   };
 
+  const paged = pageSize
+    ? resolvePage({ page, totalRows: sorted.length, pageSize })
+    : null;
+  const visible = paged ? sorted.slice(paged.start, paged.end) : sorted;
+
   if (!rows.length && empty) {
     return empty;
   }
 
   return (
+    <>
     <div className={styles.scroll}>
       <table className={styles.table}>
         <thead>
@@ -83,7 +112,7 @@ export const DataTable = ({ columns, rows, rowKey, empty = null, defaultSort = n
           </tr>
         </thead>
         <tbody>
-          {sorted.map((row, index) => (
+          {visible.map((row, index) => (
             <tr key={rowKey ? rowKey(row, index) : index}>
               {columns.map((column) => (
                 <td key={column.key} style={{ textAlign: column.align || 'left' }}>
@@ -95,6 +124,37 @@ export const DataTable = ({ columns, rows, rowKey, empty = null, defaultSort = n
         </tbody>
       </table>
     </div>
+
+    {/* Only worth drawing when there is more than one page to move between. */}
+    {paged && paged.totalPages > 1 ? (
+      <nav className={styles.pagination} aria-label="Table pages">
+        <p className={styles.pageInfo}>
+          {describeRange({ start: paged.start, end: paged.end, totalRows: sorted.length })}
+        </p>
+        <div className={styles.pageControls}>
+          <button
+            type="button"
+            className={styles.pageButton}
+            onClick={() => setPage(paged.page - 1)}
+            disabled={!paged.hasPrevious}
+          >
+            ← Previous
+          </button>
+          <span className={styles.pageCount}>
+            Page {paged.page} of {paged.totalPages}
+          </span>
+          <button
+            type="button"
+            className={styles.pageButton}
+            onClick={() => setPage(paged.page + 1)}
+            disabled={!paged.hasNext}
+          >
+            Next →
+          </button>
+        </div>
+      </nav>
+    ) : null}
+    </>
   );
 };
 
