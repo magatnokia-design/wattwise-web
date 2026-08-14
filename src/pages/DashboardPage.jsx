@@ -38,6 +38,8 @@ export const DashboardPage = () => {
     // that term is gone upstream, so the shared value is authoritative again.
     outlet1HasLoad,
     outlet2HasLoad,
+    outlet1HasReading,
+    outlet2HasReading,
     outlet1Suggestion,
     outlet2Suggestion,
     isLoadingOutlets,
@@ -56,7 +58,26 @@ export const DashboardPage = () => {
   // and every priced figure on this page, so this must not read preferences a
   // second time. The outlet snapshot itself is the same query useOutletControl
   // listens to, which the Firestore SDK serves from one watch target.
-  const { outlets, telemetryFresh, lastTelemetryMs } = useLiveOutlets({ withRates: false });
+  const { outlets, lastTelemetryMs } = useLiveOutlets({ withRates: false });
+
+  /*
+   * Staleness on this page is owned by useOutletControl, not useLiveOutlets.
+   *
+   * Both hooks now answer "are readings arriving" on their own timer — 6 s there
+   * since the phone's 07f3a42, 5 s here — and two clocks answering one question
+   * can disagree at the boundary. That matters in exactly one place and it is
+   * not cosmetic: the card feeds `hasLoad` and `telemetryFresh` into
+   * resolveOutletBadge together, so a moment where the load is judged stale and
+   * the readings are not puts the badge back on "On, idle", which is the claim
+   * the whole of outletBadge.js exists to prevent.
+   *
+   * Taking both from the same useMemo makes that unreachable rather than
+   * unlikely. useLiveOutlets keeps `telemetryFresh` for Analytics and Safety,
+   * which do not mount this hook, and keeps supplying `lastTelemetryMs` here —
+   * a timestamp is not a claim about freshness, and its 5 s tick only keeps the
+   * "12s ago" text counting up.
+   */
+  const telemetryFresh = outlet1HasReading || outlet2HasReading;
 
   // applianceIdentity carries `namedAs`, which the card needs to tell a current
   // verdict from one computed against a name the outlet has since been renamed
@@ -196,7 +217,7 @@ export const DashboardPage = () => {
           suggestion={outlet1Suggestion}
           identity={identityFor(1)}
           switchingTo={switchingFor(1)}
-          telemetryFresh={telemetryFresh}
+          telemetryFresh={outlet1HasReading}
           disabled={isToggling}
           onToggle={handleToggle(1)}
           onRename={handleRename(1)}
@@ -210,7 +231,7 @@ export const DashboardPage = () => {
           suggestion={outlet2Suggestion}
           identity={identityFor(2)}
           switchingTo={switchingFor(2)}
-          telemetryFresh={telemetryFresh}
+          telemetryFresh={outlet2HasReading}
           disabled={isToggling}
           onToggle={handleToggle(2)}
           onRename={handleRename(2)}
