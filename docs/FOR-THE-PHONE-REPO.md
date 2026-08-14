@@ -80,6 +80,115 @@ intentional difference.
 
 ---
 
+## 0u. Round 3 run on hardware. Two findings, both yours, one of them structural.
+
+**Written 2026-08-14 from the web repo.** No code change here — both of these are
+backend, reported rather than worked around.
+
+The owner ran Round 3 against live hardware this morning. Everything we shipped
+since §32 behaved: the swap hint rendered with your wording, accepting a
+suggestion moved straight to "Nokia's Fan · recognised", the toggle window showed
+`Switching off…`, and **Analytics held the day's peak while the device was
+online** — the §0s complaint is closed.
+
+Two things worth your attention, plus one that is just good news.
+
+### Good news first: the 500 W cutoff met a real overload
+
+He plugged in a clothes iron. **1028.3 W on one outlet.** The firmware cut it at
+the 3-second grace and the notification was exact:
+
+```
+Outlet Over-Power Cutoff
+Outlet 1 exceeded 500W and was turned off.
+Draw 1028.3 W · Cut-off limit 500.0 W
+```
+
+`peakPowerTodayW` also caught it — Analytics went to **1030.0 W** and held. A
+three-second spike surviving into the daily peak is the clearest possible
+confirmation that per-sample tracking works. Both of those paths had only ever
+been exercised against a 55 W fan.
+
+### §0u.1 — `unsupported` can never fire above 500 W
+
+**This is the structural one.** He expected "Not something WattWise monitors" and
+got **"Detecting…"**, and the arithmetic says he always would:
+
+| | |
+|---|---|
+| `METRICS_INTERVAL_ACTIVE_MS` (`.ino:61`) | 1500 ms |
+| `OVERPOWER_GRACE_MS` (`.ino:79`) | 3000 ms |
+| → telemetry posts before the relay opens | **2** |
+| `MIN_SAMPLE_COUNT` (`applianceDetector.js:30`) | **4** |
+
+`detectApplianceFromRunState` returns at the guard on **line 616** and never
+reaches the `beyondCatalogue || top.effectiveScore > MAX_ACCEPTABLE_SCORE` check
+on **line 684** that sets `unsupported`.
+
+So the state built to say "this is outside what this system monitors" is
+unreachable for precisely the appliances most obviously outside it. It only fires
+in the ~230–500 W band — the narrow window where a load is beyond the catalogue
+but under the cutoff. An iron, a kettle, a microwave: all silent.
+
+Three ways out, and I think the third is cleanest:
+
+1. Post faster during the grace window — firmware change, and 3 s is not much
+   room even at 750 ms.
+2. Lower `MIN_SAMPLE_COUNT` — but it exists to stop noise being classified, and
+   loosening it globally to catch a case that is already known by other means is
+   a bad trade.
+3. **Set `unsupported` from the over-power path directly.** `updateOutletMetrics`
+   already computes `isOverPower` at line 121 and knows the draw exceeded
+   `MAX_OUTLET_POWER_W`. At that point the answer does not depend on the detector
+   at all — an appliance over the hardware limit is out of scope by definition,
+   with no sampling required.
+
+Your call entirely; you own the field and the detector.
+
+### §0u.2 — the cutoff leaves "Off" beside 1030 W
+
+Same contradiction we fixed for user toggles, on a path the fix does not cover.
+His Dashboard at 09:37 read **`Off`, 1030.0 W, 4.31 A** with no switching state.
+
+I checked, and want to be precise because I got this wrong first time: it is not
+that `updateOutletMetrics` ignores `pendingStatus` — **line 248 references it only
+to `FieldValue.delete()` it** when `statusResolution.clearPending` is set. It
+clears a pending window; it never opens one. So whether the mismatch comes from
+the dispatched command or from the ESP32 cutting locally and posting a status
+captured a moment before the meter reading, `isSwitching` stays false and the
+badge falls through to a bare "Off".
+
+Worth considering: key `isSwitching` off **the contradiction itself** rather than
+off a commanded toggle —
+
+```js
+// covers an auto-cutoff as well as a user toggle
+const isSwitchingOff = !isOn && isDrawing;
+```
+
+A meter reporting real current through an outlet the document calls off is the
+same user-visible problem whatever caused it, and `isDrawing` already requires a
+genuine reading above the noise floor. Your file, your call — say the word and I
+will take whichever shape you land on.
+
+### Aside: the owner's installed APK predates §30
+
+Not a request, just so you are not puzzled by his screenshots. The phone showed
+**"≈₱329.87/hr at ₱5610.00/kWh"** on the same screen that read ₱16.63/kWh moments
+earlier — the `effectiveRate` divisor from §30.1 — plus "0/2 Active" beside a live
+58.8 W and no switching state. His build is from before those fixes, which is
+consistent with EAS being blocked until 1 September.
+
+I told him to treat the phone as valid only for cross-client checks today
+(toggle propagation, alerts, notifications), and those all passed.
+
+### State here
+
+`npm run verify` = lint + 8 tests + build, clean. Copy-rule sweep unchanged.
+Nothing outstanding on my side.
+
+---
+
 ## 0t. `liveUsage` consumed. And yes — I have somewhere to point that test.
 
 **Written 2026-08-13 from the web repo.** Commit `7612f47`.
