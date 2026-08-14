@@ -3,6 +3,7 @@ import { Card } from '../ui/Card';
 import { Switch } from '../ui/Switch';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Feedback';
+import { resolveApplianceLine } from './applianceLine';
 import styles from './OutletCard.module.css';
 
 const METRICS = [
@@ -97,31 +98,12 @@ export const OutletCard = ({
    * put "No appliance detected yet" directly above a live 52.6 W.
    */
   const drawing = hasLoad;
-  const hasIdentity = typeof identity?.state === 'string';
 
-  const identityIsCurrent =
-    hasIdentity &&
-    String(identity.namedAs || '').trim().toLowerCase() ===
-      String(applianceName || '').trim().toLowerCase();
-
-  // Absent the field entirely (documents written before it shipped), fall back
-  // to the stored name rather than showing "Detecting…" forever.
-  const verdict = !hasIdentity ? 'legacy' : identityIsCurrent ? identity.state : 'stale';
-  const identityChanged = verdict === 'changed' && !!applianceName;
-
-  /*
-   * `unsupported` is the detector saying the run scored past the scope ceiling
-   * derived from APPLIANCE_PROFILES - it is not a low-voltage appliance this
-   * system monitors. Before it existed the run came back as a bare null, which
-   * rendered as "Detecting…" forever, and before *that* the scoring found the
-   * least-bad profile and called a 300 W load a Game Console at 41% with an
-   * Accept button under it. See FROM-THE-PHONE-REPO.md §32.2.
-   *
-   * It outranks `changed`: both say the stored name is wrong, but only this one
-   * says why, and "Not Speaker" invites the user to pick a replacement that does
-   * not exist in the catalogue.
-   */
-  const unsupported = drawing && identity?.unsupported === true;
+  // Every branch of this lives in applianceLine.js, tested — it is the line that
+  // has been wrong more often than anything else on this page.
+  const line = resolveApplianceLine({ hasLoad, applianceName, identity });
+  const identityChanged = line.tone === 'changed';
+  const unsupported = line.tone === 'unsupported';
 
   /*
    * A detection run ends when the outlet goes off, or when the draw stays under
@@ -145,19 +127,7 @@ export const OutletCard = ({
    */
   const showSwapHint = drawing && identityChanged && !unsupported;
 
-  const applianceLine = !drawing
-    ? 'No appliance detected yet'
-    : unsupported
-      ? 'Not something WattWise monitors'
-      : identityChanged
-        ? `Not ${applianceName}`
-        : verdict === 'confirmed' && applianceName
-          ? identity.recognised
-            ? `${applianceName} · recognised`
-            : applianceName
-          : verdict === 'legacy' && applianceName
-            ? applianceName
-            : 'Detecting…';
+  const applianceLine = line.text;
 
   /*
    * Naming is suggestion-only, by the owner's decision.
