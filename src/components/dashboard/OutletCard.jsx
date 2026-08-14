@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { Badge } from '../ui/Feedback';
 import { resolveApplianceLine } from './applianceLine';
 import { resolveOutletBadge } from './outletBadge';
+import { resolveSuggestionTrust, describeUncertainty } from './loadStability';
 import styles from './OutletCard.module.css';
 
 const METRICS = [
@@ -40,6 +41,11 @@ export const OutletCard = ({
   // through useOutletControl, which is byte-identical to the phone's copy and
   // does not surface `namedAs`.
   identity,
+  // Raw `applianceDetection.features` from the outlet document — read here for
+  // the same reason as `identity`: useOutletControl is byte-identical to the
+  // phone's copy and surfaces meanPower but not stdDevPower, which is what says
+  // whether the load held still long enough for one name to mean anything.
+  detectionFeatures,
   // 'on' | 'off' | null — a toggle the ESP32 has not picked up yet, resolved by
   // the shared buildLiveAppliances. See switchingFor in DashboardPage.
   switchingTo,
@@ -90,6 +96,28 @@ export const OutletCard = ({
    * a true statement — the transition is.
    */
   const switching = switchingTo === 'on' || switchingTo === 'off' ? switchingTo : null;
+
+  /*
+   * Whether the suggestion below is a finding or a guess.
+   *
+   * The detector always returns its best match, and the card always printed it
+   * as though best meant good. An iPhone halfway through its charge taper came
+   * back "Monitor · 50% confident" with Speaker at 45%, Electric Fan at 39% and
+   * Laptop Charger at 37% — four profiles inside thirteen points, which is what
+   * a signature resembling everything slightly and nothing much looks like.
+   *
+   * `stdDevPower` comes from the raw document rather than the suggestion because
+   * useOutletControl is byte-identical to the phone's copy and maps meanPower
+   * but not this. Asked for in §0ad; until then, read it here.
+   */
+  const trust = resolveSuggestionTrust({
+    confidencePercent: suggestion?.confidencePercent,
+    candidates: suggestion?.candidates,
+    suggestedName: suggestion?.name,
+    ambiguous: suggestion?.ambiguous,
+    meanPowerW: suggestion?.meanPowerW,
+    stdDevPowerW: detectionFeatures?.stdDevPower,
+  });
 
   /*
    * The meter decides, not the commanded state — matching the phone's
@@ -271,37 +299,74 @@ export const OutletCard = ({
           WattWise monitors" would contradict itself, so guard it here too. */}
       {suggestion?.showBadge && !unsupported ? (
         <div className={styles.suggestion}>
-          <div className={styles.suggestionHead}>
-            <span aria-hidden="true">💡</span>
-            <span>
-              This looks like <strong>{suggestion.name}</strong>
-              {suggestion.confidencePercent != null
-                ? ` (${suggestion.confidencePercent}% confident)`
-                : ''}
-            </span>
-          </div>
+          {trust.trusted ? (
+            <>
+              <div className={styles.suggestionHead}>
+                <span aria-hidden="true">💡</span>
+                <span>
+                  This looks like <strong>{suggestion.name}</strong>
+                  {suggestion.confidencePercent != null
+                    ? ` (${suggestion.confidencePercent}% confident)`
+                    : ''}
+                </span>
+              </div>
 
-          {suggestion.meanPowerW != null ? (
-            <p className={styles.suggestionMeta}>
-              Measured about {suggestion.meanPowerW.toFixed(1)} W
-              {suggestion.runtimeSeconds
-                ? ` over ${Math.round(suggestion.runtimeSeconds / 60)} min`
-                : ''}
-              .
-            </p>
-          ) : null}
+              {suggestion.meanPowerW != null ? (
+                <p className={styles.suggestionMeta}>
+                  Measured about {suggestion.meanPowerW.toFixed(1)} W
+                  {suggestion.runtimeSeconds
+                    ? ` over ${Math.round(suggestion.runtimeSeconds / 60)} min`
+                    : ''}
+                  .
+                </p>
+              ) : null}
 
-          <div className={styles.suggestionActions}>
-            <Button size="sm" onClick={acceptSuggestion} loading={busy}>
-              Use this name
-            </Button>
-          </div>
+              <div className={styles.suggestionActions}>
+                <Button size="sm" onClick={acceptSuggestion} loading={busy}>
+                  Use this name
+                </Button>
+              </div>
+            </>
+          ) : (
+            /*
+             * The detector answered, but not well enough for the answer to be
+             * presented as one. Naming a single leader here is what made an
+             * iPhone mid-charge read "Monitor · 50% confident" — a verdict the
+             * evidence did not support, over a load that was still being
+             * measured perfectly.
+             *
+             * No primary button in this branch. Offering "Use this name" under
+             * "WattWise is not sure" contradicts itself, and the 50% leader has
+             * no more claim than the 45% behind it.
+             */
+            <>
+              <div className={styles.suggestionHead}>
+                <span aria-hidden="true">🤔</span>
+                <span>WattWise is not sure what this is</span>
+              </div>
+
+              <p className={styles.suggestionMeta}>
+                {describeUncertainty({
+                  varying: trust.varying,
+                  swingW: trust.swingW,
+                  meanPowerW: suggestion.meanPowerW,
+                })}
+              </p>
+            </>
+          )}
 
           {suggestion.candidates?.length > 1 ? (
             <div className={styles.candidates}>
-              <span className={styles.candidatesLabel}>Or:</span>
+              <span className={styles.candidatesLabel}>
+                {trust.trusted ? 'Or:' : 'Closest matches:'}
+              </span>
               {suggestion.candidates
-                .filter((candidate) => candidate.name !== suggestion.name)
+                /*
+                 * The leader is filtered out only when it has already been
+                 * offered above. Where nothing was offered it belongs in the
+                 * list like everything else — it is a candidate, not a verdict.
+                 */
+                .filter((candidate) => !trust.trusted || candidate.name !== suggestion.name)
                 .map((candidate) => (
                   <button
                     key={candidate.name}

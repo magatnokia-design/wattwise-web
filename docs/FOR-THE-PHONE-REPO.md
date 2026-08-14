@@ -80,6 +80,131 @@ intentional difference.
 
 ---
 
+## 0ad. The detector treats variability as a feature to match on, never as a reason to withhold judgement
+
+**Written 2026-08-14 from the web repo.** Tier 1 shipped here, client-side.
+**81 tests.** Tiers 2 and 3 are yours.
+
+### What the owner saw
+
+An iPhone 16 Pro Max charging through its CC–CV taper — roughly 30 W down to
+10 W across 38 minutes — came back as:
+
+```
+Monitor 50%  ·  Speaker 45%  ·  Electric Fan 39%  ·  Laptop Charger 37%
+```
+
+Four profiles inside thirteen points. He'd also learned it twice already, as
+"Nokia's Charger at 20%" (28.8 W) and "Nokia's Charger 80%" (10.5 W), and spent
+the evening watching the card flip between them and `Not <name>`.
+
+His words: *"this is so inconsistent in our system because of this unsteady-state
+appliances."*
+
+### Nothing malfunctioned, and that is the problem
+
+`stdDevPower` is already a first-class feature — weighted `0.25` against
+`meanPower`'s `0.38` — and every profile carries a range for it:
+
+| Profile | stdDevPower |
+|---|---|
+| LED Lamp | 0 – 1.5 |
+| Electric Fan | 0 – 9 |
+| Monitor | 0.5 – 12 |
+| Speaker | 4 – 30 |
+| Laptop Charger | 6 – 30 |
+
+So variability is measured, and then used to *choose between* profiles. A load
+that swings is never reported as unidentifiable; it is routed to whichever
+profile tolerates swinging. The four candidates above are exactly the four
+high-stdDev profiles, and the mean of a 30→10 W sweep is 21 W, which sits inside
+Monitor's 14–50 W band.
+
+**The model has no way to say "this load is changing, so one name is the wrong
+kind of answer."** That is the gap, and it is a modelling gap rather than a bug.
+
+### Tier 1 — shipped here, presentation only
+
+`src/components/dashboard/loadStability.js`, web-only, 11 tests. It does not
+touch the detector or any verdict; it decides whether a verdict is presented as
+a finding or as a guess. A suggestion is demoted when the backend already set
+`ambiguous`, **or** the leader scores under 60, **or** the leader is less than 10
+points clear of the runner-up. The card then reads:
+
+> 🤔 **WattWise is not sure what this is**
+> This load changes while it runs — around 21 W on average, swinging about 6 W
+> either side. The energy is still counted exactly; it is only the name that
+> cannot be pinned down.
+
+and drops the "Use this name" button, because offering a primary action under
+"not sure" contradicts itself and a 50% leader has no more claim than the 45%
+behind it.
+
+**The rule worth copying** is that variability never demotes a match on its own.
+A laptop charger genuinely swings — its profile allows 30 W of stdDev — so an
+85% match with a 40-point lead stays a finding. `varying` is the *explanation*
+for a weak match, never the cause of one. There is a test named for it.
+
+### Tier 2 — yours, and the actual fix: multi-signature appliances
+
+One name, N signature clusters. A match succeeds if **any** cluster matches.
+
+- The iPhone becomes one identity with two clusters (fast-charge, trickle)
+- A three-speed fan gets three
+- The card reports one name at every operating point, so the `Not <name>`
+  flapping stops without any UI change
+
+This also dissolves a wall the owner hit tonight. He renamed the 28.8 W profile
+to "Nokia's Iphone", tried to rename the 10.5 W one to match, and
+`renameApplianceProfile` rejected it — `already-exists`, *"refuses to collide
+with another signature"*, which is deliberate and tested. Under Tier 2 the
+action is not a rename into a collision but **"add this signature to an existing
+appliance"**, which is what he actually wanted and cannot currently express.
+
+Until then the best available advice is two adjacent names — `Nokia's Iphone`
+and `Nokia's Iphone (near full)` — which keeps detection working in both regimes
+at the cost of two lines in the breakdown.
+
+### Two smaller items
+
+**`Electric Fan`'s lower bound excludes efficient ceiling fans.** The owner's
+runs at **14.1 W**; the profile starts at 22 W. It was routed to LED Lamp (3–22 W),
+and he accepted that and renamed it — which works, but means the catalogue gap is
+invisible in the data. DC/inverter ceiling fans commonly sit at 5–35 W.
+
+**`useOutletControl` maps `meanPower`, `runtimeSec` and `sampleCount` out of
+`applianceDetection.features`, but not `stdDevPower`.** Tier 1 reads it from the
+raw document in `DashboardPage` to avoid drifting the copy-rule file. One line in
+your copy and I'll delete the workaround on the next re-sync — the sixth
+correction to round-trip this way.
+
+### Retracting one of my own suggestions
+
+I proposed adding a "it's something else, let me name it" option to the
+suggestion card. **The owner rejected it and he is right.** Free-text naming does
+not lose the signature — accepting anything saves it — but it papers over
+catalogue coverage gaps instead of surfacing them. Nobody would ever have
+discovered the `Electric Fan` floor if he'd been able to type "Ceiling Fan".
+Fix the ranges, not the escape hatch.
+
+### Tier 3 — the limitation, stated narrowly
+
+Worth agreeing on wording, because the honest scope is much smaller than it
+first appears. **Nothing load-bearing depends on the appliance name**: energy is
+measured by the PZEM, cost is PELCO III applied to energy, the cutoff is measured
+power against 500 W, and budget, history and invoice totals all derive from
+energy. Identity feeds exactly one thing — the per-appliance breakdown.
+
+> Appliance identification is reliable for steady-state loads and unreliable for
+> loads that change operating regime during a run. This affects per-appliance
+> attribution only; total energy, cost, and safety enforcement are measured
+> directly and are unaffected.
+
+A system that knows its own boundary reads better than one that appears to be
+guessing everywhere, and this boundary is real, narrow, and demonstrable.
+
+---
+
 ## 0ac. `source: 'device'` verified on hardware. Full sweep passed. Nothing is blocking you.
 
 **Written 2026-08-14 from the web repo.** Commits `79c4549` and `e4b6d71`,
