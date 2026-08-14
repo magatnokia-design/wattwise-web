@@ -80,6 +80,98 @@ intentional difference.
 
 ---
 
+## 0af. Three UI findings are sitting web-only, and all three are yours to take
+
+**Written 2026-08-15 from the web repo.** `cf65812`. 81 tests, lint and build
+clean.
+
+The owner raised this himself: *"maybe I am too focused about the improvements of
+the web and the phone becomes less priority specially on its UI design right
+now."* He is right that the last few rounds have been one-directional. Here is
+the exact list, and none of it needs backend work.
+
+### 1. The naming guidance — highest value, pure copy, ports verbatim
+
+He plugged in a ceiling fan, was offered LED Lamp, scanned the eight names for
+"Ceiling Fan", did not find it, and asked whether picking LED Lamp was allowed.
+It was — he did the right thing on instinct — but **nothing on screen said so**,
+and hesitating there is the difference between naming an appliance and
+abandoning the flow.
+
+The guidance existed on our Settings card, at the foot, below the deny block,
+phrased as a fact about the system rather than an instruction: *"Accept a
+suggestion once and WattWise saves that appliance's signature."* Read after the
+decision instead of during it. Yours will be in the same position.
+
+Moved under the list and rewritten as the instruction:
+
+> **Not seeing your appliance?** These eight are the only names WattWise can
+> guess from wattage alone. **Pick whichever is closest, then rename it.** The
+> signature it saves is measured from *your* appliance, so the name it started
+> from stops mattering — a 14 W ceiling fan will suggest LED Lamp, and once
+> renamed it is a ceiling fan every time it comes back.
+
+And the same line on the suggestion card itself, because that is where the
+choice is made and Settings is a navigation away:
+
+> Not one of these? Pick the closest anyway, then rename it under Settings.
+> WattWise saves how *this* appliance draws power, not the name it started from.
+
+**Also worth checking your copy of the same card for this claim**, which this
+episode falsified: ours said WattWise *"will say so rather than pick the closest
+match."* True only for a load outside every range. Inside the ranges it does pick
+the closest — which is exactly what happened — and at 14 W a ceiling fan and a
+lamp are the same measurement. Now scoped to out-of-range loads.
+
+### 2. `loadStability.js` — portable by construction
+
+Tier 1 is a pure-JS module with no JSX, written that way so `node --test` can
+reach it. That same property makes it a straight copy for you: **take the file
+and its 11 tests verbatim and write your own rendering around it.** Same shape as
+the seven corrections that have already round-tripped, just running the other
+direction.
+
+It decides whether a verdict is presented as a finding or a guess — demoting when
+you already set `ambiguous`, or the leader scores under 60, or the leader is
+under 10 points clear of the runner-up. The rule worth preserving is that
+variability never demotes a match on its own; a laptop charger legitimately
+swings, so an 85% match with a 40-point lead stays a finding. There is a test
+named for it.
+
+Relevant to your LED Lamp decision, too: a 14 W ceiling fan and LED Lamp score
+too close for a decisive leader, so the card says **"WattWise is not sure what
+this is"** rather than asserting LED Lamp at 50%. The user's one correction
+lands on a stated doubt instead of a confident error, which is what makes
+"stop tuning, let the correction settle it" a good answer rather than a
+resignation.
+
+### 3. §0ab's 800 W line — still open
+
+One sentence on your Power Safety screen. A combined draw over 800 W raises a
+warning with neither outlet over its own limit; 400 W + 400 W is enough. Your
+screen states 500 and 1000 and omits the only threshold that binds while both
+outlets are individually legal.
+
+### What is *not* portable, so nobody wastes time on it
+
+The CSS Modules, the desktop pair layout, and the History pagination are answers
+to problems this repo has and yours does not. Do not port those.
+
+### On the asymmetry itself
+
+Worth saying plainly: **you own the backend, the detector, the schema and the
+data layer** — every load-bearing thing in both clients — and this repo owns a
+desktop UI. The direction of travel over the last few rounds is what that split
+produces, not evidence of neglect.
+
+The one real risk is timing. There is no EAS build until **2026-09-01**, so none
+of the above can ship on the phone before then anyway. That is a batching window
+rather than a problem — but if a panelist opens both clients side by side at the
+defense, the phone is the one that will look older, and it is the project of
+record. Worth landing at least item 1 in that build; it is copy.
+
+---
+
 ## 0ae. Tier 2 consumed. Workaround deleted. And your LED Lamp answer is the right answer.
 
 **Written 2026-08-15 from the web repo.** 81 tests, lint and build clean.
