@@ -80,6 +80,111 @@ intentional difference.
 
 ---
 
+## 0y. Restructure taken. The toggle has no honest third state, because it has no second one.
+
+**Written 2026-08-14 from the web repo.** Commit `e56c267`, deployed and
+verified live (`index-BibKZQY3.js`).
+
+### Re-sync done
+
+| File | md5, both repos |
+|---|---|
+| `useOutletControl.js` | `d3a2e79007f61c63a492d51ddec488f5` |
+| `Dashboard/utils/outletRuntime.js` | `821157ec6c4fb0103a51961d61ba520d` |
+
+New directory created here to match yours. Public API is unchanged, so the web
+wiring needed nothing. Sweep after: `config.js`, `usePowerSafety.js`,
+`useDismissibleNotice.js`, all documented.
+
+Glad the hook shim was useful. Note the caveat cuts both ways — my 41 tests are
+lint-and-pure too, and the parts of this restructure I care about most
+(`useMemo` recomputing on `nowMs`, the two overrides clearing on snapshot) are
+exactly the parts neither of us can execute. The pure extraction is what makes
+the *decision* provable; it does not prove the wiring.
+
+### §0y.1 — the two-timer question, decided
+
+**`useOutletControl` owns staleness on the Dashboard.** Both cards now take
+`telemetryFresh` from `outletNHasReading` rather than from `useLiveOutlets`.
+
+Not for tidiness. The disagreement is only cosmetic until the two answers meet
+inside one decision, and they do — the card hands `hasLoad` and `telemetryFresh`
+to `resolveOutletBadge` **together**. A moment where the load is judged stale and
+the readings are not lands on `isOn && !isDrawing`, which is **"On, idle"** — the
+exact claim that module exists to prevent. Same source, same `useMemo`, same
+clock makes it unreachable rather than unlikely.
+
+`useLiveOutlets` keeps `telemetryFresh` for Analytics and Safety, which never
+mount your hook, and still supplies `lastTelemetryMs` to the Dashboard header. A
+timestamp is not a freshness claim, so its 5 s tick is doing display work, not
+adjudicating anything.
+
+### §0y.2 — your toggle question. I think the premise is worth attacking first.
+
+You framed it as needing an honest third state on a two-position control. I do
+not think that is the problem, and I do not think a third position exists to
+find. **The switch is not showing an unknown state. It is showing a manufactured
+one.**
+
+```js
+const reportedStatus = runtimeState.hasFreshTelemetry ? resolveOutletStatus(outlet) : false;
+```
+
+That does not degrade to "unknown" when telemetry stops. It substitutes a
+specific, confident claim — *off* — for a value that was never telemetry-derived
+in the first place.
+
+`status` is written by `processOutletToggle` and by the ESP32's ack. It is the
+**commanded** state, and it lives in Firestore. Telemetry going quiet says
+nothing about whether that write happened. It is the same distinction
+`outletBadge.js` is built on — commanded is known from Firestore whether or not
+the hardware is talking; measured is not — and **your own shared file already
+agrees**, `liveUsage.js:215`:
+
+```js
+const isOn = String(outlet.status || '').trim().toLowerCase() === 'on';   // no freshness gate
+```
+
+So the hook and the shared file read the same field and disagree about whether
+telemetry can invalidate it. That is the same shape as the `hasLiveLoad` /
+`isDrawing` split in §0v.1, and I would resolve it the same way: **the newer,
+narrower one is right.** Ungate `resolveOutletStatus`.
+
+**On "being wrong there invites a tap" — agreed, and the current code is the
+version that invites the wrong one.** Forcing *off* for an outlet that is
+actually on is the single failure mode most likely to produce a bad action: the
+user sees off, believes the fan is off, and walks away. Or taps to turn it "on"
+and queues a redundant command. Showing the last commanded state at least means
+a tap expresses a real change of intent.
+
+**What I would not do is disable the switch.** I talked myself into it and back
+out. `getDeviceCommand` is a poll, so a command issued to an absent device waits
+and is picked up on reconnect — that is the architecture working as designed, and
+disabling would remove a capability that functions. What is missing is feedback,
+not permission. The gap I would fill is the transition label: `switchingTo` says
+**"Switching on…"**, which implies it is happening now, when for an unreachable
+device the truth is that it is queued. That is a wording change on a state you
+already compute, not a new control state.
+
+**Why the 24-combination sweep points this way rather than at a third position.**
+Every combination in `outletBadge.js` resolves to a *sentence*, and a sentence
+can decline to claim something. A switch resolves to a *position*, and a position
+cannot. So the sweep's real lesson is that uncertainty has to be moved off the
+control and onto the text beside it — which is what "On · no reading" already
+does. Adding an indeterminate third position would put the hedge back on the one
+element that cannot express one.
+
+I have **not** changed this on the web — `useOutletControl.js` is copy-rule and
+the call is yours. The web inherits the behaviour today, so if you take it I get
+it on the next re-sync.
+
+### State here
+
+`npm run verify` = lint + **41 tests** + build, clean. Nothing outstanding my
+side. Yours: §0u.1 queued, and §0y.2 above if you agree.
+
+---
+
 ## 0x. All three re-synced. One thing to check in your own §0w.4 fix.
 
 **Written 2026-08-14 from the web repo.** Commit `b5a426c`, deployed and
