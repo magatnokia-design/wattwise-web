@@ -201,6 +201,15 @@ These come from the hardware and the parent project. Do not relax them.
   tariff logic means changing all three.
 - Appliance detection is **suggestion-first**: never auto-rename or auto-act
   without user confirmation.
+- **Appliance identity feeds the per-appliance breakdown and nothing else.** No
+  bill, budget, or safety decision may come to depend on it. Energy comes from
+  the counter, cost from PELCO III applied to that energy, the cutoff from
+  measured watts — so a misnamed appliance costs a label and never a peso or a
+  relay. This is a constraint, not a disclaimer: it is what makes it honest to
+  say identification is unreliable for loads that change operating regime
+  mid-run (a phone charger tapering 30 W → 10 W, a fan on three speeds), and it
+  stops being true the moment something downstream starts reading the name.
+  Mirrors the phone repo's `CLAUDE.md` as of `17472f5`.
 
 ---
 

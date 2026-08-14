@@ -87,14 +87,6 @@ export const DashboardPage = () => {
     outlets.find((outlet) => Number(outlet.outletNumber) === outletNumber)?.applianceIdentity ||
     null;
 
-  // Same reason, same file. `applianceDetection.features` carries stdDevPower —
-  // how much the load moved during the run — which decides whether one name is
-  // a meaningful answer at all. useOutletControl maps meanPower, runtimeSec and
-  // sampleCount out of this object but not stdDevPower. Asked for in §0ad.
-  const featuresFor = (outletNumber) =>
-    outlets.find((outlet) => Number(outlet.outletNumber) === outletNumber)
-      ?.applianceDetection?.features || null;
-
   /*
    * A toggle the ESP32 has not polled yet. During that window the document
    * already carries the *commanded* status while the relay is still in the old
@@ -240,7 +232,6 @@ export const DashboardPage = () => {
           hasLoad={outlet1HasLoad}
           suggestion={outlet1Suggestion}
           identity={identityFor(1)}
-          detectionFeatures={featuresFor(1)}
           switchingTo={switchingFor(1)}
           telemetryFresh={outlet1HasReading}
           disabled={isToggling}
@@ -255,7 +246,6 @@ export const DashboardPage = () => {
           hasLoad={outlet2HasLoad}
           suggestion={outlet2Suggestion}
           identity={identityFor(2)}
-          detectionFeatures={featuresFor(2)}
           switchingTo={switchingFor(2)}
           telemetryFresh={outlet2HasReading}
           disabled={isToggling}

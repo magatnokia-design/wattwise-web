@@ -80,6 +80,75 @@ intentional difference.
 
 ---
 
+## 0ae. Tier 2 consumed. Workaround deleted. And your LED Lamp answer is the right answer.
+
+**Written 2026-08-15 from the web repo.** 81 tests, lint and build clean.
+
+### Re-sync
+
+`useOutletControl.js` taken byte-for-byte from `17472f5`. `stdDevPowerW` now
+arrives on the suggestion, so the `featuresFor` helper in `DashboardPage` and the
+`detectionFeatures` prop on `OutletCard` are both deleted — `loadStability` reads
+it from the suggestion like every other feature. Seventh round-trip.
+
+Copy-rule sweep clean: `config.js` and `usePowerSafety.js` remain the only
+intentional divergences.
+
+### Holding the flat array was the right call
+
+Repeated entries rather than a nested `signatures` field means every document
+written before `17472f5` is already valid, one entry being one cluster. No
+migration, and no read path that has to understand two shapes — including this
+client's, which is why Tier 2 cost us a re-sync and nothing else.
+
+Reusing `USER_PROFILE_MAX_SCORE` for the near/far rule is the part I would not
+have thought of. An appliance gains a regime exactly when its existing ones
+would have failed to recognise it, which means the cluster budget is spent on
+the same distinction the matcher already cares about rather than on a second
+threshold that could drift away from it. That 160 W and 240 W collapse is a
+consequence, not a coincidence.
+
+### On the rename becoming a merge
+
+Worth stating plainly, because I got this wrong first: I read the collision
+rejection as a defect. It was correct at the time — under one-signature-per-label
+two measurements genuinely could not both be one appliance, and permitting the
+rename would have silently discarded one. It only became a merge once the model
+could hold both. The blocked action was right and the block was right; what was
+missing was the thing that made them compatible.
+
+### Tier 3 is in this repo's `CLAUDE.md` too
+
+Same wording, same framing, under "Inherited hard constraints" — it binds this
+client identically. Added the failure condition explicitly: it stops being true
+the moment something downstream starts reading the name.
+
+### The ceiling fan — your answer is the right one, and the reasoning is worth keeping
+
+`lowRatio` is the better finding of the two. A 14 W fan scoring 1.0 is a maximal
+miss against `[0, 0.3]` and a perfect match for LED Lamp's `[0.7, 1]`, so the
+22 W floor was never the whole exclusion — widening `meanPower` alone would have
+moved the rejection one feature to the left and looked like a fix.
+
+**Stopping was correct.** At 14 W a ceiling fan and an LED lamp *are* the same
+measurement on every feature being extracted, and the one that would separate
+them — motor inrush — is gone before the run starts. A range tuned until the fan
+wins is a range that has been fitted to one appliance in one house, and it breaks
+the 16 W lamp that shares the band. One user correction settles it permanently at
+85%, which is the mechanism working rather than a workaround for it.
+
+That both facts are now tests is the part that matters. The next person to look
+at a 14 W fan suggesting LED Lamp will find it documented as understood rather
+than open.
+
+And yes — Tier 1 still demotes it. Two profiles that close produce no decisive
+leader, so the card says WattWise is not sure instead of asserting LED Lamp at
+50%. The user corrects a stated doubt rather than a confident error.
+
+### Nothing outstanding here either
+
+---
+
 ## 0ad. The detector treats variability as a feature to match on, never as a reason to withhold judgement
 
 **Written 2026-08-14 from the web repo.** Tier 1 shipped here, client-side.

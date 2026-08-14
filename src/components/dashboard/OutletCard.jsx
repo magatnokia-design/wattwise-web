@@ -41,11 +41,6 @@ export const OutletCard = ({
   // through useOutletControl, which is byte-identical to the phone's copy and
   // does not surface `namedAs`.
   identity,
-  // Raw `applianceDetection.features` from the outlet document — read here for
-  // the same reason as `identity`: useOutletControl is byte-identical to the
-  // phone's copy and surfaces meanPower but not stdDevPower, which is what says
-  // whether the load held still long enough for one name to mean anything.
-  detectionFeatures,
   // 'on' | 'off' | null — a toggle the ESP32 has not picked up yet, resolved by
   // the shared buildLiveAppliances. See switchingFor in DashboardPage.
   switchingTo,
@@ -106,9 +101,11 @@ export const OutletCard = ({
    * Laptop Charger at 37% — four profiles inside thirteen points, which is what
    * a signature resembling everything slightly and nothing much looks like.
    *
-   * `stdDevPower` comes from the raw document rather than the suggestion because
-   * useOutletControl is byte-identical to the phone's copy and maps meanPower
-   * but not this. Asked for in §0ad; until then, read it here.
+   * `stdDevPowerW` arrives on the suggestion since the phone's 17472f5. This
+   * briefly read it from the raw document via a `featuresFor` helper in
+   * DashboardPage, because useOutletControl is byte-identical to the phone's
+   * copy and mapped meanPower but not this one. Asked for in §0ad, shipped, and
+   * the workaround deleted — the seventh correction to round-trip.
    */
   const trust = resolveSuggestionTrust({
     confidencePercent: suggestion?.confidencePercent,
@@ -116,7 +113,7 @@ export const OutletCard = ({
     suggestedName: suggestion?.name,
     ambiguous: suggestion?.ambiguous,
     meanPowerW: suggestion?.meanPowerW,
-    stdDevPowerW: detectionFeatures?.stdDevPower,
+    stdDevPowerW: suggestion?.stdDevPowerW,
   });
 
   /*
