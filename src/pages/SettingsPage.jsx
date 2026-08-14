@@ -14,6 +14,7 @@ import {
   sumSupplyRates,
 } from '../utils/billing';
 import { Card, CardHeader } from '../components/ui/Card';
+import SupportedAppliances from '../components/settings/SupportedAppliances';
 import { Button } from '../components/ui/Button';
 import { Switch } from '../components/ui/Switch';
 import { Modal } from '../components/ui/Modal';
@@ -302,6 +303,11 @@ export const SettingsPage = () => {
               </ul>
             )}
           </Card>
+
+          {/* Directly under Learned appliances: that card is what this one ends
+              by pointing at, and the two answer the same question from opposite
+              ends — what WattWise knows already, and what it has learned here. */}
+          <SupportedAppliances />
         </div>
 
         <div className={styles.stack}>

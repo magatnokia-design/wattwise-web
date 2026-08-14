@@ -1,0 +1,141 @@
+.lede {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ww-text);
+}
+
+.note {
+  margin-top: var(--ww-space-4);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ww-text-light);
+}
+
+.note strong {
+  color: var(--ww-text-dark);
+}
+
+/* Two columns on a desktop card, one when the sidebar squeezes it. */
+.grid {
+  list-style: none;
+  margin: var(--ww-space-4) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ww-space-2);
+}
+
+.item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ww-space-3);
+  padding: 9px 12px;
+  background: var(--ww-tint-success);
+  border: 1px solid #a7f3d0;
+  border-radius: var(--ww-radius-sm);
+}
+
+.itemName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #065f46;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemWatts {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #047857;
+  font-variant-numeric: tabular-nums;
+}
+
+.limits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ww-space-5);
+  margin-top: var(--ww-space-5);
+  padding-top: var(--ww-space-4);
+  border-top: 1px solid var(--ww-grid);
+}
+
+.limit {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.limitValue {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ww-text-dark);
+  font-variant-numeric: tabular-nums;
+}
+
+.limitLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ww-text-light);
+}
+
+.limitNote {
+  flex: 1;
+  min-width: 220px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ww-text-light);
+}
+
+/* Amber, not red: nothing is wrong, this is a boundary to stay inside. */
+.deny {
+  margin-top: var(--ww-space-5);
+  padding: var(--ww-space-4);
+  background: var(--ww-tint-warning);
+  border: 1px solid #fcd34d;
+  border-radius: var(--ww-radius-sm);
+}
+
+.denyTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ww-text-dark);
+}
+
+.denyList {
+  list-style: none;
+  margin: var(--ww-space-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.denyItem {
+  padding: 3px 10px;
+  background: var(--ww-white);
+  border: 1px solid #fcd34d;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.denyNote {
+  margin-top: var(--ww-space-3);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ww-text);
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
