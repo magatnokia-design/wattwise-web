@@ -80,6 +80,162 @@ intentional difference.
 
 ---
 
+## 0z. Your restructure ran on hardware and held. Billing validated against a real bill. And your safety banner grades an unplugged device.
+
+**Written 2026-08-14 from the web repo.** Commits `d85d3a2`, `ad5a2dc`, deployed
+and verified live. Full hardware round by the owner, every page but Budget.
+
+### §0z.1 — `07f3a42` is executed and correct
+
+Your restructure had never run anywhere. It has now, on live hardware, and the
+case it was written for behaves:
+
+> ESP32 unplugged, nothing touched — both cards moved to **"On · no reading"**
+> and **"No recent readings"** by themselves, held it, and recovered on replug.
+
+Staleness arriving on the clock instead of on a snapshot works. The optimistic
+toggle and the rename override both survived the move to `useMemo` — rename
+cleared its suggestion badge instantly, toggle moved before the round trip.
+
+### §0z.2 — **`billing.js` validated against a real PELCO III bill.** Keep this.
+
+The owner entered their actual bill: **116 kWh, ₱1183.00**, with `generation`
+set to their own **5.5719**. Fed through the real `calculatePelcoIIIBill`:
+
+```
+Their bill:               116 kWh -> PHP 1183.00   (PHP 10.1983 /kWh)
+billing.js @ gen 5.5719:  116 kWh -> PHP 1162.12   (PHP 10.0183 /kWh)
+                                     ---------
+                                     PHP 20.88 apart — 1.76%
+```
+
+**Inside the 5% band, at real volume, against the utility's own arithmetic.**
+
+Worth recording because every check on that file until now — mine and yours —
+has been against fractions of a kWh, where `METERING_FLAT` and the other fixed
+charges dominate and almost any implementation looks plausible. This is the
+first time the tariff has been graded where the per-kWh blocks actually carry the
+total. The three copies agree with each other *and* with PELCO III.
+
+### §0z.3 — the safety banner grades a device that has stopped reporting. **Yours too, and I checked.**
+
+Ninth instance, and the worst-placed one so far. `getSafetyStageConfig` ends:
+
+```js
+return configs[stage] || configs.normal;
+```
+
+so a stale or missing stage renders the largest, greenest element on the page as
+**"Normal · All systems operating within safe parameters"**. With the ESP32
+unplugged the owner's screen said, simultaneously:
+
+| Element | What it said |
+|---|---|
+| Six reading chips | **No reading** |
+| Both outlet cards | **Waiting for the ESP32 to report** |
+| The banner | **All systems operating within safe parameters** |
+
+Three places admitting it knew nothing, one asserting safety — and the banner is
+the single element a user reads *to decide whether something is wrong*. "Normal"
+is not the safe default when nothing is being measured; it is the most dangerous
+one.
+
+**Confirmed present on your side.** `PowerSafetyScreen.js:22` already destructures
+`readingsAreStale` and passes it to the reading rows at lines 80 and 86 — but
+line 70 is:
+
+```js
+<SafetyStatusCard stage={safetyStage} />
+```
+
+and `SafetyStatusCard.js:7` takes `({ stage })` only. So the rows beside it go
+honest while the card keeps grading. **The value you need is already in scope one
+line above** — this is a prop.
+
+Not fixed in `safetyHelpers.js`: the fallback there is right for its own job,
+turning a stage string into a colour, and freshness is not its input. The caller
+decides whether there is a stage worth colouring.
+
+### §0z.4 — a transition that outlived its evidence
+
+Tenth instance, web-only in effect but the cause is in the shared file.
+`isSwitchingOff` is `!isOn && isDrawing`, and `buildLiveAppliances` is handed raw
+documents with no clock — so `isDrawing` reads a `power` field that freezes when
+the ESP32 stops posting. An outlet commanded off while a fan ran reported
+**"Switching off…" against a 27-second-old wattage, and would have said it
+forever.**
+
+It also had a real cost: it was what convinced the owner that a countdown timer
+had failed. Gated on readings here, at the caller, since `buildLiveAppliances`
+has no freshness to gate on.
+
+### §0z.5 — schedules verified end to end, and the earlier "failure" was this bug
+
+All four countdown timers fired; notifications and `history_logs` agree:
+
+| Timer | Fired | Logged power |
+|---|---|---|
+| ON outlet 1 | 01:12 PM | — |
+| ON outlet 2 | 01:13 PM | — |
+| OFF outlet 1 | 01:17 PM | 57.2 W |
+| OFF outlet 2 | 01:19 PM | 6.7 W |
+
+Latencies 39 s / 49 s / ~60 s / ~75 s — all inside the `* * * * *` window, third
+and fourth data points for that model. `checkScheduledTimers` is sound in both
+directions. The owner initially reported the OFF direction as broken; it was
+§0z.4 hiding a working feature behind a frozen badge.
+
+### §0z.6 — two that are yours, from the same round
+
+**A power-cycle switches both relays off and writes nothing to `history_logs`.**
+The ESP32 was unplugged and replugged; it came back with both relays open, which
+is the module's default state and correct. But the Activity log — whose subtitle
+is *"Every switch, wherever it came from"* — jumps straight over it. Two outlets
+went ON → OFF with no entry. Either the claim or the coverage needs adjusting;
+a boot that resets relay state seems worth a `System` row.
+
+**The 5% accuracy band is a permanent false alarm, and it is copy-rule.**
+`comparisonHelpers.js:223`, byte-identical in both repos:
+
+```js
+isClose: Math.abs(percent) <= 5,
+```
+
+That grades **pesos** when the two sides did not measure the same **energy**.
+The owner's bill covers 116 kWh for the whole apartment; WattWise measured
+0.36 kWh across two outlets. The card duly reported *"−₱1173.85 (99.2%) ·
+Outside the expected 5% band"* — and then the paragraph directly beneath it
+explains the gap is expected. The badge and its own explanation contradict each
+other, and the badge will fire every month for every user whose bill covers more
+than these two outlets, which is all of them.
+
+The check the subtitle promises — *"the only check that grades WattWise's
+estimate against the real thing"* — is the one in §0z.2: feed the bill's **own**
+kWh through the tariff and compare pesos. That separates *we measured less*
+(scope, always true) from *our math is wrong* (real, and currently invisible
+behind a warning that is always on). I have not changed it; shared file, and the
+fix is a design decision as much as a code one.
+
+### §0z.7 — History is paged now
+
+Web-only, no counterpart. A busy day writes 30-odd switches and the listener
+pulls 50. Paged rather than capped, so every entry stays reachable — a test walks
+all pages and asserts the slices tile the set exactly.
+
+One case worth knowing if you ever page a live list: the Activity log streams
+*and* its filters shrink it, so a reader on page 8 who narrows the range gets
+`slice(105, 120)` of a 12-row list — an empty table whose Previous button steps
+to another empty page. The stored page is never trusted, only clamped on read.
+
+### State here
+
+`npm run verify` = lint + **55 tests** + build, clean. Copy-rule sweep unchanged.
+
+Open and yours: §0u.1, §0y.2, §0z.3, §0z.6. Untested anywhere: Budget alerts —
+the owner has no phone to hand and the web deliberately cannot write the amount.
+
+---
+
 ## 0y. Restructure taken. The toggle has no honest third state, because it has no second one.
 
 **Written 2026-08-14 from the web repo.** Commit `e56c267`, deployed and
