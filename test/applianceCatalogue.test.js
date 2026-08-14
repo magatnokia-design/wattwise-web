@@ -6,6 +6,8 @@ import {
   DETECTABLE_APPLIANCES,
   OUTLET_LIMIT_W,
   COMBINED_LIMIT_W,
+  COMBINED_WARNING_RATIO,
+  COMBINED_WARNING_W,
 } from '../src/components/settings/applianceCatalogue.js';
 
 /*
@@ -22,6 +24,7 @@ import {
  */
 const DETECTOR = 'C:/App/WattWise/functions/src/lib/applianceDetector.js';
 const FIRMWARE = 'C:/App/WattWise/docs/esp32/WattWise_ESP32_Relay_Cloud/WattWise_ESP32_Relay_Cloud.ino';
+const SAFETY = 'C:/App/WattWise/functions/src/lib/powerSafety.js';
 
 const readIfPresent = (path) => (existsSync(path) ? readFileSync(path, 'utf8') : null);
 
@@ -54,6 +57,45 @@ test('the stated limits match the firmware', { skip: !existsSync(FIRMWARE) }, ()
   assert.ok(outlet && total, 'power limits not found in the firmware');
   assert.equal(Number(outlet[1]), OUTLET_LIMIT_W);
   assert.equal(Number(total[1]), COMBINED_LIMIT_W);
+});
+
+test('the combined warning threshold matches the backend', { skip: !existsSync(SAFETY) }, () => {
+  /*
+   * The card now prints a number the firmware does not contain: the point at
+   * which evaluateSafety warns on the pair. It is derived from two backend
+   * constants, so it drifts silently if either moves — the same exposure the
+   * safety chip ratios have, guarded the same way.
+   */
+  const source = readIfPresent(SAFETY);
+
+  const ratio = source.match(/const WARNING_RATIO\s*=\s*([\d.]+)/);
+  const ceiling = source.match(/const HARD_MAX_TOTAL_POWER_W\s*=\s*([\d.]+)/);
+
+  assert.ok(ratio && ceiling, 'WARNING_RATIO / HARD_MAX_TOTAL_POWER_W not found — powerSafety.js was restructured');
+
+  assert.equal(Number(ratio[1]), COMBINED_WARNING_RATIO);
+  assert.equal(Number(ceiling[1]), COMBINED_LIMIT_W);
+  assert.equal(COMBINED_WARNING_W, Math.round(Number(ceiling[1]) * Number(ratio[1])));
+});
+
+test('the combined cutoff cannot fire before a per-outlet one', () => {
+  /*
+   * The arithmetic that made the old card misleading, pinned so it stays true.
+   *
+   * Two outlets capped at OUTLET_LIMIT_W sum to at most COMBINED_LIMIT_W, so the
+   * pair can only reach its ceiling once an outlet is already at its own — the
+   * combined cutoff is never an independent event. Printing both figures side by
+   * side read as two separate budgets, which is what the owner queried.
+   *
+   * If these ever stop being 2:1, the copy in SupportedAppliances.jsx is wrong
+   * and this fails rather than letting it quietly become so.
+   */
+  assert.equal(OUTLET_LIMIT_W * 2, COMBINED_LIMIT_W);
+
+  // The warning, by contrast, is genuinely reachable with both outlets legal —
+  // which is the whole reason it is now on the card.
+  assert.ok(COMBINED_WARNING_W < OUTLET_LIMIT_W * 2);
+  assert.ok(COMBINED_WARNING_W > OUTLET_LIMIT_W);
 });
 
 test('every entry has a name and a wattage range', () => {

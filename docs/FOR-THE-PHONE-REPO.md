@@ -80,6 +80,105 @@ intentional difference.
 
 ---
 
+## 0ab. The owner read the limits card and asked a question neither client can answer: what happens at 800 W?
+
+**Written 2026-08-14 from the web repo.** Client-side, no deploy needed on your
+side — but the same gap is in your Power Safety copy.
+
+### What he asked
+
+Unprompted, reading Settings → *What WattWise can monitor*, which prints:
+
+```
+500 W          1000 W
+PER OUTLET     BOTH OUTLETS TOGETHER
+```
+
+> "Does WattWise accept 1000 W? I can use max 500 W per outlet but I cannot use a
+> 1000 W appliance right? But if I have outlet 1 at 400 W and outlet 2 at 400 W,
+> combined 800 W, it will not cut the power right? [...] I think that settings is
+> confusing also."
+
+Every clause of that is correct. He worked out the semantics from first
+principles and still concluded the card was confusing — which is the useful
+signal, because he is the person who specified these limits.
+
+### Why the card is confusing, precisely
+
+**The combined cutoff cannot fire on its own.** Two outlets capped at 500 W sum
+to at most 1000 W, so the pair only reaches its ceiling once an outlet is
+already at or over its own. `500 × 2 = 1000` — the combined limit is the
+per-outlet limit restated, not a second budget.
+
+We already knew this empirically and did not connect it to the copy. It is the
+whole reason `cutoffEvents.js` grew the `causedByOneOutlet` suppression in
+`bf5d7d6`: outlet 1 drew 1368.8 W with outlet 2 at 0.00 A and the dashboard
+reported *"Both outlets went over the combined limit — they drew 1368.8 W
+together."* There was no "both."
+
+So the card advertises a threshold that can never be the binding one, and
+**omits the threshold that actually binds**. From `powerSafety.js`, combined draw
+is graded on `HARD_MAX_TOTAL_POWER_W`:
+
+| Combined | Ratio | Stage | Reachable with both outlets legal? |
+|---|---|---|---|
+| < 800 W | < 0.80 | normal | — |
+| **800 W** | **0.80** | **warning** | **yes — 400 + 400** |
+| 950 W | 0.95 | limit | yes — 500 + 450 |
+| 1000 W | 1.00 | cutoff | only at 500 + 500 exactly |
+
+His example lands **exactly** on `WARNING_RATIO`. He would have got a Power
+Safety warning from a number no screen has ever shown him, having just been told
+his ceiling was 1000 W.
+
+### What I changed here
+
+`applianceCatalogue.js` gains `COMBINED_WARNING_RATIO` / `COMBINED_WARNING_W`,
+duplicated from your two constants and drift-tested against them — same
+arrangement as the safety chip ratios in `safetyStatus.test.js`. The card now
+adds one sentence:
+
+> There is one more threshold between those two. A combined draw over **800 W**
+> raises a Power Safety warning even though neither outlet is over its own limit
+> — 400 W on one and 400 W on the other is enough. Nothing switches off at that
+> point; it is where the pair becomes worth watching.
+
+Two new tests (70 total, all passing). The second is the one worth stealing:
+
+```js
+test('the combined cutoff cannot fire before a per-outlet one', () => {
+  assert.equal(OUTLET_LIMIT_W * 2, COMBINED_LIMIT_W);
+  assert.ok(COMBINED_WARNING_W < OUTLET_LIMIT_W * 2);
+  assert.ok(COMBINED_WARNING_W > OUTLET_LIMIT_W);
+});
+```
+
+It pins the arithmetic the copy depends on. If the limits ever stop being 2:1,
+the sentence above is wrong and this fails instead of letting it quietly become
+so.
+
+### For your side
+
+Your `powerSafety.js:19` comment says the Power Safety screen "tells the user so
+in as many words" — so it states 500 and 1000 too, and has the same omission.
+Worth adding the 800 W line there.
+
+Note this is not the same class as our eleven staleness bugs. Nothing here is
+stale or wrong; **every number displayed is accurate, and the set is still
+misleading** because the one that governs ordinary two-outlet use is missing.
+Different failure, same lesson: the user reasons from what is on screen, so an
+accurate partial set is a wrong answer.
+
+### Still worth resolving: the paper says something else again
+
+Unchanged from earlier rounds, restated because this is the natural moment. The
+project paper allows **a lone outlet the full 1000 W**. Neither the firmware nor
+`updateOutletMetrics` implements that clause — 500 W is flat. A 700 W appliance
+on an otherwise idle pair is legal on paper and cut in practice. Either the paper
+or the firmware should move; the clients can only describe what ships.
+
+---
+
 ## 0aa. Testing is complete. Budget passes, over-power displays. One finding for you: the voltage chip can never say Normal.
 
 **Written 2026-08-14 from the web repo.** Commit `bf5d7d6`, deployed and verified

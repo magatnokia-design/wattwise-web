@@ -4,6 +4,7 @@ import {
   UNSUPPORTED_APPLIANCES,
   OUTLET_LIMIT_W,
   COMBINED_LIMIT_W,
+  COMBINED_WARNING_W,
 } from './applianceCatalogue';
 import styles from './SupportedAppliances.module.css';
 
@@ -59,6 +60,13 @@ export const SupportedAppliances = () => (
         Enforced by the ESP32 itself, three seconds after the limit is passed. It
         does not wait on wi-fi or on this page, so an outlet can switch off with
         nothing here having asked for it.
+      </p>
+      <p className={styles.limitWarning}>
+        There is one more threshold between those two. A combined draw over{' '}
+        <strong>{COMBINED_WARNING_W} W</strong> raises a Power Safety warning even
+        though neither outlet is over its own limit — 400 W on one and 400 W on
+        the other is enough. Nothing switches off at that point; it is where the
+        pair becomes worth watching.
       </p>
     </div>
 

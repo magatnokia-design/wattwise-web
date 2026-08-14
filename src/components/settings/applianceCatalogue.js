@@ -37,6 +37,27 @@ export const DETECTABLE_APPLIANCES = [
 export const OUTLET_LIMIT_W = 500;
 export const COMBINED_LIMIT_W = 1000;
 
+/*
+ * The threshold this card used to omit — and the only one that can bind while
+ * both outlets are inside their own limit.
+ *
+ * The combined *cutoff* cannot fire on its own. Two outlets capped at 500 W each
+ * sum to at most 1000 W, so the pair reaches its ceiling only once an outlet is
+ * already at or over its own. That is not theory: every combined cutoff observed
+ * on hardware was one outlet's cutoff counted twice, which is why cutoffEvents.js
+ * suppresses it.
+ *
+ * The combined *warning* is a different matter. evaluateSafety grades total draw
+ * at WARNING_RATIO of the ceiling, so 400 W + 400 W raises a warning with neither
+ * outlet in breach. Printing 500 and 1000 and nothing else made that alert arrive
+ * from a number the user had never been shown.
+ *
+ * Ratio and ceiling are duplicated from functions/src/lib/powerSafety.js and
+ * drift-tested against it, the same arrangement as the safety chip ratios.
+ */
+export const COMBINED_WARNING_RATIO = 0.8;
+export const COMBINED_WARNING_W = Math.round(COMBINED_LIMIT_W * COMBINED_WARNING_RATIO);
+
 /**
  * High-power or high-inrush, from the project's appliance policy. Listed
  * because the detector cannot warn about them: anything over the outlet limit

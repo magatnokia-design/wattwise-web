@@ -93,6 +93,19 @@
   color: var(--ww-text-light);
 }
 
+/* Full width beneath both figures, because it qualifies both of them. */
+.limitWarning {
+  flex-basis: 100%;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ww-text);
+}
+
+.limitWarning strong {
+  color: #92400e;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Amber, not red: nothing is wrong, this is a boundary to stay inside. */
 .deny {
   margin-top: var(--ww-space-5);
