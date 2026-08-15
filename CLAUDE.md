@@ -71,6 +71,49 @@ emails — something the phone app never does, because its emails open a browser
 Keep such code **out of** the copied files: adding action-code handling to
 `authService.js` would break its byte-for-byte match with the phone app.
 
+### Files that flow the OTHER way — written here, copied to the phone
+
+The Golden Rule has an exception now. Three modules were written in this repo and
+then taken **byte-identical** into `C:\App\WattWise\src\screens\Dashboard\utils\`.
+They are no longer web-only, and editing one here silently drifts the phone:
+
+| Here | Phone |
+|---|---|
+| `src/components/dashboard/loadStability.js` | `src/screens/Dashboard/utils/loadStability.js` |
+| `src/components/dashboard/outletBadge.js` | `src/screens/Dashboard/utils/outletBadge.js` |
+
+Both are pure JS with no JSX — written that way so `node --test` can reach them,
+which is exactly what made them portable to React Native. **The rendering around
+them differs; the modules do not.** Change one, report it, re-sync the other.
+
+Check them the same way as the copied files:
+
+```powershell
+$w = (Get-Content "<web path>" -Raw) -replace "`r`n","`n"
+$p = (Get-Content "<phone path>" -Raw) -replace "`r`n","`n"
+$w -eq $p
+```
+
+Compare with line endings normalised — git checks out CRLF here and the raw
+bytes will differ even when the content matches.
+
+### `switchingTo` keys on different evidence in each direction, deliberately
+
+`liveUsage.js` derives the two transition states asymmetrically, and it looks
+like an inconsistency worth "fixing". It is not — collapsing both onto
+`pendingStatus` silently breaks auto-cutoff.
+
+- **Switching off** keys on the contradiction itself, `!isOn && isDrawing`. This
+  is what covers a safety cutoff: a cutoff opens **no pending window**, because
+  `updateOutletMetrics` only ever *deletes* `pendingStatus`. Keyed on the pending
+  marker, an auto-cut outlet would never report the transition at all.
+- **Switching on** keys on the pending window. An outlet switched on with nothing
+  plugged into it draws 0 W, which is an ordinary resting state — keyed on the
+  contradiction it would sit claiming a transition forever.
+
+Seven tests in the phone repo hold this down. Recorded here because
+`outletBadge.js` is byte-identical across both repos and cannot carry the note.
+
 ### The single edit to a copied file
 
 `src/services/firebase/config.js` uses React Native auth persistence. Swap it:

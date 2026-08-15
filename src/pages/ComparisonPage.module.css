@@ -81,7 +81,27 @@
   padding: 4px 0;
 }
 
+/*
+ * Which half gives way when the row is squeezed.
+ *
+ * The phone hit this as a hard overflow (603cf24): "Not measured by WattWise"
+ * ran into "₱1172.83 under (99.1%)" with nothing between them, because
+ * space-between does not prevent overlap when neither child carries flex. The
+ * `gap` above already makes that collision impossible here, and HTML wraps text
+ * where React Native does not — but wrapping alone picks the wrong victim, and a
+ * currency figure broken across two lines reads as two numbers.
+ *
+ * So the label absorbs the squeeze and the value never does. `min-width: 0`
+ * because a flex item's default `min-width: auto` refuses to shrink below its
+ * content, which is what turns a tight row into an overflowing one.
+ */
+.accuracyRow > span:first-child {
+  min-width: 0;
+}
+
 .accuracyRow strong {
+  flex-shrink: 0;
+  white-space: nowrap;
   color: var(--ww-text-dark);
 }
 

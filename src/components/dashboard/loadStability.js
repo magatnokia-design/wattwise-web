@@ -17,8 +17,11 @@
  * model has no way to express "this load is changing, so one name is the wrong
  * kind of answer".
  *
- * Web-only, and deliberately so: it changes how a verdict is *presented*, not
- * how it is reached. The detector stays the phone repo's. See §0ad.
+ * Presentation, not detection: it changes how a verdict is shown, never how it
+ * is reached. Taken verbatim from the web client, which wrote it without JSX so
+ * `node --test` could reach it - the same property that made it a straight copy
+ * here. Keep both copies byte-identical; the rendering around it differs, this
+ * does not.
  */
 
 // At or above this, the top match reads as a finding rather than a guess.
