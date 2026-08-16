@@ -1,6 +1,7 @@
 import AppShowcase from '../components/auth/AppShowcase';
 import PowerPreview from '../components/auth/PowerPreview';
 import { BoltMark } from '../components/ui/BoltMark';
+import { Wordmark } from '../components/ui/Wordmark';
 import styles from './AuthLayout.module.css';
 
 // Bodies are kept to one line at this column width on purpose — three
@@ -31,7 +32,7 @@ export const AuthLayout = ({ title, subtitle, children, footer }) => (
           <span className={styles.brandMark} aria-hidden="true">
             <BoltMark height={16} />
           </span>
-          <span className={styles.brandName}>WattWise</span>
+          <Wordmark className={styles.brandName} />
         </div>
 
         {/* The form sits on a raised card. On a plain white page a white form

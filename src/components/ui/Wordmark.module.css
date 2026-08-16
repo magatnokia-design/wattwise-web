@@ -1,0 +1,4 @@
+/* Colour only. Everything else is inherited on purpose — see Wordmark.jsx. */
+.wise {
+  color: var(--ww-primary);
+}

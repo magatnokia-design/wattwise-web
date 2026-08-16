@@ -7,6 +7,7 @@ import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { Banner } from '../ui/Feedback';
 import { BoltMark } from '../ui/BoltMark';
+import { Wordmark } from '../ui/Wordmark';
 import { ErrorBoundary } from './ErrorBoundary';
 import styles from './AppShell.module.css';
 
@@ -119,7 +120,7 @@ export const AppShell = () => {
             <BoltMark height={17} />
           </span>
           <div>
-            <p className={styles.brandName}>WattWise</p>
+            <p className={styles.brandName}><Wordmark /></p>
             <p className={styles.brandSub}>Energy monitor</p>
           </div>
         </div>
