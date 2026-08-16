@@ -20,6 +20,8 @@ import BudgetPage from './pages/BudgetPage';
 import ComparisonPage from './pages/ComparisonPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
+import HelpPage from './pages/HelpPage';
+import DocumentPage from './pages/DocumentPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 /**
@@ -122,6 +124,11 @@ export const App = () => (
         <Route path="comparison" element={<ComparisonPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="help" element={<HelpPage />} />
+        {/* Three documents, one component - they differ only in content. */}
+        <Route path="about" element={<DocumentPage document="about" />} />
+        <Route path="privacy" element={<DocumentPage document="privacy" />} />
+        <Route path="terms" element={<DocumentPage document="terms" />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

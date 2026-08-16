@@ -1,0 +1,59 @@
+.topics {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.topic + .topic {
+  border-top: 1px solid var(--ww-border, #E5E7EB);
+}
+
+.question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ww-text, #111827);
+  text-align: left;
+}
+
+.question:hover {
+  color: var(--ww-primary, #10B981);
+}
+
+.chevron {
+  flex: none;
+  color: var(--ww-text-light, #6B7280);
+  font-size: 0.85rem;
+}
+
+.answer {
+  padding: 0 0 14px;
+}
+
+.answer p {
+  margin: 0 0 10px;
+  color: var(--ww-text-light, #6B7280);
+  line-height: 1.6;
+  font-size: 0.9rem;
+  /* Long-form prose is unreadable at full container width on a desktop. */
+  max-width: 68ch;
+}
+
+.answer p:last-child {
+  margin-bottom: 0;
+}
+
+.footer {
+  color: var(--ww-text-light, #6B7280);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  max-width: 68ch;
+}

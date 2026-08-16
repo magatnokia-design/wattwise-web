@@ -41,6 +41,10 @@ const NAV_GROUPS = [
     items: [
       { to: '/notifications', label: 'Notifications', icon: '🔔', badge: 'unread' },
       { to: '/settings', label: 'Settings', icon: '⚙️' },
+      // About, Privacy and Terms are reachable from Help rather than listed
+      // here. Four nav entries for documents nobody opens twice would crowd out
+      // the pages people use every day.
+      { to: '/help', label: 'Help', icon: '❓' },
     ],
   },
 ];

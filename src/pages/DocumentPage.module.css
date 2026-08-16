@@ -1,0 +1,34 @@
+.body p {
+  margin: 0 0 12px;
+  color: var(--ww-text-light, #6B7280);
+  line-height: 1.65;
+  font-size: 0.9rem;
+  max-width: 72ch;
+}
+
+.body p:last-child {
+  margin-bottom: 0;
+}
+
+.bullets {
+  margin: 0;
+  padding-left: 18px;
+  max-width: 72ch;
+}
+
+.bullets li {
+  margin-bottom: 8px;
+  color: var(--ww-text-light, #6B7280);
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.bullets li::marker {
+  color: var(--ww-primary, #10B981);
+}
+
+/* The safety limits are the one section a reader must not skim past. */
+.warning {
+  border-color: var(--ww-warning, #F59E0B);
+  border-width: 1.5px;
+}

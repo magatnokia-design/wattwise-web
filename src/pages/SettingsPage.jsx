@@ -288,6 +288,16 @@ export const SettingsPage = () => {
                   pelco3.org/rates.php
                 </a>
               </p>
+
+              {/* Asked often enough to be worth a link from the page that
+                  raises the question, rather than only from the sidebar. */}
+              <p className={styles.muted}>
+                Not sure which lines to fill in, or how close this will be to the
+                bill that arrives? <Link to="/help">Help Center</Link> answers
+                both. See also <Link to="/about">About</Link>,{' '}
+                <Link to="/privacy">Privacy</Link> and{' '}
+                <Link to="/terms">Terms</Link>.
+              </p>
             </div>
           </Card>
 
