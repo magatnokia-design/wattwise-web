@@ -15,6 +15,8 @@ import {
 } from '../utils/billing';
 import { Card, CardHeader } from '../components/ui/Card';
 import SupportedAppliances from '../components/settings/SupportedAppliances';
+import SecurityActivityCard from '../components/settings/SecurityActivityCard';
+import { useAuth } from '../hooks/useAuth';
 import { Button } from '../components/ui/Button';
 import { Switch } from '../components/ui/Switch';
 import { Modal } from '../components/ui/Modal';
@@ -54,6 +56,7 @@ const ratesToDraft = (rates) => {
  * outlet rows.
  */
 export const SettingsPage = () => {
+  const { user } = useAuth();
   const {
     settings,
     savedAppliances,
@@ -352,6 +355,10 @@ export const SettingsPage = () => {
         </div>
 
         <div className={styles.stack}>
+          {/* Above Account, not below: this is the card someone goes looking
+              for after something worrying, and it should already be in view. */}
+          <SecurityActivityCard userId={user?.uid} />
+
           <Card>
             <CardHeader title="Account" />
             <div className={styles.stack}>

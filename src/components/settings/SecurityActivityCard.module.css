@@ -1,0 +1,60 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  border: 1px solid var(--ww-border, #E5E7EB);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+/* Yellow, not red. Almost every entry here is something the user did
+   themselves, and a log that shouts at them teaches them to stop reading it —
+   which is exactly how the one entry that matters gets missed. */
+.alert {
+  border-color: #F59E0B;
+  background: #FEF3C7;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 3px;
+}
+
+.title {
+  font-size: 0.875rem;
+}
+
+.when {
+  font-size: 0.72rem;
+  color: var(--ww-text-light, #6b7280);
+  white-space: nowrap;
+}
+
+.body {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--ww-text-light, #6b7280);
+}
+
+.meta {
+  margin: 6px 0 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ww-text-light, #6b7280);
+}
+
+.error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #EF4444;
+}
