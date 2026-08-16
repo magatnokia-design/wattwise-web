@@ -11,6 +11,13 @@ const MESSAGES = {
   'auth/email-already-in-use': 'An account already uses this email.',
   'auth/invalid-email': 'That email address is not valid.',
   'auth/weak-password': 'Pick a stronger password.',
+  // The project's server-side password policy, as distinct from Firebase's own
+  // fixed minimum above. The form checks the same rules first, so reaching this
+  // means the server disagreed — state the rules rather than "too weak", which
+  // leaves the user guessing which one they missed.
+  'auth/password-does-not-meet-requirements':
+    'Password must be at least 8 characters and include an uppercase letter, '
+    + 'a lowercase letter and a number.',
   'auth/operation-not-allowed': 'Email sign-in is not enabled for this project.',
   'auth/unauthorized-domain':
     'This site is not an authorised domain for the WattWise Firebase project. Add it under Authentication → Settings → Authorized domains.',
