@@ -14,6 +14,7 @@ import { Card, CardHeader } from '../components/ui/Card';
 import { DataTable } from '../components/ui/DataTable';
 import { SelectField } from '../components/ui/Field';
 import { Badge, EmptyState, Spinner } from '../components/ui/Feedback';
+import ExportUsageButton from '../components/history/ExportUsageButton';
 import styles from './page.module.css';
 
 const TABS = [
@@ -101,6 +102,7 @@ export const HistoryPage = () => {
           <CardHeader
             title="Daily usage"
             subtitle="One row per day, written by the midnight rollup. Today is assembled live from the outlets."
+            action={<ExportUsageButton usage={usageHistory} />}
           />
           {loading && !usageHistory.length ? (
             <Spinner label="Loading usage history" />

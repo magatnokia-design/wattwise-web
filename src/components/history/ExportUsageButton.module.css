@@ -1,0 +1,21 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon {
+  margin-right: 6px;
+}
+
+/* Yellow, because this is the one control on the page that takes data out of
+   WattWise rather than moving around inside it. Reads as a note, not a
+   warning. */
+.caption {
+  font-size: 0.72rem;
+  color: var(--ww-text-light, #6b7280);
+  background: #fef3c7;
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
