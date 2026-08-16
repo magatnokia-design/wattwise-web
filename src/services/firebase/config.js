@@ -27,6 +27,43 @@ const firebaseConfig = {
 // Reuse app/auth instances in Fast Refresh to avoid duplicate initialization issues.
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
+/*
+ * App Check — website only, and monitoring only.
+ *
+ * The phone app cannot take part. Both clients use the Firebase JS SDK, whose
+ * App Check providers are reCAPTCHA-based and need a DOM that React Native does
+ * not have; enforcement is also switched on per product rather than per client,
+ * so turning it on would reject every call from the phone. Enforcement therefore
+ * lives in the callables themselves (functions/src/lib/rateLimiter.js), which
+ * covers the phone, this site and a script equally.
+ *
+ * What this buys is visibility: the Firebase console splits traffic into
+ * verified and unverified, so we can see whether anything other than this site
+ * calls the backend before deciding to enforce anything.
+ *
+ * Deliberately inert without a key. The site key is public by design — it ships
+ * in this bundle either way — but reading it from the environment keeps it out
+ * of the repository, and a missing key must degrade to "no App Check" rather
+ * than break sign-in for everyone.
+ */
+const appCheckSiteKey = import.meta.env?.VITE_APPCHECK_RECAPTCHA_KEY;
+
+if (appCheckSiteKey) {
+  // Imported lazily so a build without a key never carries the App Check code.
+  import('firebase/app-check')
+    .then(({ initializeAppCheck, ReCaptchaV3Provider }) => {
+      initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(appCheckSiteKey),
+        isTokenAutoRefreshEnabled: true,
+      });
+    })
+    .catch((error) => {
+      // Never fatal. While enforcement is off, a failed attestation costs
+      // nothing but a missing datapoint in the console.
+      console.warn('App Check unavailable:', error?.message);
+    });
+}
+
 export const auth = getAuth(app);
 
 // Fire and forget. setPersistence resolves before any sign-in call that follows
