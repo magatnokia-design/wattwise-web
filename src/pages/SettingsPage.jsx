@@ -83,6 +83,37 @@ export const SettingsPage = () => {
   const [renaming, setRenaming] = useState(false);
   const [renameError, setRenameError] = useState('');
 
+  // The signature being forgotten, held while the confirmation is up. Forget
+  // used to fire straight from the button: three saved appliances became two
+  // with nothing asked and no way back. What it deletes is a measured run, so
+  // recovering means plugging the appliance in and teaching it again - and the
+  // button sits directly beside Rename, which exists precisely so that
+  // correcting a name does not cost the measurements.
+  const [forgetTarget, setForgetTarget] = useState(null);
+  const [forgetting, setForgetting] = useState(false);
+  const [forgetError, setForgetError] = useState('');
+
+  const closeForget = () => {
+    setForgetTarget(null);
+    setForgetError('');
+  };
+
+  const confirmForget = async () => {
+    if (!forgetTarget) return;
+
+    setForgetError('');
+    setForgetting(true);
+    const result = await removeSavedAppliance(forgetTarget);
+    setForgetting(false);
+
+    if (!result?.success) {
+      setForgetError(result?.error || 'Could not forget this appliance. Try again.');
+      return;
+    }
+
+    setForgetTarget(null);
+  };
+
   const openRename = (label) => {
     setRenameTarget(label);
     setRenameDraft(label);
@@ -293,7 +324,7 @@ export const SettingsPage = () => {
                       <Button
                         size="sm"
                         variant="danger"
-                        onClick={() => removeSavedAppliance(appliance.label)}
+                        onClick={() => setForgetTarget(appliance.label)}
                       >
                         Forget
                       </Button>
@@ -419,6 +450,41 @@ export const SettingsPage = () => {
             The signature keeps its measurements — only the label changes. Any
             outlet currently named <strong>{renameTarget}</strong> is renamed
             with it, so WattWise still recognises this appliance afterwards.
+          </p>
+        </div>
+      </Modal>
+
+      <Modal
+        open={!!forgetTarget}
+        onClose={() => (forgetting ? null : closeForget())}
+        title="Forget this appliance?"
+        width={420}
+        footer={
+          <>
+            <Button variant="secondary" onClick={closeForget} disabled={forgetting}>
+              Keep it
+            </Button>
+            <Button variant="danger" onClick={confirmForget} loading={forgetting}>
+              Forget it
+            </Button>
+          </>
+        }
+      >
+        <div className={styles.stack}>
+          {forgetError ? <Banner tone="alert">{forgetError}</Banner> : null}
+
+          <p className={styles.muted}>
+            <strong>{forgetTarget}</strong> and the power measurements behind it
+            are deleted. Detection falls back to the built-in profiles, so this
+            appliance is recognised by its general shape rather than by how yours
+            actually draws.
+          </p>
+
+          <p className={styles.muted}>
+            There is no undo. Getting it back means plugging the appliance in and
+            letting WattWise measure a full run again. If you only want to change
+            the name, close this and use <strong>Rename</strong> — that keeps the
+            measurements.
           </p>
         </div>
       </Modal>
