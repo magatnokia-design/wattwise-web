@@ -394,7 +394,7 @@ export const SettingsPage = () => {
 
           <Card>
             <CardHeader
-              title="ESP32 device"
+              title="WattWise Hub"
               action={
                 <Badge tone={HEALTH_TONE[settings.esp32HealthStatus] || 'neutral'}>
                   {formatDeviceHealthValue(settings.esp32HealthStatus, settings.esp32LastSeenAtMs)}
@@ -424,7 +424,7 @@ export const SettingsPage = () => {
               <p className={styles.muted}>
                 {settings.esp32Linked
                   ? 'Paired. To re-pair or move this device to another account, use the phone app — it scans the QR code and checks the token against the firmware.'
-                  : 'No device paired yet. Pair it in the phone app, which scans the QR code on the ESP32. It will appear here once it reports.'}
+                  : 'No device paired yet. Pair it in the phone app, which scans the QR code on the Hub. It will appear here once it reports.'}
               </p>
             </div>
           </Card>

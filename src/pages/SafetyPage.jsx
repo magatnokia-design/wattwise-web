@@ -257,7 +257,7 @@ export const SafetyPage = () => {
                   subtitle={
                     telemetryFresh
                       ? 'Live against your thresholds'
-                      : 'Waiting for the ESP32 to report'
+                      : 'Waiting for the WattWise Hub to report'
                   }
                 />
                 <div className={styles.stack}>
