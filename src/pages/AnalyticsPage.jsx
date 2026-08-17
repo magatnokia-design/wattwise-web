@@ -118,7 +118,7 @@ export const AnalyticsPage = () => {
           caption={
             tab === 'Monthly'
               ? `PELCO III · ${formatCurrency(summary.effectiveRate)}/kWh effective`
-              : `PELCO III · ${formatCurrency(summary.marginalRate)}/kWh for extra use`
+              : `PELCO III · ${formatCurrency(summary.marginalRate)} per additional kWh`
           }
         />
         {/* Daily shows watts, the other tabs kWh — so label, value and unit are

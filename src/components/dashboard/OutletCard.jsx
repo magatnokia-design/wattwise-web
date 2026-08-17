@@ -234,14 +234,18 @@ export const OutletCard = ({
                     ? styles.subChanged
                     : ''
               } ${drawing ? '' : styles.subIdle}`}
+              /* The idle-with-a-name case used to live here too, and a tooltip
+                 was the wrong place for it: `title` needs a hover, and this page
+                 is served to tablets. On a touchscreen the card read "No
+                 appliance detected yet" above "Rename it under Settings" with
+                 nothing on screen reconciling the two. It is in the footer now,
+                 where it can actually be read. */
               title={
                 unsupported
                   ? 'The readings do not match any appliance WattWise monitors. It covers low-voltage devices up to 500 W per outlet. Usage and cost are still recorded.'
-                  : !drawing && applianceName
-                    ? `This outlet is named ${applianceName}. Nothing is drawing, so nothing is being detected.`
-                    : identityChanged
-                      ? `Named ${applianceName}, but the readings do not match it`
-                      : undefined
+                  : identityChanged && drawing
+                    ? `Named ${applianceName}, but the readings do not match it`
+                    : undefined
               }
             >
               {applianceLine}
@@ -411,9 +415,16 @@ export const OutletCard = ({
                 — metering is unaffected, only identification is. */}
             {unsupported
               ? 'WattWise identifies low-voltage appliances up to 500 W. Usage and cost are still being recorded.'
-              : applianceName
-                ? 'Rename it under Settings → Learned appliances.'
-                : 'Run the appliance for a minute and WattWise will suggest a name.'}
+              /* Idle, but the outlet carries a name. Offering "rename it" alone
+                 directly under "No appliance detected yet" reads as a
+                 contradiction — the reader is told there is no appliance and
+                 then told to rename one. Both halves are true and neither is
+                 the whole answer, so say which is which before the advice. */
+              : !drawing && applianceName
+                ? `This outlet is named ${applianceName}. Nothing is drawing, so there is nothing to detect right now. Rename it under Settings → Learned appliances.`
+                : applianceName
+                  ? 'Rename it under Settings → Learned appliances.'
+                  : 'Run the appliance for a minute and WattWise will suggest a name.'}
           </p>
         </div>
       )}
