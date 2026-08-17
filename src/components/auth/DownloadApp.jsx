@@ -1,14 +1,21 @@
+import { ANDROID_APK_URL } from '../../constants/appRelease';
 import styles from './DownloadApp.module.css';
 
-// Expo build page for the current Android release. Swap this when a new build
-// is published — it is the only place the URL appears.
-export const ANDROID_BUILD_URL =
-  'https://expo.dev/accounts/magat_nokia/projects/WiseWatt/builds/dd16460c-5af8-4318-a3eb-7ab9e541e824';
+/*
+ * Was a hard-coded Expo build URL that had gone stale — it pointed at a build
+ * from before the APK moved to GitHub releases. The address now comes from
+ * constants/appRelease.js, which the landing page uses too, so a new release is
+ * one version string rather than a hunt for copies.
+ */
+export { ANDROID_APK_URL };
 
 /**
  * The only route to a new account, since registration does not exist on the
  * web. Kept to three lines: a reason, the action, and the one caveat that
- * actually trips people up when installing an Expo build.
+ * actually trips people up installing an APK from outside the Play Store.
+ *
+ * Currently unmounted — LoginPage explains where. The landing page carries the
+ * download now.
  */
 export const DownloadApp = () => (
   <div className={styles.card}>
@@ -21,7 +28,7 @@ export const DownloadApp = () => (
 
     <a
       className={styles.button}
-      href={ANDROID_BUILD_URL}
+      href={ANDROID_APK_URL}
       target="_blank"
       rel="noreferrer noopener"
     >

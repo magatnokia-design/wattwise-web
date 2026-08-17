@@ -5,6 +5,7 @@ import AppShell from './components/layout/AppShell';
 import { ErrorBoundary } from './components/layout/ErrorBoundary';
 import { Spinner } from './components/ui/Feedback';
 
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import AuthActionPage from './pages/AuthActionPage';
@@ -62,6 +63,42 @@ const AuthGate = ({ children, requireAuth }) => {
   return children;
 };
 
+/**
+ * The gate on everything inside the app shell, with one exception at the root.
+ *
+ * `/` is two different pages depending on who is asking: the dashboard for a
+ * signed-in user, and the public landing page for everyone else. It used to be
+ * only the former, so a visitor was bounced to /login and the entire public face
+ * of the project was a password box.
+ *
+ * This replaces `<AuthGate requireAuth><AppShell /></AuthGate>` on the layout
+ * route rather than adding a second route for `/` — two routes matching the same
+ * path is ambiguous, and which one won would depend on React Router's ranking
+ * rather than on anything written here. Rendering LandingPage instead of AppShell
+ * simply means the shell's <Outlet /> never runs, so DashboardPage never mounts.
+ *
+ * Every other path keeps the old behaviour exactly: signed out means a redirect
+ * to /login carrying `from`, so signing in returns you to the deep link.
+ */
+const ShellGate = () => {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return (
+      <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>
+        <Spinner label="Restoring your session" />
+      </div>
+    );
+  }
+
+  if (user) return <AppShell />;
+
+  if (location.pathname === '/') return <LandingPage />;
+
+  return <Navigate to="/login" replace state={{ from: location }} />;
+};
+
 /*
  * Catch-all for everything outside AppShell — /login, /forgot-password and
  * /auth/action. Those have no sidebar to escape with, so this one is not keyed
@@ -101,13 +138,7 @@ export const App = () => (
           the !requireAuth branch before the code was ever spent. */}
       <Route path="/auth/action" element={<AuthActionPage />} />
 
-      <Route
-        element={
-          <AuthGate requireAuth>
-            <AppShell />
-          </AuthGate>
-        }
-      >
+      <Route element={<ShellGate />}>
         <Route index element={<DashboardPage />} />
         <Route
           path="analytics"

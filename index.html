@@ -4,7 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#10B981" />
-    <meta name="description" content="WattWise — smart energy monitoring for your 2-outlet ESP32 setup." />
+    <meta name="description" content="WattWise measures what each of your two outlets draws, prices it on your real electricity tariff, and switches them off when a load passes a limit you set." />
+
+    <!-- Open Graph, because the way this link actually travels is pasted into a
+         chat thread. Without these a share renders as a bare URL with no title,
+         no description and whatever image the scraper guesses at. The logo is
+         the one the invoice emails already use, so the mark stays consistent. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="WattWise" />
+    <meta property="og:title" content="WattWise — know what every outlet costs you" />
+    <meta property="og:description" content="Measure each outlet separately, price it on your real electricity tariff, and cut the power when a load passes your limit." />
+    <meta property="og:url" content="https://www.wattwise.site/" />
+    <meta property="og:image" content="https://www.wattwise.site/email-logo.png" />
+    <meta name="twitter:card" content="summary" />
     <!-- The real brand mark, not the ⚡ emoji this used to render: a white bolt
          on a #10B981 disc, from the source path in FROM-THE-PHONE-REPO.md §25.
          The disc is deliberate — a white bolt on transparent disappears against

@@ -1,0 +1,235 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ww-space-3);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ww-space-4);
+  flex-wrap: wrap;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ww-text-dark);
+}
+
+.reading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ww-text-dark);
+}
+
+.percent {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ww-text-light);
+}
+
+/* Zone bar */
+.track {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.zone {
+  display: block;
+}
+
+.zoneNormal {
+  background: var(--ww-primary);
+}
+
+.zoneWarning {
+  background: var(--ww-warning);
+}
+
+.zoneLimit {
+  background: var(--ww-orange);
+}
+
+.slider {
+  width: 100%;
+  height: 6px;
+  margin-top: 2px;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--ww-track);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ww-text-dark);
+  border: 3px solid var(--ww-white);
+  box-shadow: 0 1px 4px rgba(17, 24, 39, 0.35);
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ww-text-dark);
+  border: 3px solid var(--ww-white);
+  box-shadow: 0 1px 4px rgba(17, 24, 39, 0.35);
+  cursor: pointer;
+}
+
+.slider:focus-visible {
+  outline: none;
+  box-shadow: var(--ww-ring);
+}
+
+.scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ww-text-light);
+}
+
+/* Current stage */
+.state {
+  margin-top: var(--ww-space-2);
+  padding: var(--ww-space-4);
+  border-radius: var(--ww-radius);
+  border: 1px solid var(--ww-border);
+  background: var(--ww-bg);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.stateHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stateDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.stateName {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.stateDetail {
+  margin-top: 5px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ww-text-dark);
+}
+
+.state_normal {
+  background: var(--ww-tint-success);
+  border-color: #a7f3d0;
+  color: var(--ww-primary-dark);
+}
+
+.state_warning {
+  background: var(--ww-tint-warning);
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+.state_limit {
+  background: var(--ww-tint-limit);
+  border-color: #fed7aa;
+  color: #c2410c;
+}
+
+.state_cutoff {
+  background: var(--ww-tint-error);
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+/* Ladder */
+.ladder {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+.rung {
+  padding: 7px 6px;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ww-text-light);
+  background: var(--ww-white);
+  border: 1px solid var(--ww-border);
+  border-radius: var(--ww-radius-sm);
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.rungOn.rung_normal {
+  color: var(--ww-primary-dark);
+  border-color: var(--ww-primary);
+  background: var(--ww-tint-success);
+}
+
+.rungOn.rung_warning {
+  color: #b45309;
+  border-color: var(--ww-warning);
+  background: var(--ww-tint-warning);
+}
+
+.rungOn.rung_limit {
+  color: #c2410c;
+  border-color: var(--ww-orange);
+  background: var(--ww-tint-limit);
+}
+
+.rungOn.rung_cutoff {
+  color: #b91c1c;
+  border-color: var(--ww-error);
+  background: var(--ww-tint-error);
+}
+
+.note {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ww-text-light);
+}
+
+@media (max-width: 520px) {
+  .ladder {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state,
+  .rung {
+    transition: none;
+  }
+}
