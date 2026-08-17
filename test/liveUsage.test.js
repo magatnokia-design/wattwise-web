@@ -263,3 +263,48 @@ test('an unnamed outlet is not labelled twice', () => {
 
   assert.equal(one.displayLabel, 'Outlet 1');
 });
+
+/*
+ * A relay that stopped opening.
+ *
+ * The gap these cover: an outlet commanded off while current keeps flowing was
+ * indistinguishable from one waiting on the ESP32's next poll, so a welded
+ * contact rendered as "Switching off…" indefinitely. The backend confirms the
+ * fault after the draw outlasts a window no poll cycle reaches, and this file's
+ * job is to stop describing it as a transition once it has.
+ */
+test('a confirmed relay fault is not reported as a transition', () => {
+  const appliance = first([
+    outlet({ status: 'off', power: 15.4, relayFault: { state: 'stuck_closed' } }),
+  ]);
+
+  assert.equal(appliance.relayStuck, true);
+  assert.equal(appliance.isSwitching, false, 'a stuck relay is the opposite of in flight');
+  assert.equal(appliance.switchingTo, null);
+  assert.equal(appliance.isDrawing, true, 'the load is still real and still costs money');
+});
+
+test('an unconfirmed draw through an off outlet is still a transition', () => {
+  const appliance = first([outlet({ status: 'off', power: 15.4 })]);
+
+  assert.equal(appliance.relayStuck, false);
+  assert.equal(appliance.switchingTo, 'off');
+});
+
+test('a suspected fault has not tripped yet and reads as switching', () => {
+  const appliance = first([
+    outlet({ status: 'off', power: 15.4, relayFault: { state: 'suspected' } }),
+  ]);
+
+  assert.equal(appliance.relayStuck, false);
+  assert.equal(appliance.switchingTo, 'off');
+});
+
+test('a cleared fault leaves no residue', () => {
+  const appliance = first([
+    outlet({ status: 'off', power: 0, relayFault: { state: 'ok' } }),
+  ]);
+
+  assert.equal(appliance.relayStuck, false);
+  assert.equal(appliance.switchingTo, null);
+});

@@ -61,7 +61,7 @@ test('an off outlet with fresh readings is simply off', () => {
 });
 
 test('every state returns a tone the Badge component knows', () => {
-  const tones = new Set(['good', 'warn', 'neutral']);
+  const tones = new Set(['good', 'warn', 'neutral', 'danger']);
 
   [true, false].forEach((isOn) =>
     [true, false].forEach((isDrawing) =>
@@ -70,6 +70,62 @@ test('every state returns a tone the Badge component knows', () => {
           const result = resolveOutletBadge({ isOn, isDrawing, telemetryFresh, switchingTo });
           assert.ok(tones.has(result.tone), `bad tone: ${result.tone}`);
           assert.ok(result.text.length > 0);
+        })
+      )
+    )
+  );
+});
+
+/*
+ * The stuck relay outranks even a command in flight.
+ *
+ * This is the one badge state that describes an outlet WattWise does not
+ * control. Everything else on this pill is a report about a system that is
+ * working; "Will not switch off" is the admission that it is not, and the user's
+ * next action is physical rather than on screen. It has to sit above
+ * `switchingTo` because the two are only distinguishable by time — a relay that
+ * never opens looks exactly like one that has not opened yet, right up until it
+ * is too late to matter.
+ */
+test('a stuck relay outranks a command in flight', () => {
+  const result = resolveOutletBadge({
+    isOn: false,
+    isDrawing: true,
+    telemetryFresh: true,
+    switchingTo: 'off',
+    relayStuck: true,
+  });
+
+  assert.equal(result.text, 'Will not switch off');
+  assert.equal(result.tone, 'danger');
+});
+
+test('a stuck relay is reported even while telemetry is stale', () => {
+  // The fault was confirmed from readings that have since stopped arriving. The
+  // outlet did not become safe when the ESP32 went quiet.
+  const result = resolveOutletBadge({
+    isOn: false,
+    isDrawing: false,
+    telemetryFresh: false,
+    relayStuck: true,
+  });
+
+  assert.equal(result.tone, 'danger');
+});
+
+test('no other combination produces the danger tone', () => {
+  [true, false].forEach((isOn) =>
+    [true, false].forEach((isDrawing) =>
+      [true, false].forEach((telemetryFresh) =>
+        [null, 'on', 'off'].forEach((switchingTo) => {
+          const result = resolveOutletBadge({
+            isOn,
+            isDrawing,
+            telemetryFresh,
+            switchingTo,
+            relayStuck: false,
+          });
+          assert.notEqual(result.tone, 'danger');
         })
       )
     )

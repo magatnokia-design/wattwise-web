@@ -44,6 +44,9 @@ export const OutletCard = ({
   // 'on' | 'off' | null — a toggle the ESP32 has not picked up yet, resolved by
   // the shared buildLiveAppliances. See switchingFor in DashboardPage.
   switchingTo,
+  // The backend has confirmed this outlet was told to open and did not. Not a
+  // slower version of `switchingTo` — the opposite of it.
+  relayStuck,
   telemetryFresh,
   disabled,
   onToggle,
@@ -182,6 +185,7 @@ export const OutletCard = ({
     isDrawing: drawing,
     telemetryFresh,
     switchingTo: switching,
+    relayStuck,
   });
 
   /*

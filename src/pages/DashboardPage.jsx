@@ -126,6 +126,15 @@ export const DashboardPage = () => {
     return appliance?.isSwitching ? appliance.switchingTo : null;
   };
 
+  // Read from the same shared file for the same reason: the phone and the
+  // browser must not disagree about whether an outlet can still be switched off.
+  const relayStuckFor = (outletNumber) => {
+    const appliance = liveAppliances.find(
+      (item) => Number(item.outletNumber) === outletNumber
+    );
+    return appliance?.relayStuck === true;
+  };
+
   const rateNotice = useDismissibleNotice('rate-notice');
   const [toggleError, setToggleError] = useState('');
 
@@ -172,6 +181,28 @@ export const DashboardPage = () => {
 
       {/* Above the fold and above the outlet cards: this explains why one of
           them is off, so it has to be read before them, not after. */}
+      {/*
+        * Deliberately not dismissible, which is the one way it differs from
+        * CutoffNotice below. A cutoff is an event that has finished — the outlet
+        * is off, the danger passed, and dismissing it is reasonable. This is a
+        * standing fault: the outlet is live, WattWise cannot open it, and the
+        * only thing that ends the condition is someone physically unplugging the
+        * appliance. A banner the user can wave away would let the system go
+        * quiet about the one state it cannot fix.
+        */}
+      {[1, 2].filter(relayStuckFor).map((outletNumber) => (
+        <Banner
+          key={`relay-stuck-${outletNumber}`}
+          tone="danger"
+          title={`Outlet ${outletNumber} is not switching off.`}
+        >
+          It was told to switch off and current is still flowing through it. The
+          relay may be stuck closed, so the safety cut-off cannot protect this
+          outlet either. Unplug the appliance at the wall and have the wiring
+          checked before using it again.
+        </Banner>
+      ))}
+
       <CutoffNotice outlets={outlets} />
 
       <div className={styles.pageIntro}>
@@ -233,6 +264,7 @@ export const DashboardPage = () => {
           suggestion={outlet1Suggestion}
           identity={identityFor(1)}
           switchingTo={switchingFor(1)}
+          relayStuck={relayStuckFor(1)}
           telemetryFresh={outlet1HasReading}
           disabled={isToggling}
           onToggle={handleToggle(1)}
@@ -247,6 +279,7 @@ export const DashboardPage = () => {
           suggestion={outlet2Suggestion}
           identity={identityFor(2)}
           switchingTo={switchingFor(2)}
+          relayStuck={relayStuckFor(2)}
           telemetryFresh={outlet2HasReading}
           disabled={isToggling}
           onToggle={handleToggle(2)}
