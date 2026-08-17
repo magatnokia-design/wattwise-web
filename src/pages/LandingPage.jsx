@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import PowerPreview from '../components/auth/PowerPreview';
 import CostEstimator from '../components/landing/CostEstimator';
+import FaqSection from '../components/landing/FaqSection';
 import SafetyDemo from '../components/landing/SafetyDemo';
 import { BoltMark } from '../components/ui/BoltMark';
 import { Wordmark } from '../components/ui/Wordmark';
@@ -128,6 +129,9 @@ export const LandingPage = () => (
           </a>
           <a className={styles.navLink} href="#how">
             How it works
+          </a>
+          <a className={styles.navLink} href="#faq">
+            FAQ
           </a>
           <Link to="/login" className={styles.navSignIn}>
             Sign in
@@ -265,6 +269,19 @@ export const LandingPage = () => (
             ))}
           </ul>
         </div>
+      </section>
+
+      {/* FAQ — the Help Center's own answers, so the two cannot drift apart. */}
+      <section className={styles.section} id="faq">
+        <div className={styles.sectionHead}>
+          <h2 className={styles.sectionTitle}>Questions worth asking first</h2>
+          <p className={styles.sectionLead}>
+            These are taken from the app&rsquo;s Help Center word for word, including the parts
+            that say what WattWise cannot do.
+          </p>
+        </div>
+
+        <FaqSection />
       </section>
 
       {/* Download */}

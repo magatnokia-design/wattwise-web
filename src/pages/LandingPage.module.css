@@ -200,6 +200,9 @@
   max-width: 1120px;
   margin: 0 auto;
   padding: clamp(36px, 6vw, 68px) var(--ww-space-5);
+  /* The nav is sticky and 60px tall, so an #anchor jump would otherwise land
+     with the heading hidden underneath it. */
+  scroll-margin-top: 76px;
 }
 
 .sectionHead {
