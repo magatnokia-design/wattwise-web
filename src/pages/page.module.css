@@ -100,6 +100,27 @@
   color: var(--ww-text-light);
 }
 
+/* Sits under the activity table: what the loaded window covers, and the control
+   that widens it. Wraps to two rows on a narrow screen rather than squeezing the
+   sentence into a column beside the button. */
+.logFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ww-space-3);
+  margin-top: var(--ww-space-4);
+  padding-top: var(--ww-space-4);
+  border-top: 1px solid var(--ww-grid);
+}
+
+.logNote {
+  flex: 1 1 260px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ww-text-light);
+}
+
 .divider {
   height: 1px;
   background: var(--ww-grid);

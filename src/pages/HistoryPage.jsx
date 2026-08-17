@@ -8,14 +8,34 @@ import {
   formatKwh,
   formatWatts,
   getTimestampMs,
+  powerAtSwitch,
   resolveDateRange,
 } from '../screens/History/utils/historyHelpers';
+import { Button } from '../components/ui/Button';
 import { Card, CardHeader } from '../components/ui/Card';
 import { DataTable } from '../components/ui/DataTable';
 import { SelectField } from '../components/ui/Field';
 import { Badge, EmptyState, Spinner } from '../components/ui/Feedback';
 import ExportUsageButton from '../components/history/ExportUsageButton';
 import styles from './page.module.css';
+
+/*
+ * How many switch events the live listener holds, and how much further each
+ * "Load more" reaches.
+ *
+ * This used to be a bare 50 passed at the call site, and it was quietly the
+ * whole answer to "why does History only show yesterday?". The listener is
+ * capped by *count* and carries no date clause at all - the Range control is
+ * applied afterwards, in the browser, by filterByDateRange. So "This month"
+ * only ever meant "of the last 50 switches, the ones from this month", and
+ * during heavy testing 50 switches can be a day and a half. Picking a wider
+ * range changed nothing, because the older rows had never been fetched.
+ *
+ * Matching the phone app's arrangement: raise the cap and re-subscribe, rather
+ * than run a second paginated query alongside a live one. Growing the live
+ * query keeps realtime updates working; a separate fetch would fight it.
+ */
+const ACTIVITY_PAGE_SIZE = 50;
 
 const TABS = [
   { id: 'usage', label: 'Daily usage' },
@@ -38,8 +58,16 @@ export const HistoryPage = () => {
   const [outlet, setOutlet] = useState('all');
   const [range, setRange] = useState('30d');
 
-  const { activityLogs, usageHistory, loading, fetchUsageHistory, subscribeActivityLogs } =
+  const [logLimit, setLogLimit] = useState(ACTIVITY_PAGE_SIZE);
+
+  const { activityLogs, usageHistory, loading, hasMore, fetchUsageHistory, subscribeActivityLogs } =
     useHistory();
+
+  // A new filter starts a fresh window. Without this, narrowing to one outlet
+  // after several "Load more" taps would keep re-subscribing at the grown cap.
+  useEffect(() => {
+    setLogLimit(ACTIVITY_PAGE_SIZE);
+  }, [outlet, range]);
 
   // Daily usage is filtered server-side by historyService.getDailyUsage.
   useEffect(() => {
@@ -54,9 +82,9 @@ export const HistoryPage = () => {
   useEffect(() => {
     if (tab !== 'activity') return undefined;
 
-    const unsubscribe = subscribeActivityLogs({ outlet }, 50);
+    const unsubscribe = subscribeActivityLogs({ outlet }, logLimit);
     return () => unsubscribe();
-  }, [tab, outlet, subscribeActivityLogs]);
+  }, [tab, outlet, logLimit, subscribeActivityLogs]);
 
   const { startDate, endDate } = resolveDateRange(range);
   const visibleLogs = filterByDateRange(activityLogs, startDate, endDate);
@@ -243,16 +271,47 @@ export const HistoryPage = () => {
                 },
                 {
                   key: 'power',
-                  header: 'Power',
+                  // "Power" alone invited the reading that every row should have
+                  // one. Only a switch-off can: the header now says which moment
+                  // the figure belongs to, and powerAtSwitch enforces it.
+                  header: 'Power at switch',
                   align: 'right',
                   sortable: true,
-                  sortValue: (row) => Number(row.power) || 0,
-                  render: (row) => <span className="ww-num">{formatWatts(row.power) || '—'}</span>,
+                  sortValue: powerAtSwitch,
+                  render: (row) => (
+                    <span className="ww-num">{formatWatts(powerAtSwitch(row)) || '—'}</span>
+                  ),
                 },
               ]}
               rows={visibleLogs}
             />
           )}
+
+          {/* Says plainly what the range can and cannot reach. The control looks
+              authoritative — pick "This month" and the table answers — so
+              without this a short log reads as "nothing else happened", when it
+              actually means "nothing else was fetched". */}
+          {!loading || visibleLogs.length ? (
+            <div className={styles.logFooter}>
+              <p className={styles.logNote}>
+                {hasMore
+                  ? `The ${activityLogs.length} most recent switches are loaded. The range filters
+                     these — it does not search further back, so older days need loading first.`
+                  : `All ${activityLogs.length} recorded switches are loaded.`}
+              </p>
+
+              {hasMore ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={loading}
+                  onClick={() => setLogLimit((current) => current + ACTIVITY_PAGE_SIZE)}
+                >
+                  Load {ACTIVITY_PAGE_SIZE} more
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
         </Card>
       )}
     </div>
