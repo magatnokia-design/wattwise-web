@@ -229,3 +229,37 @@ test('isOn reports the command and does not decay with the readings', () => {
   const off = first([outlet({ status: 'off', metricsUpdatedAtMs: NOW - 10 * 60 * 1000 })]);
   assert.equal(off.isOn, false);
 });
+
+/*
+ * Two outlets can carry the same appliance name, and one did: both sockets were
+ * confirmed as "LED Lamp", after which Analytics printed "LED Lamp · 15.2 W"
+ * beside a dashboard that said "Detecting..." about the same outlet, and every
+ * row of the activity log became indistinguishable from every other.
+ *
+ * The grouping key must stay a bare name - the daily rollup sums energy per
+ * appliance and today's live entry has to key the way yesterday's stored one
+ * did - so the slot qualifier belongs on a separate display field.
+ */
+test('a live row is identified by its slot, not only by its name', () => {
+  const [one, two] = buildLiveAppliances(
+    [
+      outlet({ outletNumber: 1, applianceName: 'LED Lamp', power: 15.2 }),
+      outlet({ outletNumber: 2, applianceName: 'LED Lamp', power: 14.0 }),
+    ],
+    { nowMs: NOW }
+  );
+
+  assert.equal(one.displayLabel, 'Outlet 1 · LED Lamp');
+  assert.equal(two.displayLabel, 'Outlet 2 · LED Lamp');
+  assert.notEqual(one.displayLabel, two.displayLabel);
+
+  // The rollup key stays bare, so the two still sum into one appliance total.
+  assert.equal(one.applianceName, 'LED Lamp');
+  assert.equal(two.applianceName, 'LED Lamp');
+});
+
+test('an unnamed outlet is not labelled twice', () => {
+  const [one] = buildLiveAppliances([outlet({ outletNumber: 1 })], { nowMs: NOW });
+
+  assert.equal(one.displayLabel, 'Outlet 1');
+});

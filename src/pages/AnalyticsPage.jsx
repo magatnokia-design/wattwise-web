@@ -252,7 +252,7 @@ export const AnalyticsPage = () => {
                   <div key={appliance.outletNumber} className="ww-live-row">
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                       <span style={{ fontWeight: 600, color: 'var(--ww-text-dark)' }}>
-                        {appliance.applianceName}
+                        {appliance.displayLabel || appliance.applianceName}
                       </span>
                       {/* Switching outranks both: during that window neither the
                           commanded state nor the meter is the whole truth, and
