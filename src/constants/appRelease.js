@@ -12,7 +12,7 @@
  * version. `RELEASES_URL` is the fallback for anyone arriving after a newer build
  * is out.
  */
-export const ANDROID_VERSION = '1.0.5';
+export const ANDROID_VERSION = '1.0.6';
 
 export const REPO_URL = 'https://github.com/magatnokia-design/WattWise';
 
@@ -21,5 +21,12 @@ export const RELEASES_URL = `${REPO_URL}/releases`;
 export const ANDROID_APK_URL =
   `${REPO_URL}/releases/download/v${ANDROID_VERSION}/WattWise-v${ANDROID_VERSION}.apk`;
 
-/** Rounded from the built artifact so the button can warn about a big download. */
-export const ANDROID_APK_SIZE_MB = 107;
+/**
+ * Rounded from the built artifact, so the page states the real transfer size.
+ *
+ * Was 107, which was accurate and also the problem: the APK carried x86 and
+ * x86_64 native libraries that only a PC emulator can run, and the download was
+ * stalling on phone data before it finished. Building for the two ARM
+ * architectures alone takes it to 61 MB with the app itself unchanged.
+ */
+export const ANDROID_APK_SIZE_MB = 61;
