@@ -17,13 +17,22 @@
     <meta property="og:url" content="https://www.wattwise.site/" />
     <meta property="og:image" content="https://www.wattwise.site/email-logo.png" />
     <meta name="twitter:card" content="summary" />
-    <!-- The real brand mark, not the ⚡ emoji this used to render: a white bolt
-         on a #10B981 disc, from the source path in FROM-THE-PHONE-REPO.md §25.
-         The disc is deliberate — a white bolt on transparent disappears against
-         a light tab strip. Bolt height equals the circle's radius, matching the
-         phone's circle lockup, and it stays legible down to 16px, which is the
-         size a browser tab actually draws. -->
-    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20100%20100%27%3E%3Ccircle%20cx%3D%2750%27%20cy%3D%2750%27%20r%3D%2750%27%20fill%3D%27%2310B981%27%2F%3E%3Cpath%20d%3D%27M17%200%20L0%2025%20L10%2025%20L8%2044%20L26%2018%20L15%2018%20Z%27%20fill%3D%27%23ffffff%27%20transform%3D%27translate(35.23%2C25)%20scale(1.1364)%27%2F%3E%3C%2Fsvg%3E" />
+    <!-- Real files, at real URLs, generated from the phone app's launcher icon
+         by scripts/generate-icons.cjs so both surfaces carry the same mark.
+
+         This was an inline `data:` SVG until 18 Aug 2026, which looked correct
+         in every browser tab and was still wrong. Google's crawler does not read
+         a data URI - it fetches /favicon.ico as an ordinary URL. This is a
+         single-page app whose rewrite serves index.html for anything unmatched,
+         so the crawler asked for the icon, received a page of HTML, and printed
+         its own generic mark beside wattwise.site in the search results.
+
+         Keep these as files. Any future "tidy-up" back into a data URI silently
+         reintroduces exactly that bug, and it will not be visible in a browser. -->
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
     <title>WattWise</title>
   </head>
   <body>
