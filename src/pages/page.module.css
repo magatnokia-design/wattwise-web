@@ -121,6 +121,16 @@
   color: var(--ww-text-light);
 }
 
+/* Holds the hedged action badge and the reason it is hedged. Wraps rather than
+   widening the column, since only the occasional row carries a second badge and
+   the table should not resize around it. */
+.actionCell {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
 .divider {
   height: 1px;
   background: var(--ww-grid);

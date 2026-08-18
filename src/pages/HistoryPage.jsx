@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useHistory } from '../screens/History/hooks/useHistory';
 import {
   DATE_RANGE_PRESETS,
+  describeLogDelivery,
   describeLogSource,
   filterByDateRange,
   formatCost,
@@ -88,6 +89,9 @@ export const HistoryPage = () => {
 
   const { startDate, endDate } = resolveDateRange(range);
   const visibleLogs = filterByDateRange(activityLogs, startDate, endDate);
+  // The badge alone explains one row. This says what the whole column means, and
+  // only appears when there is something to explain.
+  const hasUnconfirmed = visibleLogs.some((row) => describeLogDelivery(row));
 
   return (
     <div className={styles.page}>
@@ -256,9 +260,33 @@ export const HistoryPage = () => {
                 {
                   key: 'status',
                   header: 'Action',
-                  render: (row) => (
-                    <Badge tone={row.status === 'ON' ? 'good' : 'neutral'}>{row.status}</Badge>
-                  ),
+                  /*
+                   * The row is written when the switch is *requested* - the hub
+                   * only finds out when it next polls. So this column has always
+                   * meant "what was asked for", and read as "what the relay did".
+                   * Identical, until the hub is off the network: then the table
+                   * states flatly that an outlet switched when nothing did.
+                   *
+                   * When the command times out the backend stamps the row, and
+                   * the badge hedges rather than disappears. The request is still
+                   * a true record of what the user asked for; what is unknown is
+                   * only whether the relay followed.
+                   */
+                  render: (row) => {
+                    const delivery = describeLogDelivery(row);
+                    if (!delivery) {
+                      return (
+                        <Badge tone={row.status === 'ON' ? 'good' : 'neutral'}>{row.status}</Badge>
+                      );
+                    }
+
+                    return (
+                      <span className={styles.actionCell} title={delivery.note}>
+                        <Badge tone="neutral">{row.status}?</Badge>
+                        <Badge tone={delivery.tone}>{delivery.label}</Badge>
+                      </span>
+                    );
+                  },
                 },
                 {
                   key: 'source',
@@ -298,6 +326,11 @@ export const HistoryPage = () => {
                   ? `The ${activityLogs.length} most recent switches are loaded. The range filters
                      these — it does not search further back, so older days need loading first.`
                   : `All ${activityLogs.length} recorded switches are loaded.`}
+                {hasUnconfirmed
+                  ? ' A row marked “Not confirmed” means the hub never answered that command, so'
+                    + ' the outlet may not have changed. Every other row was acknowledged by the'
+                    + ' hardware.'
+                  : ''}
               </p>
 
               {hasMore ? (
