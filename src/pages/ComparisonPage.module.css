@@ -1,30 +1,46 @@
-.verdict {
+/* The month-on-month line, inside the measured card rather than floating above
+   it as its own verdict panel. It used to sit at the top of the page as the
+   screen's headline answer, which overstated it: it is one of two checks here,
+   and the one that needs a second measured month to exist at all. */
+.trend {
   padding: var(--ww-space-4) var(--ww-space-5);
+  margin-bottom: var(--ww-space-4);
   border-radius: var(--ww-radius);
   border: 1px solid var(--ww-border);
   background: var(--ww-white);
 }
 
-.verdict[data-tone='good'] {
+.trend[data-tone='good'] {
   background: var(--ww-tint-success);
   border-color: #a7f3d0;
 }
 
-.verdict[data-tone='alert'] {
+.trend[data-tone='alert'] {
   background: var(--ww-tint-error);
   border-color: #fecaca;
 }
 
-.verdictHeadline {
-  font-size: 19px;
+.trendHeadline {
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--ww-text-dark);
 }
 
-.verdictDetail {
+.trendDetail {
   margin-top: 4px;
   font-size: 13.5px;
+  color: var(--ww-text-light);
+  max-width: 80ch;
+}
+
+/* No baseline month. Deliberately unboxed and untoned — an absent comparison
+   is not a result, and giving it a panel of its own was what made the empty
+   screen look like it had reported something. */
+.trendMuted {
+  margin-bottom: var(--ww-space-4);
+  font-size: 13px;
+  line-height: 1.55;
   color: var(--ww-text-light);
   max-width: 80ch;
 }

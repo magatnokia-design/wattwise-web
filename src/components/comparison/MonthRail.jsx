@@ -1,43 +1,30 @@
-import { useState } from 'react';
 import { formatMonthShort } from '../../screens/ReferenceComparison/utils/comparisonHelpers';
 import { formatCurrency } from '../../screens/BudgetTracking/utils/budgetHelpers';
 import styles from './MonthRail.module.css';
 
 /**
- * Month picker for the comparison screen.
+ * Month picker for the comparison screen. One month, one control.
  *
- * This used to be drag-and-drop: pick up a month chip, drop it on a slot. Two
- * things were wrong with that.
+ * This has now lost two things, for the same underlying reason each time.
  *
- * HTML5 drag events do not fire on touch at all, so on a phone or tablet the
- * advertised interaction was dead - and the slots said "Drop a month here",
- * instructing people to do something their device could not do. Click was
- * already implemented as the shortcut, so the feature worked, but only for
- * anyone who ignored the label.
+ * It was drag-and-drop first: pick up a month chip, drop it on a slot. HTML5
+ * drag events do not fire on touch, so on a phone the advertised interaction
+ * was dead while the slots read "Drop a month here" - instructing people to do
+ * something their device could not do. Click was already wired as a shortcut,
+ * so the feature worked, but only for anyone who ignored the label.
  *
- * And dragging is the wrong verb regardless. Dragging suits arranging things
- * whose order matters. This is choosing two values out of twelve, which is what
- * a select control is for, and a select carries its current value visibly
- * instead of asking the user to infer it from where a chip ended up.
+ * Then it was two selects, A and B. That fixed the input but not the concept.
+ * The bill card below only ever followed slot A, so slot B governed half the
+ * screen and nothing said which half; picking July in it while August sat in A
+ * produced a page that looked like it was comparing three things at once. The
+ * baseline is now always the preceding month, derived rather than chosen, and
+ * named where the comparison is actually shown.
  *
- * So: two selects, which every device and every assistive technology already
- * knows how to operate. The bar strip stays, because the original note above it
- * was right that a bare dropdown hides the data you are choosing between - but
- * it is now an overview you can click, not the only way in.
+ * What survives is the strip, because the point it was always making is right:
+ * a bare dropdown hides the data you are choosing between. It is an overview
+ * you can click, not the only way in.
  */
-export const MonthRail = ({
-  monthOptions,
-  monthTotals,
-  monthA,
-  monthB,
-  onSelectA,
-  onSelectB,
-  loading,
-}) => {
-  // Which slot a strip click fills. Starts on A and flips after each pick, so
-  // clicking two months in a row reads as "compare this with that".
-  const [activeSlot, setActiveSlot] = useState('A');
-
+export const MonthRail = ({ monthOptions, monthTotals, month, onSelect, loading }) => {
   // Bars are relative to the tallest month on screen. Against a fixed ceiling a
   // real month of two-outlet usage would be a sliver.
   const peak = monthOptions.reduce(
@@ -45,33 +32,20 @@ export const MonthRail = ({
     0
   );
 
-  const assign = (slot, monthKey) => {
-    if (slot === 'A') {
-      onSelectA(monthKey);
-      setActiveSlot('B');
-    } else {
-      onSelectB(monthKey);
-      setActiveSlot('A');
-    }
-  };
+  const totals = monthTotals[month];
+  const recorded = !!totals && totals.daysRecorded > 0;
 
-  const renderSlot = (slot, label, monthKey, onSelect) => {
-    const totals = monthTotals[monthKey];
-    const recorded = !!totals && totals.daysRecorded > 0;
-
-    return (
-      <div
-        className={`${styles.slot} ${activeSlot === slot ? styles.slotActive : ''}`}
-        onFocus={() => setActiveSlot(slot)}
-      >
-        <label className={styles.slotLabel} htmlFor={`ww-month-${slot}`}>
-          {label}
+  return (
+    <div className={styles.rail}>
+      <div className={styles.slot}>
+        <label className={styles.slotLabel} htmlFor="ww-month">
+          Month
         </label>
 
         <select
-          id={`ww-month-${slot}`}
+          id="ww-month"
           className={styles.slotSelect}
-          value={monthKey || ''}
+          value={month || ''}
           onChange={(event) => onSelect(event.target.value)}
         >
           {monthOptions.map((option) => (
@@ -88,52 +62,36 @@ export const MonthRail = ({
               <span className="ww-num">{totals.kWh.toFixed(2)} kWh</span>
               {' · '}
               <span className="ww-num">{formatCurrency(totals.cost)}</span>
+              {' measured by WattWise'}
             </>
           ) : (
-            'Nothing recorded'
+            'Nothing recorded — you can still enter this month’s bill below'
           )}
         </span>
       </div>
-    );
-  };
 
-  return (
-    <div className={styles.rail}>
-      <div className={styles.slots}>
-        {renderSlot('A', 'Month', monthA, onSelectA)}
-        <span className={styles.versus} aria-hidden="true">
-          vs
-        </span>
-        {renderSlot('B', 'Compared with', monthB, onSelectB)}
-      </div>
-
-      <p className={styles.stripHint}>
-        Or pick from the year — a tap fills the{' '}
-        <strong>{activeSlot === 'A' ? 'Month' : 'Compared with'}</strong> box.
-      </p>
+      <p className={styles.stripHint}>Or pick from the year.</p>
 
       <div className={styles.strip} role="group" aria-label="Months">
         {monthOptions.map((option) => {
-          const totals = monthTotals[option.value];
-          const kWh = Number(totals?.kWh) || 0;
-          const recorded = !!totals && totals.daysRecorded > 0;
-          const inUse =
-            option.value === monthA ? 'A' : option.value === monthB ? 'B' : null;
+          const optionTotals = monthTotals[option.value];
+          const kWh = Number(optionTotals?.kWh) || 0;
+          const hasData = !!optionTotals && optionTotals.daysRecorded > 0;
+          const selected = option.value === month;
 
           return (
             <button
               key={option.value}
               type="button"
-              onClick={() => assign(activeSlot, option.value)}
-              className={`${styles.chip} ${inUse ? styles.chipInUse : ''} ${
-                recorded ? '' : styles.chipEmpty
+              onClick={() => onSelect(option.value)}
+              aria-pressed={selected}
+              className={`${styles.chip} ${selected ? styles.chipInUse : ''} ${
+                hasData ? '' : styles.chipEmpty
               }`}
               aria-label={`${formatMonthShort(option.value)}${
-                recorded ? `, ${kWh.toFixed(2)} kilowatt hours` : ', nothing recorded'
-              }. Fills the ${activeSlot === 'A' ? 'Month' : 'Compared with'} box.`}
+                hasData ? `, ${kWh.toFixed(2)} kilowatt hours` : ', nothing recorded'
+              }`}
             >
-              {inUse ? <span className={styles.chipTag}>{inUse}</span> : null}
-
               <span className={styles.barTrack} aria-hidden="true">
                 <span
                   className={styles.bar}
@@ -143,7 +101,7 @@ export const MonthRail = ({
 
               <span className={styles.chipMonth}>{formatMonthShort(option.value)}</span>
               <span className={styles.chipValue}>
-                {loading ? '·' : recorded ? <span className="ww-num">{kWh.toFixed(1)}</span> : '—'}
+                {loading ? '·' : hasData ? <span className="ww-num">{kWh.toFixed(1)}</span> : '—'}
               </span>
             </button>
           );

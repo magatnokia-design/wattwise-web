@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import useReferenceComparison from '../screens/ReferenceComparison/hooks/useReferenceComparison';
 import {
-  buildVerdict,
+  buildTrend,
   explainAccuracy,
   formatMonthLabel,
 } from '../screens/ReferenceComparison/utils/comparisonHelpers';
@@ -23,8 +23,8 @@ const DELTAS = [
   { key: 'outlet2', label: 'Outlet 2', unit: ' kWh', digits: 2 },
 ];
 
-// Which field on a month's totals each delta reads, for the case where there is
-// only one month to show and no delta to take.
+// Which field on the month's totals each row reads. The measured figure is
+// always the selected month's own total; the delta beside it is what changed.
 const TOTAL_FIELD = { energy: 'kWh', cost: 'cost', outlet1: 'outlet1', outlet2: 'outlet2' };
 
 const EMPTY_BILL = { kWh: '', cost: '', outlet1: '', outlet2: '' };
@@ -32,17 +32,15 @@ const EMPTY_BILL = { kWh: '', cost: '', outlet1: '', outlet2: '' };
 export const ComparisonPage = () => {
   const {
     monthOptions,
-    monthA,
-    monthB,
-    totalsA,
-    totalsB,
+    month,
+    previousMonth,
+    totals,
     comparison,
     actualBill,
     accuracy,
     loading,
     error,
-    selectMonthA,
-    selectMonthB,
+    selectMonth,
     saveActualBill,
     deleteActualBill,
   } = useReferenceComparison();
@@ -54,9 +52,17 @@ export const ComparisonPage = () => {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
 
-  const monthALabel = formatMonthLabel(monthA);
-  const monthBLabel = formatMonthLabel(monthB);
-  const verdict = buildVerdict(comparison, monthALabel, monthBLabel);
+  // Removing a bill is destructive and silent — the row is gone and the
+  // accuracy check with it — so it asks first. The phone app has always
+  // confirmed here; the web client went straight to the delete.
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [removeError, setRemoveError] = useState('');
+
+  const monthLabel = formatMonthLabel(month);
+  const previousLabel = formatMonthLabel(previousMonth);
+  const trend = buildTrend(comparison, monthLabel, previousLabel);
+  const hasUsage = totals.daysRecorded > 0;
 
   const openForm = () => {
     setForm({
@@ -95,66 +101,68 @@ export const ComparisonPage = () => {
     setOpen(false);
   };
 
-  /*
-   * The one-month case. `hasData` is true when *either* month has days
-   * recorded, but a delta needs both — so gating the delta grid on it printed
-   * "↑ 0.20 kWh" against a baseline of "May 2026: 0.00 kWh" for a month that
-   * was never measured at all, under a heading that simultaneously said "Not
-   * enough data yet". Absence of data shown as a measurement of zero, which is
-   * the same mistake as grading an unplugged outlet's 0.0 V.
-   *
-   * So: totals on their own, no delta, no baseline, and the empty month named.
-   */
-  const recordedTotals = totalsA.daysRecorded > 0 ? totalsA : totalsB;
-  const recordedLabel = totalsA.daysRecorded > 0 ? monthALabel : monthBLabel;
-  const unrecordedLabel = totalsA.daysRecorded > 0 ? monthBLabel : monthALabel;
+  const remove = async () => {
+    setRemoving(true);
+    setRemoveError('');
+    const result = await deleteActualBill();
+    setRemoving(false);
 
-  const renderTotal = (key) => {
-    const config = DELTAS.find((entry) => entry.key === key);
-    const value = Number(recordedTotals[TOTAL_FIELD[key]]) || 0;
+    if (!result?.success) {
+      setRemoveError(result?.error || 'Could not remove the bill.');
+      return;
+    }
 
-    return (
-      <div key={key} className={comparisonStyles.delta}>
-        <p className={comparisonStyles.deltaLabel}>{config.label}</p>
-        <p className={comparisonStyles.deltaValue}>
-          <span className="ww-num">
-            {config.currency ? formatCurrency(value) : `${value.toFixed(config.digits)}${config.unit}`}
-          </span>
-        </p>
-      </div>
-    );
+    setConfirmRemove(false);
   };
 
-  const renderDelta = (key) => {
-    const delta = comparison[key];
+  /*
+   * One row per metric: the selected month's measured figure, with the change
+   * from the preceding month beside it *only* when that month was measured.
+   *
+   * The delta is gated on `bothHaveData`, never on `hasData`. Gating it on the
+   * looser flag once printed "↑ 0.20 kWh" against a baseline of "May 2026: 0.00
+   * kWh" for a month that was never measured at all, under a heading that
+   * simultaneously said there was not enough data — absence rendered as a
+   * measurement of zero, the same mistake as grading an unplugged outlet's
+   * 0.0 V.
+   */
+  const renderMetric = (key) => {
     const config = DELTAS.find((entry) => entry.key === key);
+    const delta = comparison[key];
+    const value = Number(totals[TOTAL_FIELD[key]]) || 0;
+
+    const formatValue = (input) =>
+      config.currency ? formatCurrency(input) : `${input.toFixed(config.digits)}${config.unit}`;
+
     const isGood = delta.direction === 'down';
     const tone = delta.direction === 'flat' ? 'neutral' : isGood ? 'good' : 'alert';
 
-    const formatValue = (value) =>
-      config.currency ? formatCurrency(value) : `${value.toFixed(config.digits)}${config.unit}`;
-
     return (
       <div key={key} className={comparisonStyles.delta}>
         <p className={comparisonStyles.deltaLabel}>{config.label}</p>
         <p className={comparisonStyles.deltaValue}>
-          <span className="ww-num">{formatValue(delta.current)}</span>
+          <span className="ww-num">{formatValue(value)}</span>
         </p>
-        <div className={styles.row}>
-          <Badge tone={tone}>
-            {delta.direction === 'flat'
-              ? 'No change'
-              : `${isGood ? '↓' : '↑'} ${formatValue(delta.absolute)}`}
-          </Badge>
-          {delta.absolutePercent !== null ? (
-            <span className={styles.muted}>
-              <span className="ww-num">{delta.absolutePercent.toFixed(1)}%</span>
-            </span>
-          ) : null}
-        </div>
-        <p className={comparisonStyles.deltaBaseline}>
-          {monthBLabel}: <span className="ww-num">{formatValue(delta.previous)}</span>
-        </p>
+
+        {trend.available ? (
+          <>
+            <div className={styles.row}>
+              <Badge tone={tone}>
+                {delta.direction === 'flat'
+                  ? 'No change'
+                  : `${isGood ? '↓' : '↑'} ${formatValue(delta.absolute)}`}
+              </Badge>
+              {delta.absolutePercent !== null ? (
+                <span className={styles.muted}>
+                  <span className="ww-num">{delta.absolutePercent.toFixed(1)}%</span>
+                </span>
+              ) : null}
+            </div>
+            <p className={comparisonStyles.deltaBaseline}>
+              {previousLabel}: <span className="ww-num">{formatValue(delta.previous)}</span>
+            </p>
+          </>
+        ) : null}
       </div>
     );
   };
@@ -163,8 +171,9 @@ export const ComparisonPage = () => {
     <div className={styles.page}>
       <div className={styles.pageIntro}>
         <p className={styles.lede}>
-          Compares what the hardware actually measured in each month. Both sides come from the daily
-          rollups, not from anything typed in.
+          Pick one month. Everything below is about that month: what the hardware measured, how
+          that compares with the month before it, and how the estimate lines up with the PELCO III
+          bill covering the same electricity.
         </p>
       </div>
 
@@ -174,58 +183,56 @@ export const ComparisonPage = () => {
         <MonthRail
           monthOptions={monthOptions}
           monthTotals={monthTotals}
-          monthA={monthA}
-          monthB={monthB}
-          onSelectA={selectMonthA}
-          onSelectB={selectMonthB}
+          month={month}
+          onSelect={selectMonth}
           loading={loadingStrip}
         />
       </Card>
 
       {loading ? (
-        <Spinner label="Loading months" />
+        <Spinner label="Loading month" />
       ) : (
         <>
-          <div
-            className={comparisonStyles.verdict}
-            data-tone={verdict.tone}
-          >
-            <p className={comparisonStyles.verdictHeadline}>{verdict.headline}</p>
-            <p className={comparisonStyles.verdictDetail}>{verdict.detail}</p>
-          </div>
+          <Card>
+            <CardHeader
+              title={`What WattWise measured — ${monthLabel}`}
+              subtitle={
+                hasUsage
+                  ? `${totals.daysRecorded} ${totals.daysRecorded === 1 ? 'day' : 'days'} recorded, from outlet 1 and outlet 2 only.`
+                  : undefined
+              }
+            />
 
-          {comparison.bothHaveData ? (
-            <Card>
-              <CardHeader
-                title={`${monthALabel} vs ${monthBLabel}`}
-                subtitle={`${totalsA.daysRecorded} days recorded in ${monthALabel} · ${totalsB.daysRecorded} in ${monthBLabel}`}
-              />
-              <div className={comparisonStyles.deltaGrid}>
-                {DELTAS.map((entry) => renderDelta(entry.key))}
-              </div>
-            </Card>
-          ) : comparison.hasData ? (
-            <Card>
-              <CardHeader
-                title={`${recordedLabel} on its own`}
-                subtitle={`${unrecordedLabel} has no recorded usage, so there is nothing to compare against yet. These are ${recordedLabel}'s totals.`}
-              />
-              <div className={comparisonStyles.deltaGrid}>
-                {DELTAS.map((entry) => renderTotal(entry.key))}
-              </div>
-            </Card>
-          ) : (
-            <Card>
-              <EmptyState icon="⚖️" title="Nothing recorded for these months">
-                A month becomes comparable once the nightly rollup has written at least one day for
-                it.
+            {hasUsage ? (
+              <>
+                {/* The month-on-month line. Bordered and toned when there is a
+                    real change to report; a quiet sentence when the preceding
+                    month has nothing, because "no baseline" is not a finding
+                    and should not be dressed as one. */}
+                {trend.available ? (
+                  <div className={comparisonStyles.trend} data-tone={trend.tone}>
+                    <p className={comparisonStyles.trendHeadline}>{trend.headline}</p>
+                    <p className={comparisonStyles.trendDetail}>{trend.detail}</p>
+                  </div>
+                ) : (
+                  <p className={comparisonStyles.trendMuted}>{trend.detail}</p>
+                )}
+
+                <div className={comparisonStyles.deltaGrid}>
+                  {DELTAS.map((entry) => renderMetric(entry.key))}
+                </div>
+              </>
+            ) : (
+              <EmptyState icon="⚖️" title={`Nothing recorded for ${monthLabel}`}>
+                A month appears here once the nightly rollup has written at least one day for it.
+                You can still file that month&apos;s PELCO III bill below.
               </EmptyState>
-            </Card>
-          )}
+            )}
+          </Card>
 
           <Card>
             <CardHeader
-              title={`Actual PELCO III bill — ${monthALabel}`}
+              title={`Actual PELCO III bill — ${monthLabel}`}
               subtitle="The only check that grades WattWise's estimate against the real thing."
               action={
                 <div className={styles.row}>
@@ -233,7 +240,14 @@ export const ComparisonPage = () => {
                     {actualBill ? 'Edit' : 'Enter bill'}
                   </Button>
                   {actualBill ? (
-                    <Button size="sm" variant="danger" onClick={deleteActualBill}>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => {
+                        setRemoveError('');
+                        setConfirmRemove(true);
+                      }}
+                    >
                       Remove
                     </Button>
                   ) : null}
@@ -241,7 +255,31 @@ export const ComparisonPage = () => {
               }
             />
 
-            {accuracy ? (
+            {accuracy && !hasUsage ? (
+              /*
+                A bill filed against a month WattWise never measured — which is
+                the normal case for anyone entering an old bill, and the case
+                this screen actively encourages. Running it through the rows
+                below would print "WattWise estimated ₱0.00" and score the gap
+                at 100%, reporting an absence of data as a total failure of the
+                estimate. So the estimate line says what is true instead.
+              */
+              <div className={comparisonStyles.accuracy}>
+                <div className={comparisonStyles.accuracyRow}>
+                  <span>PELCO III billed</span>
+                  <strong className="ww-num">{formatCurrency(accuracy.actualCost)}</strong>
+                </div>
+                <div className={comparisonStyles.accuracyRow}>
+                  <span>WattWise measured</span>
+                  <strong>Nothing yet</strong>
+                </div>
+                <p className={comparisonStyles.accuracyNote}>
+                  Your {monthLabel} bill is saved. WattWise has no recorded usage for that month, so
+                  there is nothing to grade it against yet — the check appears once the outlets have
+                  reported for a full day of that month.
+                </p>
+              </div>
+            ) : accuracy ? (
               <div className={comparisonStyles.accuracy}>
                 <div className={comparisonStyles.accuracyRow}>
                   <span>WattWise estimated</span>
@@ -322,12 +360,12 @@ export const ComparisonPage = () => {
                   answering it differently would be worse than either answer.
                 */}
                 <p className={comparisonStyles.accuracyNote}>
-                  {explainAccuracy(accuracy, monthALabel)}
+                  {explainAccuracy(accuracy, monthLabel)}
                 </p>
               </div>
             ) : (
-              <EmptyState icon="🧾" title="No bill on file for this month">
-                Type in the total kWh and amount from the bill covering this month&apos;s
+              <EmptyState icon="🧾" title={`No bill on file for ${monthLabel}`}>
+                Type in the total kWh and amount from the bill covering {monthLabel}&apos;s
                 electricity. Bills from before you owned the hub work too — that is how this screen
                 has something to check against on day one.
               </EmptyState>
@@ -337,9 +375,34 @@ export const ComparisonPage = () => {
       )}
 
       <Modal
+        open={confirmRemove}
+        onClose={() => setConfirmRemove(false)}
+        title={`Remove the ${monthLabel} bill?`}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmRemove(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" loading={removing} onClick={remove}>
+              Remove
+            </Button>
+          </>
+        }
+      >
+        <div className={styles.stack}>
+          {removeError ? <Banner tone="alert">{removeError}</Banner> : null}
+          <p>
+            This deletes the PELCO III figures you saved for {monthLabel}, and the accuracy check
+            with them. Your measured usage is not affected — that comes from the hardware, not from
+            this form.
+          </p>
+        </div>
+      </Modal>
+
+      <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title={`PELCO III bill — ${monthALabel}`}
+        title={`PELCO III bill — ${monthLabel}`}
         width={520}
         footer={
           <>

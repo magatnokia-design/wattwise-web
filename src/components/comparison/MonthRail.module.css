@@ -4,35 +4,24 @@
   gap: var(--ww-space-4);
 }
 
-/* Slots */
-.slots {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--ww-space-3);
-}
-
+/* The one control. Capped rather than full-bleed: a select stretched across a
+   wide desktop card reads as a text field, and there is only ever one line of
+   month in it. */
 .slot {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  max-width: 420px;
   padding: var(--ww-space-4);
-  min-height: 104px;
   text-align: left;
   background: var(--ww-white);
   border: 1.5px solid var(--ww-border);
   border-radius: var(--ww-radius);
-  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .slot:hover {
   border-color: var(--ww-border-hover);
-}
-
-/* The box a strip tap will fill. */
-.slotActive {
-  border-color: var(--ww-primary);
-  box-shadow: var(--ww-ring);
 }
 
 .slotLabel {
@@ -74,16 +63,6 @@
   color: var(--ww-text-light);
 }
 
-.stripHint strong {
-  color: var(--ww-text-dark);
-}
-
-.versus {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ww-text-light);
-}
-
 /* Strip */
 .strip {
   display: flex;
@@ -104,7 +83,7 @@
   background: var(--ww-white);
   border: 1px solid var(--ww-border);
   border-radius: var(--ww-radius-sm);
-  cursor: grab;
+  cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
@@ -114,33 +93,20 @@
   transform: translateY(-2px);
 }
 
-.chip:active {
-  cursor: grabbing;
+.chip:focus-visible {
+  outline: none;
+  border-color: var(--ww-primary);
+  box-shadow: var(--ww-ring);
 }
 
-/* Already sitting in a slot. */
+/* The month currently selected. */
 .chipInUse {
   border-color: var(--ww-primary);
   background: var(--ww-tint-success);
 }
 
-.chipTag {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 15px;
-  height: 15px;
-  display: grid;
-  place-items: center;
-  border-radius: 4px;
-  background: var(--ww-primary);
-  color: var(--ww-white);
-  font-size: 9.5px;
-  font-weight: 700;
-}
-
-/* A month with no rollups is still selectable — it is a legitimate thing to
-   compare against — but it should not look like a month that measured zero. */
+/* A month with no rollups is still selectable — a paper bill can be filed
+   against it — but it should not look like a month that measured zero. */
 .chipEmpty .barTrack {
   opacity: 0.5;
 }
@@ -184,12 +150,8 @@
 }
 
 @media (max-width: 860px) {
-  .slots {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .versus {
-    display: none;
+  .slot {
+    max-width: none;
   }
 }
 
