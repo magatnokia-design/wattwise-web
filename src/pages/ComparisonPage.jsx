@@ -35,6 +35,7 @@ export const ComparisonPage = () => {
     month,
     previousMonth,
     totals,
+    previousTotals,
     comparison,
     actualBill,
     accuracy,
@@ -61,7 +62,10 @@ export const ComparisonPage = () => {
 
   const monthLabel = formatMonthLabel(month);
   const previousLabel = formatMonthLabel(previousMonth);
-  const trend = buildTrend(comparison, monthLabel, previousLabel);
+  const trend = buildTrend(comparison, monthLabel, previousLabel, {
+    recorded: totals.daysRecorded,
+    previousRecorded: previousTotals.daysRecorded,
+  });
   const hasUsage = totals.daysRecorded > 0;
 
   const openForm = () => {
@@ -135,7 +139,12 @@ export const ComparisonPage = () => {
       config.currency ? formatCurrency(input) : `${input.toFixed(config.digits)}${config.unit}`;
 
     const isGood = delta.direction === 'down';
-    const tone = delta.direction === 'flat' ? 'neutral' : isGood ? 'good' : 'alert';
+    // While the month is still running the arrows stay factual but lose their
+    // verdict colour, for the same reason the headline does: a lower total on
+    // the second of the month is the missing days, not a saving.
+    const tone = delta.direction === 'flat' || trend.partial
+      ? 'neutral'
+      : isGood ? 'good' : 'alert';
 
     return (
       <div key={key} className={comparisonStyles.delta}>
