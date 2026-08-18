@@ -3,18 +3,27 @@ import { formatMonthShort } from '../../screens/ReferenceComparison/utils/compar
 import { formatCurrency } from '../../screens/BudgetTracking/utils/budgetHelpers';
 import styles from './MonthRail.module.css';
 
-const DRAG_TYPE = 'application/x-wattwise-month';
-
 /**
  * Month picker for the comparison screen.
  *
- * Replaces two dropdowns. A dropdown hides the data it is choosing between —
- * you had to already know which month was expensive before you could pick it —
- * and on a desktop there is room to simply show the year.
+ * This used to be drag-and-drop: pick up a month chip, drop it on a slot. Two
+ * things were wrong with that.
  *
- * Drag a month onto a slot, or click it. Click is not a fallback bolted on for
- * accessibility: it is faster, and the chips are real buttons so the keyboard
- * gets the same behaviour. Drag is the affordance, click is the shortcut.
+ * HTML5 drag events do not fire on touch at all, so on a phone or tablet the
+ * advertised interaction was dead - and the slots said "Drop a month here",
+ * instructing people to do something their device could not do. Click was
+ * already implemented as the shortcut, so the feature worked, but only for
+ * anyone who ignored the label.
+ *
+ * And dragging is the wrong verb regardless. Dragging suits arranging things
+ * whose order matters. This is choosing two values out of twelve, which is what
+ * a select control is for, and a select carries its current value visibly
+ * instead of asking the user to infer it from where a chip ended up.
+ *
+ * So: two selects, which every device and every assistive technology already
+ * knows how to operate. The bar strip stays, because the original note above it
+ * was right that a bare dropdown hides the data you are choosing between - but
+ * it is now an overview you can click, not the only way in.
  */
 export const MonthRail = ({
   monthOptions,
@@ -25,11 +34,9 @@ export const MonthRail = ({
   onSelectB,
   loading,
 }) => {
-  // Which slot a click fills. Starts on A and flips after each pick, so
+  // Which slot a strip click fills. Starts on A and flips after each pick, so
   // clicking two months in a row reads as "compare this with that".
   const [activeSlot, setActiveSlot] = useState('A');
-  const [dragOver, setDragOver] = useState(null);
-  const [dragging, setDragging] = useState(null);
 
   // Bars are relative to the tallest month on screen. Against a fixed ceiling a
   // real month of two-outlet usage would be a sliver.
@@ -48,40 +55,35 @@ export const MonthRail = ({
     }
   };
 
-  const dropOn = (slot) => (event) => {
-    event.preventDefault();
-    // getData is only readable on drop; `dragging` covers the dragover styling
-    // in between.
-    const monthKey = event.dataTransfer.getData(DRAG_TYPE) || dragging;
-    if (monthKey) assign(slot, monthKey);
-    setDragOver(null);
-    setDragging(null);
-  };
-
-  const renderSlot = (slot, label, monthKey) => {
+  const renderSlot = (slot, label, monthKey, onSelect) => {
     const totals = monthTotals[monthKey];
-    const isActive = activeSlot === slot;
+    const recorded = !!totals && totals.daysRecorded > 0;
 
     return (
-      <button
-        type="button"
-        className={`${styles.slot} ${isActive ? styles.slotActive : ''} ${
-          dragOver === slot ? styles.slotOver : ''
-        }`}
-        onClick={() => setActiveSlot(slot)}
-        onDragOver={(event) => {
-          event.preventDefault();
-          event.dataTransfer.dropEffect = 'move';
-          setDragOver(slot);
-        }}
-        onDragLeave={() => setDragOver((current) => (current === slot ? null : current))}
-        onDrop={dropOn(slot)}
-        aria-label={`${label}: ${formatMonthShort(monthKey)}. Click to make this the slot a month fills.`}
+      <div
+        className={`${styles.slot} ${activeSlot === slot ? styles.slotActive : ''}`}
+        onFocus={() => setActiveSlot(slot)}
       >
-        <span className={styles.slotLabel}>{label}</span>
-        <span className={styles.slotMonth}>{formatMonthShort(monthKey)}</span>
+        <label className={styles.slotLabel} htmlFor={`ww-month-${slot}`}>
+          {label}
+        </label>
+
+        <select
+          id={`ww-month-${slot}`}
+          className={styles.slotSelect}
+          value={monthKey || ''}
+          onChange={(event) => onSelect(event.target.value)}
+        >
+          {monthOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {formatMonthShort(option.value)}
+              {monthTotals[option.value]?.daysRecorded > 0 ? '' : ' — nothing recorded'}
+            </option>
+          ))}
+        </select>
+
         <span className={styles.slotTotal}>
-          {totals && totals.daysRecorded > 0 ? (
+          {recorded ? (
             <>
               <span className="ww-num">{totals.kWh.toFixed(2)} kWh</span>
               {' · '}
@@ -91,22 +93,24 @@ export const MonthRail = ({
             'Nothing recorded'
           )}
         </span>
-        <span className={styles.slotHint}>
-          {isActive ? 'Drop here, or click a month below' : 'Drop a month here'}
-        </span>
-      </button>
+      </div>
     );
   };
 
   return (
     <div className={styles.rail}>
       <div className={styles.slots}>
-        {renderSlot('A', 'Month', monthA)}
+        {renderSlot('A', 'Month', monthA, onSelectA)}
         <span className={styles.versus} aria-hidden="true">
           vs
         </span>
-        {renderSlot('B', 'Compared with', monthB)}
+        {renderSlot('B', 'Compared with', monthB, onSelectB)}
       </div>
+
+      <p className={styles.stripHint}>
+        Or pick from the year — a tap fills the{' '}
+        <strong>{activeSlot === 'A' ? 'Month' : 'Compared with'}</strong> box.
+      </p>
 
       <div className={styles.strip} role="group" aria-label="Months">
         {monthOptions.map((option) => {
@@ -120,23 +124,13 @@ export const MonthRail = ({
             <button
               key={option.value}
               type="button"
-              draggable
-              onDragStart={(event) => {
-                event.dataTransfer.setData(DRAG_TYPE, option.value);
-                event.dataTransfer.effectAllowed = 'move';
-                setDragging(option.value);
-              }}
-              onDragEnd={() => {
-                setDragging(null);
-                setDragOver(null);
-              }}
               onClick={() => assign(activeSlot, option.value)}
               className={`${styles.chip} ${inUse ? styles.chipInUse : ''} ${
-                dragging === option.value ? styles.chipDragging : ''
-              } ${recorded ? '' : styles.chipEmpty}`}
+                recorded ? '' : styles.chipEmpty
+              }`}
               aria-label={`${formatMonthShort(option.value)}${
                 recorded ? `, ${kWh.toFixed(2)} kilowatt hours` : ', nothing recorded'
-              }. Fills the ${activeSlot === 'A' ? 'Month' : 'Compared with'} slot.`}
+              }. Fills the ${activeSlot === 'A' ? 'Month' : 'Compared with'} box.`}
             >
               {inUse ? <span className={styles.chipTag}>{inUse}</span> : null}
 
