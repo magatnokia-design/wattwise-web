@@ -312,6 +312,18 @@ export const LandingPage = () => (
             Everything except live readings works without a Hub — you can sign in, look around and
             see how the app is laid out before any hardware exists.
           </p>
+
+          {/* Reported twice from a phone on mobile data: the transfer stalls near
+              the end and a second attempt completes. Every download link on this
+              page is the same markup pointing at the same asset, so there is
+              nothing here to fix — what was missing was telling people that a
+              stall is resumable rather than leaving them to guess whether a
+              60 MB download had failed. */}
+          <p className={styles.downloadNote}>
+            It is a {ANDROID_APK_SIZE_MB} MB file. If the download stalls part-way on mobile data,
+            open your browser&apos;s Downloads and tap resume — it picks up where it stopped rather
+            than starting again. Wi-Fi is easier on it.
+          </p>
         </div>
       </section>
     </main>
