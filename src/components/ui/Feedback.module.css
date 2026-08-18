@@ -148,3 +148,14 @@
     transform: rotate(360deg);
   }
 }
+
+/* `info` was documented in the Banner and Badge JSDoc from the start and used in
+   four places - the budget banners, the unread notification badge, the schedule
+   badge - but the class was never written, so all four rendered with no tone at
+   all. Blue rather than a reuse of `neutral`: these are statements of fact the
+   reader has not seen before, which is what separates them from the grey used
+   for a value that is simply absent. */
+.info {
+  background: var(--ww-tint-info, #eff6ff);
+  color: #1d4ed8;
+}

@@ -432,7 +432,7 @@ export const ComparisonPage = () => {
               the electricity was used, so filing the paper in your hand under
               the current month lines PELCO's previous month up against
               WattWise's current one, and the gap gets reported as error. */}
-          <Banner tone="warning">
+          <Banner tone="warn">
             File this under the month the electricity was <strong>used</strong>, not the month the
             bill arrived. Check the billing period printed on it — a bill received now usually
             covers last month.

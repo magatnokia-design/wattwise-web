@@ -4,6 +4,7 @@ import { useSettings } from '../screens/Settings/hooks/useSettings';
 import {
   formatAckStatusValue,
   formatDeviceHealthValue,
+  validateSupplyRates,
 } from '../screens/Settings/utils/settingsHelpers';
 import { authService } from '../services/firebase';
 import { auth } from '../services/firebase/config';
@@ -158,6 +159,7 @@ export const SettingsPage = () => {
   const [rateDraft, setRateDraft] = useState(() => ratesToDraft(null));
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [rateStatus, setRateStatus] = useState(null);
+  const [rateErrors, setRateErrors] = useState({});
   const [savingRates, setSavingRates] = useState(false);
 
 
@@ -179,19 +181,61 @@ export const SettingsPage = () => {
     refresh();
   };
 
+  /*
+   * Checked before saving, which this did not do at all.
+   *
+   * Nothing was validated: whatever sat in the boxes went to Firestore and came
+   * back green. The quiet failure is a cleared generation field -
+   * normalizeSupplyRates reads blank as "use the default", so the user's own
+   * P5.5034 would be replaced by the seeded P6.5269 while the page reported
+   * "Rates saved". The phone has refused that since it was written; the web
+   * never did.
+   */
   const saveRates = async () => {
     setRateStatus(null);
+
+    const check = validateSupplyRates(rateDraft, SUPPLY_RATE_FIELDS);
+    setRateErrors(check.errors);
+
+    if (!check.valid) {
+      const first = SUPPLY_RATE_FIELDS.find((field) => check.errors[field.key]);
+      setRateStatus({
+        tone: 'alert',
+        message: `${first.label}: ${check.errors[first.key]} Nothing was saved.`,
+      });
+      return;
+    }
+
     setSavingRates(true);
     const result = await updateSupplyRates(rateDraft);
     setSavingRates(false);
 
+    if (!result.success) {
+      setRateStatus({ tone: 'alert', message: result.error || 'Could not save the rates.' });
+      return;
+    }
+
+    // A saved-but-odd total is still saved, so this reports success and flags
+    // the oddity rather than pretending the save failed.
     setRateStatus(
-      result.success
-        ? { tone: 'good', message: 'Rates saved. Every peso figure now prices against them.' }
-        : { tone: 'alert', message: result.error || 'Could not save the rates.' }
+      check.warnings.length > 0
+        ? { tone: 'warn', message: `Rates saved. ${check.warnings[0]}` }
+        : { tone: 'good', message: 'Rates saved. Every peso figure now prices against them.' }
     );
   };
 
+
+  // Clears the field's error as it is edited, so a message never outlives the
+  // value that produced it.
+  const setRate = (key, value) => {
+    setRateDraft((draft) => ({ ...draft, [key]: value }));
+    setRateErrors((errors) => {
+      if (!errors[key]) return errors;
+      const next = { ...errors };
+      delete next[key];
+      return next;
+    });
+  };
 
   const rateTotal = sumSupplyRates(rateDraft);
   const primaryField = SUPPLY_RATE_FIELDS.find((field) => field.primary);
@@ -231,9 +275,8 @@ export const SettingsPage = () => {
                   prefix="₱"
                   suffix="/kWh"
                   value={rateDraft[primaryField.key] ?? ''}
-                  onChange={(event) =>
-                    setRateDraft({ ...rateDraft, [primaryField.key]: event.target.value })
-                  }
+                  onChange={(event) => setRate(primaryField.key, event.target.value)}
+                  error={rateErrors[primaryField.key]}
                 />
               ) : null}
 
@@ -256,9 +299,8 @@ export const SettingsPage = () => {
                       step="0.0001"
                       prefix="₱"
                       value={rateDraft[field.key] ?? ''}
-                      onChange={(event) =>
-                        setRateDraft({ ...rateDraft, [field.key]: event.target.value })
-                      }
+                      onChange={(event) => setRate(field.key, event.target.value)}
+                      error={rateErrors[field.key]}
                       hint={`Default ${field.defaultValue}`}
                     />
                   ))}
@@ -273,11 +315,20 @@ export const SettingsPage = () => {
               {rateStatus ? <Banner tone={rateStatus.tone}>{rateStatus.message}</Banner> : null}
 
               <div className={styles.rowEnd}>
+                {/* Named for what it does. "Reset" reads as though it wipes the
+                    saved rates; it only puts the boxes back to what is already
+                    stored and touches nothing in Firestore. The owner said
+                    outright they would not click it, for fear of losing their
+                    figures. */}
                 <Button
                   variant="secondary"
-                  onClick={() => setRateDraft(ratesToDraft(settings.supplyRates))}
+                  onClick={() => {
+                    setRateDraft(ratesToDraft(settings.supplyRates));
+                    setRateErrors({});
+                    setRateStatus(null);
+                  }}
                 >
-                  Reset
+                  Discard changes
                 </Button>
                 <Button loading={savingRates} onClick={saveRates}>
                   Save rates
