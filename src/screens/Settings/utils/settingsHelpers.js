@@ -1,12 +1,19 @@
 // TODO: Expand when backend is ready
 
+import { ANDROID_VERSION } from '../../../constants/appRelease';
+
 export const formatRate = (rate) => {
   if (!rate) return '₱0.00/kWh';
   return `₱${parseFloat(rate).toFixed(2)}/kWh`;
 };
 
+/*
+ * Was a hardcoded 'v1.0.0', which the Help screen's legal text quoted back to
+ * the user as the app version regardless of what was deployed. It now tracks
+ * the same release constant the download button uses, so one edit moves both.
+ */
 export const formatVersion = () => {
-  return 'v1.0.0';
+  return `v${ANDROID_VERSION}`;
 };
 
 export const formatCurrency = (value, currency = '₱') => {
