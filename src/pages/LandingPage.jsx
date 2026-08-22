@@ -105,10 +105,25 @@ const STEPS = [
   },
 ];
 
+/*
+ * Recomputed from the bench sheet on 22 Aug 2026, using every reading rather
+ * than a subset.
+ *
+ * The previous figures here - "1.32% worst of five, 4.67% the sixth" - were
+ * true only of a chosen five. Two loads were measured twice, and quoting 1.32%
+ * required taking the second run for both while leaving out the first run's
+ * laptop charger at 10.92%, which sits on the same sheet. Anyone shown the raw
+ * data would have found it.
+ *
+ * The honest figures are barely weaker and cover all eight readings: six points
+ * inside the 2.24% band, and the charger outside it on both attempts. Repeating
+ * the outlier is what makes it a characterised behaviour rather than an
+ * anomaly, so both numbers are quoted.
+ */
 const ACCURACY = [
-  { figure: '6', unit: 'load points', detail: 'from 13.8 W to 121.8 W' },
-  { figure: '1.32%', unit: 'worst of five', detail: 'against a reference meter' },
-  { figure: '4.67%', unit: 'the sixth', detail: 'a laptop charger at 0.47 power factor' },
+  { figure: '8', unit: 'load points', detail: 'from 11.9 W to 121.8 W, over two runs' },
+  { figure: '2.18%', unit: 'worst of six', detail: 'inside the 2.24% agreement band' },
+  { figure: '10.92%', unit: 'and 4.67%', detail: 'one laptop charger at 0.47 power factor, both runs' },
 ];
 
 export const LandingPage = () => (
@@ -264,10 +279,11 @@ export const LandingPage = () => (
           <div className={styles.accuracyCopy}>
             <h2 className={styles.sectionTitle}>Checked against a reference meter</h2>
             <p className={styles.sectionLead}>
-              Measurement was compared against a separate meter across six loads. Five agreed
-              closely. The sixth did not, and it is on this page for the same reason it is in the
-              documentation: a charger with a poor power factor is exactly the case where a
-              low-cost meter drifts, and hiding it would make the other five worth less.
+              Measurement was compared against a separate meter across eight readings. Six
+              agreed inside the tolerance the two instruments share. The other two are one laptop
+              charger, measured twice, and it is on this page for the same reason it is in the
+              documentation: a poor power factor is exactly where a low-cost meter drifts, and
+              hiding it would make the other six worth less.
             </p>
           </div>
 
