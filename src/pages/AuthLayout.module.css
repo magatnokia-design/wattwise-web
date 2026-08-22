@@ -296,3 +296,28 @@
     transform: none;
   }
 }
+
+/* Sits above the brand rather than floating over the panel: the sign-in card is
+   vertically centred and a floating control would collide with it on a short
+   viewport. */
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 4px 2px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ww-text-light);
+  text-decoration: none;
+  border-radius: var(--ww-radius-sm);
+}
+
+.back:hover {
+  color: var(--ww-primary);
+}
+
+.back:focus-visible {
+  outline: 2px solid var(--ww-primary);
+  outline-offset: 2px;
+}

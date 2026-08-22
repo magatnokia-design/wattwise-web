@@ -504,3 +504,18 @@
     transform: none;
   }
 }
+
+/* The nav logo doubles as the way back to the top of the page. Styled as a
+   plain wrapper so the mark and wordmark look exactly as they did before it
+   became clickable — only the cursor and the focus ring say it is a control. */
+.brandLink {
+  display: inline-flex;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--ww-radius-sm);
+}
+
+.brandLink:focus-visible {
+  outline: 2px solid var(--ww-primary);
+  outline-offset: 3px;
+}

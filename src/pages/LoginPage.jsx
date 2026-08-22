@@ -53,6 +53,8 @@ export const LoginPage = () => {
     <AuthLayout
       title="Sign in"
       subtitle="Use the same account as the WattWise app on your phone."
+      backTo="/"
+      backLabel="Back to home"
       footer={
         <>
           <Link to="/forgot-password" className={styles.footerLink}>

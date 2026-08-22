@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import AppShowcase from '../components/auth/AppShowcase';
 import PowerPreview from '../components/auth/PowerPreview';
 import { BoltMark } from '../components/ui/BoltMark';
@@ -24,10 +25,31 @@ const FEATURES = [
   },
 ];
 
-export const AuthLayout = ({ title, subtitle, children, footer }) => (
+/**
+ * `backTo` is optional. Sign-in is reachable straight from the landing page's
+ * header, and once you were on it the only way back was the browser's own back
+ * button - which is not obvious on a phone, and gone entirely if the page was
+ * opened from a link. Pages that already offer a way out in their footer, like
+ * forgot-password, simply do not pass it.
+ */
+export const AuthLayout = ({
+  title,
+  subtitle,
+  children,
+  footer,
+  backTo,
+  backLabel = 'Back',
+}) => (
   <div className={styles.page}>
     <div className={styles.panel}>
       <div className={styles.panelInner}>
+        {backTo ? (
+          <Link className={styles.back} to={backTo}>
+            <span aria-hidden="true">&larr;</span>
+            {backLabel}
+          </Link>
+        ) : null}
+
         <div className={styles.brand}>
           <span className={styles.brandMark} aria-hidden="true">
             <BoltMark height={16} />

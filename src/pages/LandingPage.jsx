@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import PowerPreview from '../components/auth/PowerPreview';
+import BackToTop from '../components/landing/BackToTop';
 import CostEstimator from '../components/landing/CostEstimator';
 import FaqSection from '../components/landing/FaqSection';
 import SafetyDemo from '../components/landing/SafetyDemo';
@@ -12,6 +13,7 @@ import {
   RELEASES_URL,
   REPO_URL,
 } from '../constants/appRelease';
+import { scrollToTop } from '../utils/scrollToTop';
 import styles from './LandingPage.module.css';
 
 /**
@@ -110,15 +112,25 @@ const ACCURACY = [
 ];
 
 export const LandingPage = () => (
-  <div className={styles.page}>
+  <div className={styles.page} id="top">
     <header className={styles.nav}>
       <div className={styles.navInner}>
-        <span className={styles.brand}>
-          <span className={styles.brandMark} aria-hidden="true">
-            <BoltMark height={16} />
+        <a
+          className={styles.brandLink}
+          href="#top"
+          aria-label="WattWise — back to top"
+          onClick={(event) => {
+            event.preventDefault();
+            scrollToTop();
+          }}
+        >
+          <span className={styles.brand}>
+            <span className={styles.brandMark} aria-hidden="true">
+              <BoltMark height={16} />
+            </span>
+            <Wordmark className={styles.brandName} />
           </span>
-          <Wordmark className={styles.brandName} />
-        </span>
+        </a>
 
         <nav className={styles.navLinks}>
           <a className={styles.navLink} href="#what">
@@ -350,6 +362,8 @@ export const LandingPage = () => (
         </p>
       </div>
     </footer>
+
+    <BackToTop />
   </div>
 );
 

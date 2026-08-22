@@ -1,0 +1,77 @@
+/* Green/white only, matching the rest of the public page — there is no dark
+   variant anywhere in this product. */
+
+.button {
+  position: fixed;
+  right: clamp(14px, 3vw, 28px);
+  bottom: clamp(14px, 3vw, 28px);
+  z-index: 30;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ww-white);
+  background: var(--ww-primary);
+  border: 1px solid var(--ww-primary-dark);
+  border-radius: 999px;
+  box-shadow: var(--ww-shadow-card);
+  cursor: pointer;
+
+  /* Parked out of reach until it is wanted. `visibility` rather than
+     `display:none` so the fade has something to animate, and so the element
+     keeps its box for the transition back in. */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: opacity 180ms ease, transform 180ms ease, visibility 0s linear 180ms;
+}
+
+.button.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity 180ms ease, transform 180ms ease, visibility 0s;
+}
+
+.button:hover {
+  background: var(--ww-primary-dark);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--ww-primary-dark);
+  outline-offset: 3px;
+}
+
+.icon {
+  flex: none;
+}
+
+.label {
+  /* The arrow carries the meaning on a narrow screen; the word is a nicety
+     that costs width where there is least of it. */
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .label {
+    display: inline;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: opacity 1ms linear, visibility 0s linear 1ms;
+    transform: none;
+  }
+
+  .button.visible {
+    transition: opacity 1ms linear, visibility 0s;
+    transform: none;
+  }
+}
