@@ -303,7 +303,9 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
       profileId: rateProfileId || null,
       daysInPeriod: entries.length > 0 ? days.length : 0,
       billingDays: getDaysInMonth(endDate),
-      includePeriodFlats: tab === 'Monthly',
+      // ...and only when the month actually measured something. An empty
+      // month is not owed the metering flat on a screen about measurement.
+      includePeriodFlats: tab === 'Monthly' && totalEnergy > 0,
     });
 
     const latestEntry = entries[entries.length - 1];
