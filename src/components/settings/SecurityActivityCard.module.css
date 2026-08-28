@@ -58,3 +58,38 @@
   font-size: 0.8125rem;
   color: #EF4444;
 }
+
+/* Sits against the title, so a run reads as "this thing, 23 times" rather than
+   as a separate number the eye has to pair up with something. */
+.count {
+  margin-left: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ww-text-light, #6b7280);
+}
+
+/* The span of a collapsed run. Kept quieter than the body: it is the answer to
+   "when did this happen", not to "what happened". */
+.run {
+  margin: 6px 0 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ww-text-light, #6b7280);
+}
+
+.toggle {
+  margin-top: 10px;
+  padding: 8px 12px;
+  width: 100%;
+  border: 1px solid var(--ww-border, #E5E7EB);
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--ww-text-light, #6b7280);
+  cursor: pointer;
+}
+
+.toggle:hover {
+  background: var(--ww-surface-muted, #F9FAFB);
+}
