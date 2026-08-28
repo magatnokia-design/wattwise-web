@@ -268,15 +268,27 @@ These come from the hardware and the parent project. Do not relax them.
 
 ### Deploy
 
-Firebase Hosting, same project:
+**Vercel**, not Firebase Hosting. This said Firebase Hosting until 2026-08-28,
+when three things settled it: `vercel.json` is committed here, Firebase Auth's
+authorised-domains list carries a hand-added `wattwise-black.vercel.app`, and
+`vercel link` found an existing project already matched to this git remote
+(`magatnokia-designs-projects/wattwise`).
+
+Deploys are git-driven - push to `main` and Vercel builds it. `vercel.json` sets
+the build command, `dist` as output, and the SPA rewrite of `/(.*)` to
+`/index.html` that every route but `/` needs to survive a refresh.
 
 ```powershell
-npm run build                  # -> dist/
-firebase deploy --only hosting
+npm run build     # local check only; Vercel runs its own build
+vercel            # preview deployment
+vercel --prod     # production - deliberate, never automatic
 ```
 
-Hosting config needs `public: "dist"` and a single rewrite of `**` →
-`/index.html`, or every route but `/` 404s on refresh.
+**Do not run `firebase deploy --only hosting`.** The `hosting` block in
+`firebase.json` is leftover config. Deploying it publishes a second, divergent
+copy of the app to `wattwise-fe394.web.app` while `wattwise.site` stays on
+Vercel - two live versions, one of which nobody is watching. It is denied in
+`.claude/settings.json`.
 
 ### API key gotcha
 
@@ -320,3 +332,11 @@ Item 2 is the one that proves the whole architecture:
 - Don't write to `device_commands`, or to outlet `status`, directly.
 - Don't reimplement billing, or "clean up" the copied service files.
 - Don't add outlets, or a non-green theme, or placeholder data.
+- **Don't run destructive commands without explicit confirmation first.** Deleting or
+  overwriting files, `git push --force`, `git reset --hard`, `git clean` - all of these
+  are the user's call, every time, stated explicitly, not inferred from a task that
+  would be tidier if they happened. `.claude/settings.json` denies the worst of them
+  outright, because a rule a model can talk itself past is not a guardrail. `git clean`
+  is on that list specifically because it would delete `.env.local` and `.env`, which
+  hold the Vercel OIDC token and the App Check key and exist nowhere else.
+- Don't run `vercel --prod` on your own initiative. Production deploys are deliberate.
