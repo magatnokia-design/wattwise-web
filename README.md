@@ -99,6 +99,14 @@ against white, every chart ships a legend, axis labels and a table view.
 
 ## Running locally
 
+On a machine that already has Node 24 and the repo cloned, the block below is all
+you need. Starting from a bare OS instead - new laptop, reinstall, wiped drive -
+follow **`C:\App\WattWise\docs\FRESH-MACHINE.md`** in the phone repo. It is the
+runbook for both projects and the ESP32 together: what to install, the three
+browser logins (`firebase login` needs `--no-localhost`), where `npm ci` has to
+run, and what does not survive a wipe. This repo needs `npm ci` and `vercel link`;
+the rest of the work is on the phone side.
+
 ```powershell
 npm install
 npm run dev      # http://localhost:5173

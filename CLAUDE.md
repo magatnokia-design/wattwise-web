@@ -33,6 +33,11 @@ it picks up. That is why this works at all.
 - **`C:\App\WattWise\docs\email-senders.md`** is the authoritative record for the
   mail pipeline as a whole — the backend, the extension, and the SMTP config all
   live in the phone repo.
+- **`C:\App\WattWise\docs\FRESH-MACHINE.md`** to rebuild a development machine from
+  nothing. It covers both repos: installs, the three browser logins, the `npm ci`
+  locations, the ESP32 toolchain, and what does and does not survive a wipe. This
+  repo's share is small - `npm ci` and `vercel link` - but the runbook lives with
+  the phone app because the Hub does.
 
 ## THE GOLDEN RULE
 
@@ -340,3 +345,8 @@ Item 2 is the one that proves the whole architecture:
   is on that list specifically because it would delete `.env.local` and `.env`, which
   hold the Vercel OIDC token and the App Check key and exist nowhere else.
 - Don't run `vercel --prod` on your own initiative. Production deploys are deliberate.
+- **Do not leave a hard-won lesson only in the commit message.** Two of the phone
+  repo's most expensive traps were recorded in commit bodies alone and stayed
+  invisible until a laptop reset forced them to be rediscovered. If you learn
+  something the next person needs, put it in this file, in `docs/`, or beside the
+  code it concerns.
