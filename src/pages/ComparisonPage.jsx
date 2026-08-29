@@ -381,6 +381,15 @@ export const ComparisonPage = () => {
                   {explainAccuracy(accuracy, monthLabel)}
                 </p>
               </div>
+            ) : showOfflineState ? (
+              // The bill is a single document, and getMonthData reports a
+              // missing one and an unreachable one the same way - both arrive
+              // as success:false. So this card cannot tell them apart on its
+              // own, and takes the answer from the month read above it.
+              <OfflineState title="Can't check for a saved bill">
+                Any bill you filed for {monthLabel} is on your account and needs a connection to
+                read. It has not been deleted.
+              </OfflineState>
             ) : (
               <EmptyState icon="🧾" title={`No bill on file for ${monthLabel}`}>
                 Type in the total kWh and amount from the bill covering {monthLabel}&apos;s
