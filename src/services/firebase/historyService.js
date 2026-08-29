@@ -106,7 +106,10 @@ export const historyService = {
           });
 
           logs.sort((a, b) => getTimestampMs(b.timestamp) - getTimestampMs(a.timestamp));
-          onUpdate(logs);
+
+          // Metadata is passed on because a listener does not error offline -
+          // it serves the cache and marks the snapshot.
+          onUpdate(logs, snapshot.metadata);
         },
         (error) => {
           console.error('Error subscribing to activity logs:', error);

@@ -16,7 +16,7 @@ import { Button } from '../components/ui/Button';
 import { Card, CardHeader } from '../components/ui/Card';
 import { DataTable } from '../components/ui/DataTable';
 import { SelectField } from '../components/ui/Field';
-import { Badge, EmptyState, Spinner } from '../components/ui/Feedback';
+import { Badge, EmptyState, OfflineState, Spinner } from '../components/ui/Feedback';
 import ExportUsageButton from '../components/history/ExportUsageButton';
 import styles from './page.module.css';
 
@@ -61,8 +61,15 @@ export const HistoryPage = () => {
 
   const [logLimit, setLogLimit] = useState(ACTIVITY_PAGE_SIZE);
 
-  const { activityLogs, usageHistory, loading, hasMore, fetchUsageHistory, subscribeActivityLogs } =
-    useHistory();
+  const {
+    activityLogs,
+    usageHistory,
+    loading,
+    hasMore,
+    showOfflineState,
+    fetchUsageHistory,
+    subscribeActivityLogs,
+  } = useHistory();
 
   // A new filter starts a fresh window. Without this, narrowing to one outlet
   // after several "Load more" taps would keep re-subscribing at the grown cap.
@@ -147,10 +154,17 @@ export const HistoryPage = () => {
               pageSize={15}
               resetKey={range}
               empty={
-                <EmptyState icon="📋" title="No days recorded in this range">
-                  A day appears here after the midnight rollup, or immediately once the hardware
-                  starts reporting today.
-                </EmptyState>
+                showOfflineState ? (
+                  <OfflineState title="Can't load your usage">
+                    The daily records live on your account and need a connection to read. Nothing
+                    has been lost.
+                  </OfflineState>
+                ) : (
+                  <EmptyState icon="📋" title="No days recorded in this range">
+                    A day appears here after the midnight rollup, or immediately once the hardware
+                    starts reporting today.
+                  </EmptyState>
+                )
               }
               columns={[
                 {
@@ -239,9 +253,16 @@ export const HistoryPage = () => {
               pageSize={15}
               resetKey={`${range}:${outlet}`}
               empty={
-                <EmptyState icon="🕓" title="No activity in this range">
-                  Toggling an outlet writes a log entry here.
-                </EmptyState>
+                showOfflineState ? (
+                  <OfflineState title="Can't load your activity">
+                    Switch events live on your account and need a connection to read. Nothing has
+                    been lost.
+                  </OfflineState>
+                ) : (
+                  <EmptyState icon="🕓" title="No activity in this range">
+                    Toggling an outlet writes a log entry here.
+                  </EmptyState>
+                )
               }
               columns={[
                 {

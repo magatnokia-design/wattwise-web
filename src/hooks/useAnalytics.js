@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { budgetService, historyService } from '../services/firebase';
 import { useAuth } from './useAuth';
+import { useLoadOutcome } from './useLoadTracker';
 import { calculatePelcoIIIBill, marginalRatePerKwh } from '../utils/billing';
 import { buildLiveAppliances, buildLiveTodayEntry, withLiveToday } from '../utils/liveUsage';
 
@@ -106,6 +107,8 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
   const [fallbackDaily, setFallbackDaily] = useState(null);
   const [budget, setBudget] = useState({ monthlyBudget: 0, currentSpending: 0 });
   const [loading, setLoading] = useState(false);
+  // An empty range and an unreadable one both leave the charts at zero.
+  const load = useLoadOutcome();
 
   const liveTodayEntry = useMemo(
     () => buildLiveTodayEntry(outlets, { rateProfileId, supplyRates }),
@@ -162,6 +165,12 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
 
           setFallbackDaily(dailyResult.success && dailyResult.data.length ? dailyResult.data[0] : null);
           setRangeEntries([]);
+
+          if (dailyResult.success) {
+            load.succeeded();
+          } else {
+            load.failed(dailyResult);
+          }
           return;
         }
 
@@ -174,7 +183,17 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
         if (!active) return;
 
         setRangeEntries(rangeResult.success ? rangeResult.data : []);
+
+        // An empty range and an unreadable one both leave rangeEntries at [],
+        // which the charts draw as a month of zeroes. This is what tells them
+        // apart.
+        if (rangeResult.success) {
+          load.succeeded();
+        } else {
+          load.failed(rangeResult);
+        }
       } catch (error) {
+        load.failed(error);
         console.error('Error loading analytics:', error);
       } finally {
         if (active) setLoading(false);
@@ -186,7 +205,7 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
     return () => {
       active = false;
     };
-  }, [authLoading, tab, user?.uid]);
+  }, [authLoading, tab, user?.uid, load.succeeded, load.failed]);
 
   const analytics = useMemo(() => {
     if (tab === 'Daily') {
@@ -353,7 +372,14 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
     };
   }, [tab, rangeEntries, fallbackDaily, liveTodayEntry, rateProfileId, supplyRates]);
 
-  return { ...analytics, liveAppliances, budget, loading };
+  return {
+    ...analytics,
+    liveAppliances,
+    budget,
+    loading,
+    showEmptyState: load.showEmptyState,
+    showOfflineState: load.showOfflineState,
+  };
 };
 
 export default useAnalytics;

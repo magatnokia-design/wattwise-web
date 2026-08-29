@@ -4,6 +4,12 @@ import { historyService, outletService, userService } from '../../../services/fi
 import { auth } from '../../../services/firebase/config';
 import { buildLiveTodayEntry, withLiveToday } from '../../../utils/liveUsage';
 import { formatDate, formatTime, getTimestampMs, splitDailyDate } from '../utils/historyHelpers';
+import { useLoadOutcome } from '../../../hooks/useLoadTracker';
+import {
+  isUnconfirmedEmpty,
+  UNREACHABLE_READ_RESULT,
+  UNCONFIRMED_GRACE_MS,
+} from '../../../utils/connectivity';
 
 const toNumber = (value) => {
   const parsed = Number(value);
@@ -87,6 +93,20 @@ const mapUsageRecord = (record = {}) => {
 const normalizeUsageHistory = (records = []) => records.map(mapUsageRecord);
 
 export const useHistory = () => {
+  // An empty log is not on its own evidence that nothing has happened on this
+  // account - it is also what an unread collection looks like.
+  const load = useLoadOutcome();
+
+  // Pending decision on a listener snapshot that was empty and came from the
+  // cache. Cancelled the moment the server confirms anything.
+  const unconfirmedTimer = useRef(null);
+  const clearUnconfirmed = useCallback(() => {
+    if (unconfirmedTimer.current) {
+      clearTimeout(unconfirmedTimer.current);
+      unconfirmedTimer.current = null;
+    }
+  }, []);
+
   const [activityLogs, setActivityLogs] = useState([]);
   const [storedUsage, setStoredUsage] = useState([]);
   const [usageRange, setUsageRange] = useState({ startDate: null, endDate: null });
@@ -191,24 +211,50 @@ export const useHistory = () => {
     setLoading(true);
     setError(null);
 
-    return historyService.subscribeToActivityLogs(
+    const unsubscribe = historyService.subscribeToActivityLogs(
       userId,
       filters,
-      (logs) => {
+      (logs, meta) => {
         const normalizedLogs = normalizeActivityLogs(logs);
         setActivityLogs(normalizedLogs);
         setHasMore(normalizedLogs.length >= limitCount);
         lastDocRef.current = null;
         setLastDoc(null);
         setLoading(false);
+
+        // Held rather than acted on: a listener's first snapshot comes from the
+        // cache even when the server is a moment behind, so an empty one is not
+        // yet evidence of anything. See UNCONFIRMED_GRACE_MS.
+        if (isUnconfirmedEmpty(normalizedLogs.length, meta)) {
+          if (!unconfirmedTimer.current) {
+            unconfirmedTimer.current = setTimeout(() => {
+              unconfirmedTimer.current = null;
+              load.failed(UNREACHABLE_READ_RESULT);
+            }, UNCONFIRMED_GRACE_MS);
+          }
+          return;
+        }
+
+        clearUnconfirmed();
+        load.succeeded();
       },
       (subscriptionError) => {
         setError(subscriptionError?.message || 'Failed to subscribe to activity logs');
         setLoading(false);
+        clearUnconfirmed();
+        load.failed(subscriptionError);
       },
       limitCount
     );
-  }, []);
+
+    // The pending decision belongs to this subscription, so it dies with it - a
+    // filter change tears the listener down and the timer would otherwise fire
+    // against the next one.
+    return () => {
+      clearUnconfirmed();
+      unsubscribe();
+    };
+  }, [clearUnconfirmed, load.succeeded, load.failed]);
 
   // Fetch usage history (daily summaries)
   const fetchUsageHistory = useCallback(async (startDate, endDate) => {
@@ -232,8 +278,10 @@ export const useHistory = () => {
 
       setStoredUsage(result.data);
       setUsageRange({ startDate, endDate });
+      load.succeeded();
     } catch (err) {
       setError(err.message);
+      load.failed(err);
       console.error('Error fetching usage history:', err);
     } finally {
       setLoading(false);
@@ -272,6 +320,8 @@ export const useHistory = () => {
     // were priced with - the profile AND the user's own Block 1 figures.
     rateProfileId,
     supplyRates,
+    showEmptyState: load.showEmptyState,
+    showOfflineState: load.showOfflineState,
     fetchActivityLogs,
     subscribeActivityLogs,
     fetchUsageHistory,

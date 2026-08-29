@@ -6,7 +6,7 @@ import { formatCurrency } from '../screens/BudgetTracking/utils/budgetHelpers';
 import { Card, CardHeader } from '../components/ui/Card';
 import { StatGrid, StatTile } from '../components/ui/StatTile';
 import { DataTable } from '../components/ui/DataTable';
-import { Badge, Banner, EmptyState, Spinner } from '../components/ui/Feedback';
+import { Badge, Banner, EmptyState, OfflineState, Spinner } from '../components/ui/Feedback';
 import UsageChart from '../components/charts/UsageChart';
 import BillBreakdown from '../components/analytics/BillBreakdown';
 import styles from './page.module.css';
@@ -20,7 +20,16 @@ const PERIOD_LABEL = {
 export const AnalyticsPage = () => {
   const [tab, setTab] = useState('Daily');
   const { outlets, rateProfileId, supplyRates, hasSupplyRates, telemetryFresh } = useLiveOutlets();
-  const { summary, series, billDetails, liveAppliances, budget, loading, isLive } = useAnalytics({
+  const {
+    summary,
+    series,
+    billDetails,
+    liveAppliances,
+    budget,
+    loading,
+    isLive,
+    showOfflineState,
+  } = useAnalytics({
     tab,
     outlets,
     rateProfileId,
@@ -75,6 +84,16 @@ export const AnalyticsPage = () => {
 
   return (
     <div className={styles.page}>
+      {/* The totals below are summed from rolled-up days. With none read they
+          are all zero, which is indistinguishable from a month of no usage -
+          so the page says which it is rather than printing a confident ₱0.00. */}
+      {showOfflineState ? (
+        <Banner tone="warn" title="Can't reach WattWise.">
+          The totals and charts below could not be loaded, so they are not your figures. Check your
+          network and reload — nothing has been lost.
+        </Banner>
+      ) : null}
+
       {!hasSupplyRates ? (
         <Banner tone="warn" title="Priced with default rates.">
           These totals are estimates until you enter your own PELCO III generation and transmission
@@ -194,10 +213,17 @@ export const AnalyticsPage = () => {
               rowKey={(row) => row.applianceName}
               defaultSort={{ key: 'energyKwh', direction: 'desc' }}
               empty={
-                <EmptyState icon="🔌" title="No appliance breakdown yet">
-                  Name the appliance on each outlet and WattWise attributes usage to it from the
-                  next rollup.
-                </EmptyState>
+                showOfflineState ? (
+                  <OfflineState title="Can't load the breakdown">
+                    The rolled-up days live on your account and need a connection to read. The
+                    figures above come from the same reads, so they are not complete either.
+                  </OfflineState>
+                ) : (
+                  <EmptyState icon="🔌" title="No appliance breakdown yet">
+                    Name the appliance on each outlet and WattWise attributes usage to it from the
+                    next rollup.
+                  </EmptyState>
+                )
               }
               columns={[
                 { key: 'applianceName', header: 'Appliance', sortable: true },
