@@ -125,7 +125,14 @@ export const AnalyticsPage = () => {
           value={summary.totalEnergy.toFixed(3)}
           unit="kWh"
           tone="primary"
-          caption={`Measured ${PERIOD_LABEL[tab]}`}
+          /* A quiet day reports zero and names when the last reading was, rather
+             than borrowing the last rolled-up day's figure and captioning it
+             "Measured today". */
+          caption={
+            summary.lastMeasuredDate
+              ? `Nothing measured today · last recorded ${summary.lastMeasuredDate}`
+              : `Measured ${PERIOD_LABEL[tab]}`
+          }
         />
         <StatTile
           label="Cost"

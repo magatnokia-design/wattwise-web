@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { useLoadOutcome } from './useLoadTracker';
 import { calculatePelcoIIIBill, marginalRatePerKwh } from '../utils/billing';
 import { buildLiveAppliances, buildLiveTodayEntry, withLiveToday } from '../utils/liveUsage';
+import { resolveDailyEntry } from '../utils/dailyEntry';
 
 /**
  * Analytics for the selected period.
@@ -209,9 +210,17 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
 
   const analytics = useMemo(() => {
     if (tab === 'Daily') {
-      // Today first. Only when nothing has been measured yet does this fall
-      // back to the last rolled-up day.
-      const dailyEntry = liveTodayEntry || fallbackDaily;
+      // Today, and only today - see resolveDailyEntry for why this is a named
+      // function and not `liveTodayEntry || fallbackDaily`. Fixed on the phone
+      // in 0e59ed2; this was the same line in the same shape.
+      const { entry: dailyEntry, lastMeasuredDateKey } = resolveDailyEntry(
+        liveTodayEntry,
+        fallbackDaily
+      );
+
+      const lastMeasuredDate = lastMeasuredDateKey
+        ? formatShortDate(new Date(`${lastMeasuredDateKey}T00:00:00`))
+        : '';
 
       const totalEnergy = toNumber(dailyEntry?.totalEnergy);
       const outlet1Total = toNumber(dailyEntry?.outlet1Energy);
@@ -260,6 +269,9 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
           applianceUsage: aggregateApplianceUsage(dailyEntry ? [dailyEntry] : []),
           outlet1Name,
           outlet2Name,
+          // Empty when today has readings. When it does not, this names the day
+          // the figures above would otherwise have been silently taken from.
+          lastMeasuredDate,
         },
         // One point: today, split by outlet. The chart reads the same shape for
         // every tab so the component does not branch.
@@ -267,9 +279,9 @@ export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
           ? [
               {
                 key: dailyEntry.date,
-                // Only actually today when the live entry is what got charted;
-                // the fallback is the last rolled-up day, which can be older.
-                label: liveTodayEntry ? 'Today' : formatShortDate(entryDate),
+                // Always today now - the only entry that reaches here is the
+                // live one, so the label cannot name a different date.
+                label: 'Today',
                 outlet1: outlet1Total,
                 outlet2: outlet2Total,
                 total: totalEnergy,
