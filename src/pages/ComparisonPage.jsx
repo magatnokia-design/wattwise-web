@@ -10,7 +10,7 @@ import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { TextField } from '../components/ui/Field';
-import { Badge, Banner, EmptyState, Spinner } from '../components/ui/Feedback';
+import { Badge, Banner, EmptyState, OfflineState, Spinner } from '../components/ui/Feedback';
 import { useMonthStrip } from '../hooks/useMonthStrip';
 import MonthRail from '../components/comparison/MonthRail';
 import styles from './page.module.css';
@@ -41,6 +41,7 @@ export const ComparisonPage = () => {
     accuracy,
     loading,
     error,
+    showOfflineState,
     selectMonth,
     saveActualBill,
     deleteActualBill,
@@ -231,6 +232,14 @@ export const ComparisonPage = () => {
                   {DELTAS.map((entry) => renderMetric(entry.key))}
                 </div>
               </>
+            ) : showOfflineState ? (
+              // "Nothing recorded" asserts something about the account. With no
+              // read behind it, a full month looks identical to one that
+              // genuinely has no days - which is how August reported as empty.
+              <OfflineState title={`Can't load ${monthLabel}`}>
+                This month&apos;s readings live on your account, and the page needs a connection to
+                read them. Nothing has been lost.
+              </OfflineState>
             ) : (
               <EmptyState icon="⚖️" title={`Nothing recorded for ${monthLabel}`}>
                 A month appears here once the nightly rollup has written at least one day for it.

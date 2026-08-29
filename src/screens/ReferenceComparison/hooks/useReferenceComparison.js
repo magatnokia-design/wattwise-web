@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { comparisonService, historyService, userService } from '../../../services/firebase';
 import { auth } from '../../../services/firebase/config';
+import { useLoadOutcome } from '../../../hooks/useLoadTracker';
+import { isConnectivityError } from '../../../utils/connectivity';
 import {
   MONTH_OPTION_COUNT,
   buildMonthOptions,
@@ -48,6 +50,8 @@ const useReferenceComparison = () => {
   // bill's own kWh with the same tariff the months were priced with.
   const [rates, setRates] = useState({});
   const [loading, setLoading] = useState(false);
+  // Zeroed totals are also what an unreachable read looks like. This says which.
+  const load = useLoadOutcome();
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -73,7 +77,13 @@ const useReferenceComparison = () => {
       `${monthKey}-31`
     );
 
-    return result.success ? summarizeDailyEntries(result.data, rates) : emptyMonthTotals;
+    // The failure is returned rather than flattened into empty totals. Mapping
+    // an unreachable read to zeroes here is what let the page say "Nothing
+    // recorded for August 2026" with no connection - the caller could not tell
+    // the two apart because this function had already discarded the difference.
+    return result.success
+      ? { ok: true, totals: summarizeDailyEntries(result.data, rates) }
+      : { ok: false, totals: emptyMonthTotals, failure: result };
   }, []);
 
   const fetchComparison = useCallback(async () => {
@@ -104,8 +114,8 @@ const useReferenceComparison = () => {
         comparisonService.getMonthData(userId, monthA),
       ]);
 
-      setTotalsA(nextA);
-      setTotalsB(nextB);
+      setTotalsA(nextA.totals);
+      setTotalsB(nextB.totals);
 
       // The accuracy check re-prices the bill's own kWh, so it needs the same
       // rates the months were priced with.
@@ -114,13 +124,23 @@ const useReferenceComparison = () => {
       const bill = billResult.success ? billResult.data : null;
       // A stored row of all zeroes is the same as no bill on file.
       setActualBill(bill && (bill.totalCost > 0 || bill.totalKWh > 0) ? bill : null);
+
+      // The selected month is this page's subject. If its usage could not be
+      // read, nothing below is known, whatever the other two reads returned.
+      if (!nextA.ok && isConnectivityError(nextA.failure)) {
+        load.failed(nextA.failure);
+        return;
+      }
+
+      load.succeeded();
     } catch (err) {
       setError(err.message);
+      load.failed(err);
       console.error('Error loading comparison:', err);
     } finally {
       setLoading(false);
     }
-  }, [loadMonthTotals, monthA, monthB, userId]);
+  }, [loadMonthTotals, monthA, monthB, userId, load.succeeded, load.failed]);
 
   useEffect(() => {
     if (!userId) return;
@@ -201,6 +221,8 @@ const useReferenceComparison = () => {
     accuracy,
     loading,
     error,
+    showEmptyState: load.showEmptyState,
+    showOfflineState: load.showOfflineState,
     selectMonth,
     saveActualBill,
     deleteActualBill,

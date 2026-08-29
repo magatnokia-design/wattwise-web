@@ -8,13 +8,21 @@ import {
 } from '../screens/Notifications/utils/notificationHelpers';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Badge, Banner, EmptyState, Spinner } from '../components/ui/Feedback';
+import { Badge, Banner, EmptyState, OfflineState, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
 import notificationStyles from './NotificationsPage.module.css';
 
 export const NotificationsPage = () => {
-  const { notifications, unreadCount, loading, error, markAsRead, markAllAsRead, clearAll } =
-    useNotifications();
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    error,
+    showOfflineState,
+    markAsRead,
+    markAllAsRead,
+    clearAll,
+  } = useNotifications();
 
   return (
     <div className={styles.page}>
@@ -39,12 +47,24 @@ export const NotificationsPage = () => {
         <CardHeader
           title="Notifications"
           subtitle={
-            unreadCount > 0 ? `${unreadCount} unread` : 'Everything here has been read'
+            showOfflineState
+              ? 'Not loaded'
+              : unreadCount > 0
+                ? `${unreadCount} unread`
+                : 'Everything here has been read'
           }
         />
 
         {loading && !notifications.length ? (
           <Spinner label="Loading notifications" />
+        ) : showOfflineState ? (
+          // "Nothing yet" is a claim, and an empty list with no connection does
+          // not support it - the alerts are on the account, unread, and simply
+          // were not fetched.
+          <OfflineState title="Can't load your notifications">
+            They are stored on your account and need a connection to read. Any you have not seen
+            are still there.
+          </OfflineState>
         ) : notifications.length === 0 ? (
           <EmptyState icon="🔔" title="Nothing yet">
             Alerts appear when a budget threshold is crossed, a timer fires, or the safety cut-off

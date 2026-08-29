@@ -122,6 +122,28 @@
   max-width: 46ch;
 }
 
+/* Offered by OfflineState only. An empty state has nothing to retry. */
+.emptyRetry {
+  margin-top: var(--ww-space-3);
+  padding: 9px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ww-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.emptyRetry:hover {
+  background: var(--ww-primary-dark);
+}
+
+.emptyRetry:focus-visible {
+  outline: 2px solid var(--ww-primary);
+  outline-offset: 2px;
+}
+
 .spinnerWrap {
   display: flex;
   align-items: center;

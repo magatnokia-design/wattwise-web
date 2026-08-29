@@ -2,9 +2,12 @@ import { useState, useCallback, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { budgetService } from '../../../services/firebase';
 import { auth } from '../../../services/firebase/config';
+import { useLoadOutcome } from '../../../hooks/useLoadTracker';
 
 const useBudgetTracking = () => {
   const [userId, setUserId] = useState(null);
+  // A ₱0 budget with ₱0 spent is also what an unreachable read looks like.
+  const load = useLoadOutcome();
   const [monthlyBudget, setMonthlyBudget] = useState(0);
   const [currentSpending, setCurrentSpending] = useState(0);
   const [outlet1Spending, setOutlet1Spending] = useState(0);
@@ -69,13 +72,17 @@ const useBudgetTracking = () => {
       const historyResult = await budgetService.getBudgetHistory(userId, 3);
       if (historyResult.success) {
         setBudgetHistory(historyResult.data);
+        load.succeeded();
+      } else {
+        load.failed(historyResult);
       }
     } catch (error) {
       console.error('Error fetching budget data:', error);
+      load.failed(error);
     } finally {
       setLoading(false);
     }
-  }, [currentDay, daysInMonth, userId]);
+  }, [currentDay, daysInMonth, userId, load.succeeded, load.failed]);
 
   useEffect(() => {
     if (!userId) return;
@@ -117,6 +124,8 @@ const useBudgetTracking = () => {
     currentDay,
     budgetHistory,
     loading,
+    showEmptyState: load.showEmptyState,
+    showOfflineState: load.showOfflineState,
     handleSetBudget,
     handleRefresh,
   };

@@ -7,7 +7,7 @@ import {
 import { Card, CardHeader } from '../components/ui/Card';
 import { StatGrid, StatTile } from '../components/ui/StatTile';
 import { DataTable } from '../components/ui/DataTable';
-import { Banner, EmptyState, Spinner } from '../components/ui/Feedback';
+import { Banner, EmptyState, OfflineState, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
 import budgetStyles from './BudgetPage.module.css';
 
@@ -23,6 +23,8 @@ export const BudgetPage = () => {
     currentDay,
     budgetHistory,
     loading,
+    showOfflineState,
+    handleRefresh,
     // handleSetBudget is deliberately not pulled in — see the banner below.
     // Leaving it unbound is what makes setMonthlyBudget unreachable from the
     // web, rather than merely un-clicked.
@@ -35,6 +37,29 @@ export const BudgetPage = () => {
 
   if (loading && monthlyBudget === 0 && currentSpending === 0) {
     return <Spinner label="Loading budget" />;
+  }
+
+  // Every figure below is an assertion about the account - a ₱0 budget, nothing
+  // spent, "No monthly budget set yet." With no read behind them they are all
+  // zero, which is the empty state of a new account rather than the truth about
+  // this one.
+  if (showOfflineState) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.pageIntro}>
+          <p className={styles.lede}>
+            Spending is recomputed from the daily rollups each night, so it never double-counts a
+            re-run.
+          </p>
+        </div>
+        <Card>
+          <OfflineState onRetry={handleRefresh}>
+            Your budget and this month&apos;s spending are stored on your account, and the page
+            needs a connection to read them. Nothing has been lost or reset.
+          </OfflineState>
+        </Card>
+      </div>
+    );
   }
 
   return (
