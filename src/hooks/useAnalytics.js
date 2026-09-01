@@ -3,6 +3,7 @@ import { budgetService, historyService } from '../services/firebase';
 import { useAuth } from './useAuth';
 import { useLoadOutcome } from './useLoadTracker';
 import { calculatePelcoIIIBill, marginalRatePerKwh } from '../utils/billing';
+import { aggregateApplianceUsage } from '../utils/applianceBreakdown';
 import { buildLiveAppliances, buildLiveTodayEntry, withLiveToday } from '../utils/liveUsage';
 import { resolveDailyEntry } from '../utils/dailyEntry';
 
@@ -77,30 +78,6 @@ const formatPeakHour = (hourValue) => {
   return `${hour12}:00 ${period}`;
 };
 
-/**
- * Rolls the per-day applianceBreakdown written by processDailyRollup into one
- * list for the selected range, largest consumer first.
- */
-const aggregateApplianceUsage = (entries) => {
-  const totals = new Map();
-
-  (Array.isArray(entries) ? entries : []).forEach((entry) => {
-    const breakdown = Array.isArray(entry?.applianceBreakdown) ? entry.applianceBreakdown : [];
-
-    breakdown.forEach((item) => {
-      const name = String(item?.applianceName || '').trim();
-      const energyKwh = toNumber(item?.energyKwh);
-      if (!name || energyKwh <= 0) return;
-
-      const existing = totals.get(name) || { applianceName: name, energyKwh: 0, cost: 0 };
-      existing.energyKwh += energyKwh;
-      existing.cost += toNumber(item?.cost);
-      totals.set(name, existing);
-    });
-  });
-
-  return Array.from(totals.values()).sort((a, b) => b.energyKwh - a.energyKwh);
-};
 
 export const useAnalytics = ({ tab, outlets, rateProfileId, supplyRates }) => {
   const { user, loading: authLoading } = useAuth();

@@ -56,9 +56,10 @@ certainly does.
 
 | From `C:\App\WattWise\` | Why |
 |---|---|
-| `src/services/firebase/` (all 13 files) | **This is the schema, in executable form.** Already web SDK. |
+| `src/services/firebase/` (all 13 files, plus `invoiceService.js`) | **This is the schema, in executable form.** Already web SDK. This repo carries a cut-down `invoiceService` — `getInvoice` only, since finalizing a month is done from the phone. |
 | `src/utils/billing.js` | PELCO III tariff math. Do not reimplement. |
 | `src/utils/datetime.js`, `src/utils/liveUsage.js` | Pure JS |
+| `src/utils/applianceBreakdown.js` | The per-day appliance attribution and the six-row fold. Mirrors `functions/src/lib/invoice.js` + `invoicePdf.js`, so the emailed statement and both clients itemise a month identically. |
 | `src/constants/colors.js` | Theme tokens |
 | `src/screens/*/utils/*.js` | `historyHelpers`, `scheduleHelpers`, `comparisonHelpers`, `budgetHelpers`, `safetyHelpers`, `settingsHelpers`, `notificationHelpers` — all pure JS |
 

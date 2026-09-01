@@ -6,6 +6,7 @@ import {
   formatMonthLabel,
 } from '../screens/ReferenceComparison/utils/comparisonHelpers';
 import { formatCurrency } from '../screens/BudgetTracking/utils/budgetHelpers';
+import { foldApplianceRows } from '../utils/applianceBreakdown';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -68,6 +69,16 @@ export const ComparisonPage = () => {
     previousRecorded: previousTotals.daysRecorded,
   });
   const hasUsage = totals.daysRecorded > 0;
+
+  // The same fold the emailed statement uses: six named rows, and a residual
+  // summed from the tail itself so the block can only restate figures that
+  // exist. Kept identical on purpose - two surfaces itemising one month by
+  // different rules is the bug this block was added to close.
+  const applianceRows = foldApplianceRows(totals.appliances);
+  const applianceKwh = applianceRows.reduce(
+    (sum, row) => sum + (Number(row.energyKwh) || 0),
+    0
+  );
 
   const openForm = () => {
     setForm({
@@ -149,7 +160,16 @@ export const ComparisonPage = () => {
 
     return (
       <div key={key} className={comparisonStyles.delta}>
-        <p className={comparisonStyles.deltaLabel}>{config.label}</p>
+        <p className={comparisonStyles.deltaLabel}>
+          {config.label}
+          {/* Which basis this peso figure came from. Before the month is
+              finalized it is an estimate at the rates set in Settings; after,
+              it is what the statement billed, and the two are different
+              numbers for the same month. */}
+          {key === 'cost' && totals.isFinal ? (
+            <span className={comparisonStyles.finalPill}>Final</span>
+          ) : null}
+        </p>
         <p className={comparisonStyles.deltaValue}>
           <span className="ww-num">{formatValue(value)}</span>
         </p>
@@ -208,7 +228,10 @@ export const ComparisonPage = () => {
               title={`What WattWise measured — ${monthLabel}`}
               subtitle={
                 hasUsage
-                  ? `${totals.daysRecorded} ${totals.daysRecorded === 1 ? 'day' : 'days'} recorded, from outlet 1 and outlet 2 only.`
+                  ? `${totals.daysRecorded} ${totals.daysRecorded === 1 ? 'day' : 'days'} recorded, from outlet 1 and outlet 2 only. `
+                    + (totals.isFinal
+                      ? 'The cost is the finalized figure from the emailed statement.'
+                      : 'The cost is an estimate at the rates set in Settings.')
                   : undefined
               }
             />
@@ -231,6 +254,74 @@ export const ComparisonPage = () => {
                 <div className={comparisonStyles.deltaGrid}>
                   {DELTAS.map((entry) => renderMetric(entry.key))}
                 </div>
+
+                {/* Both months in the change above are priced with the user's
+                    configured rates, including this one even after it has been
+                    finalized. Swapping in the billed figure for the finalized
+                    month alone would measure August's official rates against
+                    July's configured ones and report the gap as a change in
+                    consumption. So the comparison stays like-for-like and the
+                    basis is stated rather than left to be inferred. */}
+                {totals.isFinal ? (
+                  <p className={comparisonStyles.basisNote}>
+                    {monthLabel} was finalized at{' '}
+                    <span className="ww-num">{formatCurrency(totals.cost)}</span> using PELCO
+                    III&apos;s official rates for that month, which is the figure on the emailed
+                    statement. Any change shown against {previousLabel} prices both months with
+                    your own rates, so the two are measured the same way.
+                  </p>
+                ) : null}
+
+                {/* Where it went.
+                    The two outlet tiles above answer "which of the two sockets";
+                    this answers "which appliance", and they are not the same
+                    question. Outlet totals carry the name each outlet held on
+                    the LAST recorded day, so renaming an appliance rewrites the
+                    whole month retroactively. These rows credit each day's
+                    energy to the name the outlet carried on THAT day, which is
+                    the rule the emailed statement uses and the only one a rename
+                    cannot rewrite.
+
+                    Both were already true; only the statement was showing this
+                    one. August 2026 read as six appliances on the PDF and two
+                    here off the same 7.24 kWh, and nothing said why. */}
+                {applianceRows.length > 0 ? (
+                  <div className={comparisonStyles.appliances}>
+                    <p className={comparisonStyles.appliancesTitle}>Where it went</p>
+
+                    {applianceRows.map((row) => {
+                      const share = totals.kWh > 0 ? (row.energyKwh / totals.kWh) * 100 : 0;
+
+                      return (
+                        <div key={row.applianceName} className={comparisonStyles.accuracyRow}>
+                          <span>
+                            {row.applianceName}{' '}
+                            <span className={styles.muted}>
+                              <span className="ww-num">{share.toFixed(0)}%</span>
+                            </span>
+                          </span>
+                          <strong className="ww-num">{row.energyKwh.toFixed(2)} kWh</strong>
+                        </div>
+                      );
+                    })}
+
+                    {/* The total bar, for the same reason the statement carries
+                        one: a block that itemises a total has to add up to it,
+                        and a shortfall has to be visible rather than silent. */}
+                    <div
+                      className={`${comparisonStyles.accuracyRow} ${comparisonStyles.accuracyTotal}`}
+                    >
+                      <span>Total measured</span>
+                      <strong className="ww-num">{applianceKwh.toFixed(2)} kWh</strong>
+                    </div>
+
+                    <p className={comparisonStyles.accuracyNote}>
+                      Energy is credited to the name the outlet carried on the day it was
+                      measured, so an appliance renamed mid-month appears under both names.
+                      This is the same split as the emailed statement.
+                    </p>
+                  </div>
+                ) : null}
               </>
             ) : showOfflineState ? (
               // "Nothing recorded" asserts something about the account. With no
@@ -300,7 +391,12 @@ export const ComparisonPage = () => {
             ) : accuracy ? (
               <div className={comparisonStyles.accuracy}>
                 <div className={comparisonStyles.accuracyRow}>
-                  <span>WattWise estimated</span>
+                  {/* Whose figure this is, and on what basis. Once the month is
+                      finalized this row is no longer an estimate - it is the
+                      same number the statement billed - and calling it one would
+                      put a third description of that figure in front of the
+                      reader. */}
+                  <span>{totals.isFinal ? 'WattWise measured (final)' : 'WattWise estimated'}</span>
                   <strong className="ww-num">{formatCurrency(accuracy.estimatedCost)}</strong>
                 </div>
                 <div className={comparisonStyles.accuracyRow}>
