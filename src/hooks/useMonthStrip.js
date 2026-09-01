@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { historyService, userService } from '../services/firebase';
+import { historyService, invoiceService, userService } from '../services/firebase';
 import { auth } from '../services/firebase/config';
-import { summarizeDailyEntries } from '../screens/ReferenceComparison/utils/comparisonHelpers';
+import {
+  summarizeDailyEntries,
+  applyFinalizedCost,
+} from '../screens/ReferenceComparison/utils/comparisonHelpers';
 
 /*
  * Totals for every month the comparison picker offers, so the rail can show the
@@ -36,14 +39,30 @@ export const useMonthStrip = (monthOptions) => {
       if (!cancelled) setLoading(true);
 
       // Same source the two compared months use, so the rail cannot disagree
-      // with the cards below it.
-      const preferences = await userService.getUserPreferences(user.uid);
+      // with the cards below it. That claim was false for a while: the card
+      // showed August 2026 finalized at P85.09 while the rail directly above it
+      // read P79.39, because the rail priced every month itself and never
+      // looked at the invoices. Statements are read here for the same reason
+      // they are read there.
+      const [preferences, invoiceResult] = await Promise.all([
+        userService.getUserPreferences(user.uid),
+        // One query for the year rather than twelve document reads.
+        invoiceService.getInvoices(user.uid, monthOptions.length),
+      ]);
+
       const rates = preferences?.success
         ? {
           supplyRates: preferences.data?.supplyRates || null,
           profileId: preferences.data?.rateProfileId || null,
         }
         : {};
+
+      // A failed read leaves every month on its estimate rather than asserting
+      // that none of them were finalized.
+      const invoices = new Map(
+        (invoiceResult.success ? invoiceResult.data : [])
+          .map((invoice) => [invoice.billingMonth, invoice])
+      );
 
       const entries = await Promise.all(
         monthOptions.map(async (option) => {
@@ -53,9 +72,14 @@ export const useMonthStrip = (monthOptions) => {
             `${option.value}-31`
           );
 
+          if (!result.success) return [option.value, null];
+
           return [
             option.value,
-            result.success ? summarizeDailyEntries(result.data, rates) : null,
+            applyFinalizedCost(
+              summarizeDailyEntries(result.data, rates),
+              invoices.get(option.value) || null
+            ),
           ];
         })
       );

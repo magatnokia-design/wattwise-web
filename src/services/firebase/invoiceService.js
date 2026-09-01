@@ -1,4 +1,4 @@
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from './config';
 
 /**
@@ -25,6 +25,42 @@ export const invoiceService = {
    * from the cache, so an unreachable read arrives here as an error and is
    * reported as one. Callers must not read that as "not finalized".
    */
+  /**
+   * The most recent statements, newest first, keyed by caller.
+   *
+   * One query instead of twelve `getDoc` calls, which is what the month rail
+   * would otherwise need to price a year.
+   *
+   * Ordered by the stored `billingMonth` field, not by `__name__`. The document
+   * id is the billing month and sorts identically, but Firestore's automatic
+   * index on document ids is ASCENDING only - a descending `orderBy('__name__')`
+   * demands a composite index that does not exist, and the phone app's
+   * statements screen opened to "The query requires an index" because of it.
+   */
+  getInvoices: async (userId, max = 12) => {
+    try {
+      if (!userId) {
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      const invoicesRef = collection(db, 'users', userId, 'invoices');
+      const snapshot = await getDocs(
+        query(invoicesRef, orderBy('billingMonth', 'desc'), limit(max))
+      );
+
+      return {
+        success: true,
+        data: snapshot.docs.map((docSnapshot) => ({
+          ...docSnapshot.data(),
+          billingMonth: docSnapshot.id,
+        })),
+      };
+    } catch (error) {
+      console.error('Error getting invoices:', error);
+      return { success: false, error: error.message, code: error.code };
+    }
+  },
+
   getInvoice: async (userId, billingMonth) => {
     try {
       if (!userId) {

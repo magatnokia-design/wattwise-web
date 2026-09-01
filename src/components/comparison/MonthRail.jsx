@@ -62,7 +62,11 @@ export const MonthRail = ({ monthOptions, monthTotals, month, onSelect, loading 
               <span className="ww-num">{totals.kWh.toFixed(2)} kWh</span>
               {' · '}
               <span className="ww-num">{formatCurrency(totals.cost)}</span>
-              {' measured by WattWise'}
+              {/* Which rate set that peso figure came from. WattWise measured
+                  the kWh either way; only the pricing differs, and a finalized
+                  month is priced with PELCO III's official rates rather than
+                  the ones in Settings. */}
+              {totals.isFinal ? ' · final statement' : ' measured by WattWise'}
             </>
           ) : (
             'Nothing recorded — you can still enter this month’s bill below'
