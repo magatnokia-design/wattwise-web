@@ -4,6 +4,8 @@ import {
   buildTrend,
   explainAccuracy,
   formatMonthLabel,
+  describeCostBasis,
+  labelCostBasis,
 } from '../screens/ReferenceComparison/utils/comparisonHelpers';
 import { formatCurrency } from '../screens/BudgetTracking/utils/budgetHelpers';
 import { foldApplianceRows } from '../utils/applianceBreakdown';
@@ -229,9 +231,7 @@ export const ComparisonPage = () => {
               subtitle={
                 hasUsage
                   ? `${totals.daysRecorded} ${totals.daysRecorded === 1 ? 'day' : 'days'} recorded, from outlet 1 and outlet 2 only. `
-                    + (totals.isFinal
-                      ? 'The cost is the finalized figure from the emailed statement.'
-                      : 'The cost is an estimate at the rates set in Settings.')
+                    + describeCostBasis(totals.costBasis, monthLabel)
                   : undefined
               }
             />
@@ -262,15 +262,15 @@ export const ComparisonPage = () => {
                     July's configured ones and report the gap as a change in
                     consumption. So the comparison stays like-for-like and the
                     basis is stated rather than left to be inferred. */}
-                {totals.isFinal ? (
+                {totals.costBasis === 'estimate' ? null : (
                   <p className={comparisonStyles.basisNote}>
-                    {monthLabel} was finalized at{' '}
-                    <span className="ww-num">{formatCurrency(totals.cost)}</span> using PELCO
-                    III&apos;s official rates for that month, which is the figure on the emailed
-                    statement. Any change shown against {previousLabel} prices both months with
-                    your own rates, so the two are measured the same way.
+                    {monthLabel} comes to{' '}
+                    <span className="ww-num">{formatCurrency(totals.cost)}</span>.{' '}
+                    {describeCostBasis(totals.costBasis, monthLabel)} Any change shown against{' '}
+                    {previousLabel} prices both months with your own rates, so the two are
+                    measured the same way.
                   </p>
-                ) : null}
+                )}
 
                 {/* Where it went.
                     The two outlet tiles above answer "which of the two sockets";
@@ -396,7 +396,7 @@ export const ComparisonPage = () => {
                       same number the statement billed - and calling it one would
                       put a third description of that figure in front of the
                       reader. */}
-                  <span>{totals.isFinal ? 'WattWise measured (final)' : 'WattWise estimated'}</span>
+                  <span>{labelCostBasis(totals.costBasis)}</span>
                   <strong className="ww-num">{formatCurrency(accuracy.estimatedCost)}</strong>
                 </div>
                 <div className={comparisonStyles.accuracyRow}>

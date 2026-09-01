@@ -4,7 +4,7 @@ import { historyService, invoiceService, userService } from '../services/firebas
 import { auth } from '../services/firebase/config';
 import {
   summarizeDailyEntries,
-  applyFinalizedCost,
+  applyInvoiceCost,
 } from '../screens/ReferenceComparison/utils/comparisonHelpers';
 
 /*
@@ -76,7 +76,7 @@ export const useMonthStrip = (monthOptions) => {
 
           return [
             option.value,
-            applyFinalizedCost(
+            applyInvoiceCost(
               summarizeDailyEntries(result.data, rates),
               invoices.get(option.value) || null
             ),

@@ -24,6 +24,17 @@ import styles from './MonthRail.module.css';
  * a bare dropdown hides the data you are choosing between. It is an overview
  * you can click, not the only way in.
  */
+/*
+ * Which rate set produced the peso figure. WattWise measured the kWh either
+ * way - only the pricing differs - so the distinction is worth four words
+ * rather than a badge.
+ */
+const RAIL_BASIS = {
+  final: ' · final statement',
+  statement: ' · same as your statement',
+  estimate: ' measured by WattWise',
+};
+
 export const MonthRail = ({ monthOptions, monthTotals, month, onSelect, loading }) => {
   // Bars are relative to the tallest month on screen. Against a fixed ceiling a
   // real month of two-outlet usage would be a sliver.
@@ -66,7 +77,7 @@ export const MonthRail = ({ monthOptions, monthTotals, month, onSelect, loading 
                   the kWh either way; only the pricing differs, and a finalized
                   month is priced with PELCO III's official rates rather than
                   the ones in Settings. */}
-              {totals.isFinal ? ' · final statement' : ' measured by WattWise'}
+              {RAIL_BASIS[totals.costBasis] || RAIL_BASIS.estimate}
             </>
           ) : (
             'Nothing recorded — you can still enter this month’s bill below'
