@@ -84,7 +84,7 @@ export const useLiveOutlets = ({ withRates = true } = {}) => {
             if (!result?.success) return;
             setRateProfileId(result.data?.rateProfileId || null);
             setSupplyRates(result.data?.supplyRates || null);
-            setHasSupplyRates(result.data?.hasSupplyRates === true);
+            setHasSupplyRates(result.data?.hasSupplyRates !== false);
           })
           .catch((error) => console.warn('Could not load rate profile:', error?.message));
       }
