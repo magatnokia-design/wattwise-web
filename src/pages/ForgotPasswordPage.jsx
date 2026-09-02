@@ -20,6 +20,15 @@ export const ForgotPasswordPage = () => {
     event.preventDefault();
     setError('');
 
+    // Every other form in both clients refuses an empty field before it calls
+    // anything. This one did not: a blank submit went to Firebase and came
+    // back as auth/invalid-email, which reads as "we could not send it"
+    // rather than "you have not typed an address yet".
+    if (!email.trim()) {
+      setError('Enter your email address.');
+      return;
+    }
+
     setLoading(true);
     // resetPassword is one callable, not two: `sendPasswordResetEmail` generates
     // the code and sends the branded mail itself, and reports a missing account

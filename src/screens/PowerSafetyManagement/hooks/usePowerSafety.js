@@ -17,9 +17,11 @@ const usePowerSafety = () => {
     power: 0,
   });
   const [thresholds, setThresholds] = useState({
-    voltage: { min: 200, max: 250 },
+    // Placeholders only, kept in step with powerSafety.js so a frame drawn
+    // before the read cannot flash a limit the backend does not enforce.
+    voltage: { min: 190, max: 260 },
     current: { max: 10 },
-    power: { max: 2000 },
+    power: { max: 500 },
   });
   const [protectionEnabled, setProtectionEnabled] = useState(true);
   const [alertHistory, setAlertHistory] = useState([]);
