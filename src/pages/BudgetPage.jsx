@@ -192,7 +192,14 @@ export const BudgetPage = () => {
                   header: 'Spent',
                   align: 'right',
                   sortable: true,
-                  render: (row) => <span className="ww-num">{formatCurrency(row.spent)}</span>,
+                  // A finalized month shows what the statement billed rather
+                  // than what the nightly rollup estimated, and says so.
+                  render: (row) => (
+                    <>
+                      <span className="ww-num">{formatCurrency(row.spent)}</span>
+                      {row.isFinal ? <span className={budgetStyles.finalTag}>Final</span> : null}
+                    </>
+                  ),
                 },
                 {
                   key: 'delta',
