@@ -5,6 +5,7 @@ import {
   formatOutletName,
   formatScheduledTime,
   getLiveCountdownDisplay,
+  describeTimerState,
   getNextScheduledRunSeconds,
   formatDuration,
 } from '../screens/Timer/utils/scheduleHelpers';
@@ -25,7 +26,9 @@ const EMPTY_FORM = {
   action: 'ON',
   scheduledTime: '18:00',
   hours: '0',
-  minutes: '30',
+  // Zero, not 30. A pre-filled half hour is a value nobody chose that saves
+  // one keystroke and silently sets the timer for anyone who does not notice.
+  minutes: '0',
   seconds: '0',
   days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
 };
@@ -178,7 +181,13 @@ export const SchedulePage = () => {
                   </p>
 
                   <p className={scheduleStyles.itemNext}>
-                    {schedule.active ? describeNextRun(schedule) : 'Paused'}
+                    {/* describeTimerState, shared with the phone. A finished
+                        countdown used to read "Paused" - it was not paused,
+                        it had run - and one sitting at 00:00:00 waiting for
+                        the once-a-minute server check said nothing at all. */}
+                    {schedule.type === 'countdown'
+                      ? describeTimerState(schedule, now).label
+                      : (schedule.active ? describeNextRun(schedule) : 'Paused')}
                   </p>
                 </div>
 
