@@ -12,7 +12,7 @@
 // hardware talks to the real one — silently, with no error.
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 import { getFunctions } from "firebase/functions";
 
 const firebaseConfig = {
@@ -73,8 +73,29 @@ setPersistence(auth, browserLocalPersistence).catch((error) => {
   console.warn('Could not enable local auth persistence:', error?.message);
 });
 
-// Initialize Firestore
-export const db = getFirestore(app);
+// Firestore, with the transport allowed to fall back.
+//
+// The SDK streams live updates over a WebChannel, which some networks and
+// most captive or proxied Wi-Fi will not carry cleanly. When it fails the
+// console fills with
+//
+//   WebChannelConnection RPC 'Listen' stream transport errored
+//   Failed to load resource: the server responded with a status of 400
+//
+// and live updates stall until the SDK gives up and reconnects. Seen on the
+// owner's own network on 4 Sep 2026, alongside the ESP32 losing its posts in
+// the same minutes - two devices, one flaky path.
+//
+// autoDetectLongPolling lets the SDK notice that and switch to long polling
+// instead, which survives networks WebChannel does not. It costs a round trip
+// on a connection that works and rescues one that does not.
+//
+// Web only. The phone app talks to Firestore over React Native's own
+// networking and needs none of this - the same reason auth persistence
+// differs between the two config files.
+export const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true,
+});
 
 // Initialize Cloud Functions (region: asia-southeast1)
 export const functions = getFunctions(app, 'asia-southeast1');

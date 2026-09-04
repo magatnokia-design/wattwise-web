@@ -145,7 +145,7 @@ export const PENDING_WRITE_RESULT = Object.freeze({
  * This does not cancel anything. Firestore keeps the write queued and sends it
  * when the connection returns, so the result says `pending`, not "failed" - and
  * the message shown must not claim the change did not happen, because it very
- * likely will. `getFirestore` is configured with no persistent cache, so the
+ * likely will. Firestore is initialized with no persistent cache, so the
  * queue lives in memory only and closing the tab drops it.
  *
  * @param {Promise} promise The write in flight.
