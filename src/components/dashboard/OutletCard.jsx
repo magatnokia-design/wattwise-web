@@ -420,6 +420,16 @@ export const OutletCard = ({
                  contradiction — the reader is told there is no appliance and
                  then told to rename one. Both halves are true and neither is
                  the whole answer, so say which is which before the advice. */
+              /* Freshness first. `drawing` is false when the meter reads zero
+                 AND when no meter is reporting at all, and only one of those
+                 justifies "Nothing is drawing" - which is a claim about a
+                 measurement. During a power cut this sentence said it while
+                 the badge two lines above correctly read "No recent
+                 readings", so the same card asserted and disclaimed the same
+                 fact. applianceLine.js already guards this; this string was
+                 written separately and did not. */
+              : telemetryFresh === false && applianceName
+                ? `This outlet is named ${applianceName}. No readings are arriving, so nothing can be detected right now. Rename it under Settings → Learned appliances.`
               : !drawing && applianceName
                 ? `This outlet is named ${applianceName}. Nothing is drawing, so there is nothing to detect right now. Rename it under Settings → Learned appliances.`
                 : applianceName
