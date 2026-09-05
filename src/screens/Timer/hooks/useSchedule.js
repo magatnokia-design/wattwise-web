@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { scheduleService } from '../../../services/firebase';
 import { auth } from '../../../services/firebase/config';
+import { toggleTimerFields } from '../utils/scheduleHelpers';
 
 export const useSchedule = () => {
   const [userId, setUserId] = useState(null);
@@ -119,7 +120,15 @@ export const useSchedule = () => {
     try {
       if (!userId) throw new Error('User not authenticated');
 
-      const result = await scheduleService.updateSchedule(userId, scheduleId, { active });
+      // Writing `{ active }` alone stopped the display and not the clock: the
+      // countdown kept being measured from its original countdownStartedAt, so
+      // the paused seconds were spent anyway and the backend switched the
+      // outlet on the next tick after the user resumed. toggleTimerFields
+      // records what was actually left and restarts the clock from it.
+      const current = schedules.find((item) => item?.id === scheduleId);
+      const fields = toggleTimerFields(current, active);
+
+      const result = await scheduleService.updateSchedule(userId, scheduleId, fields);
 
       if (!result.success) {
         throw new Error(result.error);
@@ -131,7 +140,7 @@ export const useSchedule = () => {
       console.error('Error toggling schedule:', err);
       return { success: false, error: err.message };
     }
-  }, [userId]);
+  }, [userId, schedules]);
 
   return {
     schedules,

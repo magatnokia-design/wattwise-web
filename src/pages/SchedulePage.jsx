@@ -192,9 +192,14 @@ export const SchedulePage = () => {
                 </div>
 
                 <div className={scheduleStyles.itemActions}>
+                  {/* A spent countdown must not be re-armed from here: it has
+                      no seconds left, so switching it on fires the outlet on the
+                      backend's next tick. canRun has always said so and nothing
+                      read it - the same shape as the phone card. */}
                   <Switch
                     size="sm"
                     checked={schedule.active}
+                    disabled={!describeTimerState(schedule, now).canRun}
                     onChange={(next) => toggleSchedule(schedule.id, next)}
                     label={`Enable timer for outlet ${schedule.outlet}`}
                   />
