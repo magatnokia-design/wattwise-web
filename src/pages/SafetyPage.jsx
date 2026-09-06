@@ -14,6 +14,7 @@ import { Modal } from '../components/ui/Modal';
 import { TextField } from '../components/ui/Field';
 import { Badge, Banner, EmptyState, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
+import { EMERGENCY_CONTACTS, EMERGENCY_GUIDANCE } from '../constants/emergency';
 import safetyStyles from './SafetyPage.module.css';
 
 // safetyService clamps whatever is saved to this, matching the firmware's
@@ -362,6 +363,25 @@ export const SafetyPage = () => {
             The firmware enforces a hard limit of {MAX_POWER_W} W per outlet and 1000 W in total,
             regardless of what is set here.
           </p>
+        </Card>
+
+        {/*
+          Emergency numbers, rendered as text. No tel: href and no click
+          handler anywhere in this block - a mis-tap that calls the fire
+          service is worse than typing the digits, and this page is reached by
+          people browsing settings, not only by people in trouble.
+        */}
+        <Card>
+          <CardHeader title="In an emergency" />
+          <p className={styles.muted}>{EMERGENCY_GUIDANCE}</p>
+          <dl className={safetyStyles.thresholds} style={{ marginTop: 12 }}>
+            {EMERGENCY_CONTACTS.map((contact) => (
+              <div className={safetyStyles.thresholdRow} key={contact.number}>
+                <dt>{contact.label}</dt>
+                <dd className="ww-num">{contact.number}</dd>
+              </div>
+            ))}
+          </dl>
         </Card>
       </div>
 
