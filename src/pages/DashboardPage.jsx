@@ -4,6 +4,7 @@ import { useOutletControl } from '../screens/Dashboard/hooks/useOutletControl';
 import { useLiveOutlets } from '../hooks/useLiveOutlets';
 import { buildLiveAppliances } from '../utils/liveUsage';
 import { useDismissibleNotice } from '../hooks/useDismissibleNotice';
+import { describeRelayFault } from '../constants/relayFault';
 import { formatCurrency } from '../screens/BudgetTracking/utils/budgetHelpers';
 import OutletCard from '../components/dashboard/OutletCard';
 import CutoffNotice from '../components/dashboard/CutoffNotice';
@@ -196,10 +197,9 @@ export const DashboardPage = () => {
           tone="danger"
           title={`Outlet ${outletNumber} is not switching off.`}
         >
-          It was told to switch off and current is still flowing through it. The
-          relay may be stuck closed, so the safety cut-off cannot protect this
-          outlet either. Unplug the appliance at the wall and have the wiring
-          checked before using it again.
+          {describeRelayFault(
+            outletNumber === 1 ? outlet1HasReading : outlet2HasReading
+          )}
         </Banner>
       ))}
 
