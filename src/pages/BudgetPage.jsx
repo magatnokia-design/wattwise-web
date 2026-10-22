@@ -1,14 +1,13 @@
 import useBudgetTracking from '../screens/BudgetTracking/hooks/useBudgetTracking';
 import useRangeUsage from '../screens/BudgetTracking/hooks/useRangeUsage';
 import { RangeUsageCard } from '../components/budget/RangeUsageCard';
+import { MonthAtAGlance } from '../components/budget/MonthAtAGlance';
 import {
   formatCurrency,
   getBudgetStatus,
   getBudgetStatusColor,
 } from '../screens/BudgetTracking/utils/budgetHelpers';
 import { Card, CardHeader } from '../components/ui/Card';
-import { StatGrid, StatTile } from '../components/ui/StatTile';
-import { DataTable } from '../components/ui/DataTable';
 import { Banner, EmptyState, OfflineState, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
 import budgetStyles from './BudgetPage.module.css';
@@ -17,10 +16,6 @@ export const BudgetPage = () => {
   const {
     monthlyBudget,
     currentSpending,
-    outlet1Spending,
-    outlet2Spending,
-    dailyAverage,
-    projectedCost,
     daysInMonth,
     currentDay,
     budgetHistory,
@@ -98,189 +93,75 @@ export const BudgetPage = () => {
         </Banner>
       )}
 
-      <StatGrid>
-        <StatTile label="Monthly budget" value={formatCurrency(monthlyBudget)} icon="🎯" />
-        <StatTile
-          label="Spent so far"
-          value={formatCurrency(currentSpending)}
-          tone="primary"
-          caption={`Day ${currentDay} of ${daysInMonth}`}
+      {/* Same order as the phone: the budget, then any dates, then the month
+          at a glance. The stat tiles, Previous months table and By outlet card
+          were folded into these (Oct 2026 feedback: simple, one overall view). */}
+      <Card>
+        <CardHeader
+          title="This month"
+          subtitle={monthlyBudget > 0 ? status.message : 'Set a budget to track progress'}
         />
-        <StatTile
-          label="Projected"
-          value={formatCurrency(projectedCost)}
-          tone={monthlyBudget > 0 && projectedCost > monthlyBudget ? 'danger' : 'default'}
-          caption="At the current daily pace"
-        />
-        <StatTile
-          label="Daily average"
-          value={formatCurrency(dailyAverage)}
-          caption="Across the month so far"
-        />
-      </StatGrid>
+
+        {monthlyBudget > 0 ? (
+          <>
+            <div className={budgetStyles.progressHead}>
+              <span className="ww-num">{formatCurrency(currentSpending)}</span>
+              <span className={styles.muted}>of {formatCurrency(monthlyBudget)}</span>
+            </div>
+
+            <div
+              className={budgetStyles.track}
+              role="progressbar"
+              aria-valuenow={Math.round(percentUsed)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Budget used"
+            >
+              <div
+                className={budgetStyles.fill}
+                style={{
+                  width: `${Math.min(100, percentUsed)}%`,
+                  background: statusColor,
+                }}
+              />
+            </div>
+
+            <div className={budgetStyles.progressFoot}>
+              <span className="ww-num">{percentUsed.toFixed(0)}% used</span>
+              <span className="ww-num">
+                {remaining >= 0
+                  ? `${formatCurrency(remaining)} left`
+                  : `${formatCurrency(Math.abs(remaining))} over`}
+              </span>
+            </div>
+          </>
+        ) : (
+          <EmptyState icon="💰" title="No budget set">
+            Dagitab still records what you spend — a budget just adds the alerts and the
+            projection.
+          </EmptyState>
+        )}
+      </Card>
 
       <RangeUsageCard
         range={rangeUsage.range}
         setRange={rangeUsage.setRange}
         summary={rangeUsage.summary}
+        insights={rangeUsage.insights}
         status={rangeUsage.status}
         message={rangeUsage.message}
         onRetry={rangeUsage.reload}
         monthlyBudget={monthlyBudget}
+        daysInMonth={daysInMonth}
       />
 
-      <div className={styles.split}>
-        <div className={styles.stack}>
-          <Card>
-            <CardHeader
-              title="This month"
-              subtitle={monthlyBudget > 0 ? status.message : 'Set a budget to track progress'}
-            />
-
-            {monthlyBudget > 0 ? (
-              <>
-                <div className={budgetStyles.progressHead}>
-                  <span className="ww-num">{formatCurrency(currentSpending)}</span>
-                  <span className={styles.muted}>of {formatCurrency(monthlyBudget)}</span>
-                </div>
-
-                <div
-                  className={budgetStyles.track}
-                  role="progressbar"
-                  aria-valuenow={Math.round(percentUsed)}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label="Budget used"
-                >
-                  <div
-                    className={budgetStyles.fill}
-                    style={{
-                      width: `${Math.min(100, percentUsed)}%`,
-                      background: statusColor,
-                    }}
-                  />
-                </div>
-
-                <div className={budgetStyles.progressFoot}>
-                  <span className="ww-num">{percentUsed.toFixed(0)}% used</span>
-                  <span className="ww-num">
-                    {remaining >= 0
-                      ? `${formatCurrency(remaining)} left`
-                      : `${formatCurrency(Math.abs(remaining))} over`}
-                  </span>
-                </div>
-              </>
-            ) : (
-              <EmptyState icon="💰" title="No budget set">
-                Dagitab still records what you spend — a budget just adds the alerts and the
-                projection.
-              </EmptyState>
-            )}
-          </Card>
-
-          <Card>
-            <CardHeader title="Previous months" subtitle="Spend against the budget in force then." />
-            <DataTable
-              rowKey={(row) => row.id}
-              empty={<EmptyState icon="📅" title="No earlier months recorded yet" />}
-              columns={[
-                {
-                  key: 'month',
-                  header: 'Month',
-                  render: (row) => `${row.month} ${row.year}`,
-                },
-                {
-                  key: 'budget',
-                  header: 'Budget',
-                  align: 'right',
-                  sortable: true,
-                  render: (row) => (
-                    <span className="ww-num">
-                      {row.budget > 0 ? formatCurrency(row.budget) : '—'}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'spent',
-                  header: 'Spent',
-                  align: 'right',
-                  sortable: true,
-                  // A finalized month shows what the statement billed rather
-                  // than what the nightly rollup estimated, and says so.
-                  render: (row) => (
-                    <>
-                      <span className="ww-num">{formatCurrency(row.spent)}</span>
-                      {row.isFinal ? <span className={budgetStyles.finalTag}>Final</span> : null}
-                    </>
-                  ),
-                },
-                {
-                  key: 'delta',
-                  header: 'Result',
-                  align: 'right',
-                  sortValue: (row) => row.spent - row.budget,
-                  render: (row) => {
-                    if (row.budget <= 0) return <span className={styles.muted}>No budget</span>;
-                    const over = row.spent > row.budget;
-                    return (
-                      <span
-                        className="ww-num"
-                        style={{
-                          color: over ? 'var(--ww-error)' : 'var(--ww-primary-dark)',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {over ? '+' : '−'}
-                        {formatCurrency(Math.abs(row.spent - row.budget))}
-                      </span>
-                    );
-                  },
-                },
-              ]}
-              rows={budgetHistory}
-            />
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader title="By outlet" subtitle="This month's spend, split." />
-          <div className={styles.stack}>
-            {[
-              { label: 'Outlet 1', value: outlet1Spending, color: 'var(--ww-series-1)' },
-              { label: 'Outlet 2', value: outlet2Spending, color: 'var(--ww-series-2)' },
-            ].map((entry) => {
-              const total = outlet1Spending + outlet2Spending;
-              const share = total > 0 ? (entry.value / total) * 100 : 0;
-
-              return (
-                <div key={entry.label}>
-                  <div className={budgetStyles.outletRow}>
-                    <span className={styles.row}>
-                      <span
-                        className={budgetStyles.swatch}
-                        style={{ background: entry.color }}
-                        aria-hidden="true"
-                      />
-                      {entry.label}
-                    </span>
-                    <strong className="ww-num">{formatCurrency(entry.value)}</strong>
-                  </div>
-                  <div className={budgetStyles.track}>
-                    <div
-                      className={budgetStyles.fill}
-                      style={{ width: `${share}%`, background: entry.color }}
-                    />
-                  </div>
-                  <p className={budgetStyles.outletShare}>
-                    <span className="ww-num">{share.toFixed(0)}%</span> of this month
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      </div>
-
+      <MonthAtAGlance
+        monthlyBudget={monthlyBudget}
+        currentSpending={currentSpending}
+        currentDay={currentDay}
+        daysInMonth={daysInMonth}
+        budgetHistory={budgetHistory}
+      />
     </div>
   );
 };

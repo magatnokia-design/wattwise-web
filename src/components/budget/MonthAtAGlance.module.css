@@ -1,0 +1,163 @@
+.pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.onTrack {
+  background: var(--ww-tint-success);
+  color: var(--ww-primary-dark);
+}
+
+.atRisk {
+  background: var(--ww-tint-warning);
+  color: #b45309;
+}
+
+.over {
+  background: var(--ww-tint-error);
+  color: var(--ww-error);
+}
+
+.none {
+  background: var(--ww-bg);
+  color: var(--ww-text-light);
+}
+
+.headline {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--ww-text-dark);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tile {
+  display: grid;
+  gap: 2px;
+  padding: 12px;
+  border-radius: var(--ww-radius-sm);
+  background: var(--ww-bg);
+}
+
+.tile span,
+.tile small {
+  font-size: 12px;
+  color: var(--ww-text-light);
+}
+
+.tile strong {
+  font-size: 18px;
+  color: var(--ww-text);
+}
+
+.tileStrong {
+  background: var(--ww-tint-success);
+}
+
+.tileStrong strong {
+  color: var(--ww-primary);
+}
+
+.history {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.history h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ww-text);
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.barLabel {
+  font-size: 13px;
+  color: var(--ww-text-light);
+}
+
+.barTrack {
+  position: relative;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--ww-border);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 6px;
+}
+
+.barUnder {
+  background: var(--ww-primary);
+}
+
+.barOver {
+  background: var(--ww-error);
+}
+
+.barNoBudget {
+  background: var(--ww-primary-light);
+}
+
+.budgetMark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ww-text);
+}
+
+.barValue {
+  min-width: 110px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ww-text);
+}
+
+.final {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--ww-tint-success);
+  color: var(--ww-primary-dark);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.legend {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ww-text-light);
+}
+
+.alerts {
+  margin: 16px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--ww-border);
+  font-size: 13px;
+  color: var(--ww-text-light);
+}
+
+@media (max-width: 520px) {
+  .tiles {
+    grid-template-columns: 1fr 1fr;
+  }
+}
