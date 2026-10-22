@@ -178,7 +178,7 @@ export const AppShell = () => {
           >
             ☰
           </button>
-          <h1 className={styles.pageTitle}>{PAGE_TITLES[location.pathname] || 'WattWise'}</h1>
+          <h1 className={styles.pageTitle}>{PAGE_TITLES[location.pathname] || 'Dagitab'}</h1>
           <Button variant="secondary" size="sm" onClick={() => setConfirmSignOut(true)}>
             Sign out
           </Button>

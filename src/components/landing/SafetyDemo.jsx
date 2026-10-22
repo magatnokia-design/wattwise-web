@@ -44,7 +44,7 @@ const STAGES = {
     name: 'Cut off',
     tone: 'cutoff',
     detail:
-      'At the limit WattWise opens the relay — if auto-protection is on — and tells you which outlet and why.',
+      'At the limit Dagitab opens the relay — if auto-protection is on — and tells you which outlet and why.',
   },
 };
 

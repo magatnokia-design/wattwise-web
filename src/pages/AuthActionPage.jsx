@@ -19,7 +19,7 @@ import styles from './AuthLayout.module.css';
  * Firebase hosts an equivalent page at wattwise-fe394.firebaseapp.com, which is
  * where these links point until "Customise action URL" is set in the console.
  * That page is unbranded and says "project-421489842338" in places - taking the
- * traffic here means the whole journey stays on wattwise.site.
+ * traffic here means the whole journey stays on dagitab.site.
  *
  * Deliberately mounted outside AuthGate. A signed-in user clicking a
  * verification link must be able to finish it, and AuthGate's signed-in branch
@@ -109,7 +109,7 @@ export const AuthActionPage = () => {
         return;
       }
 
-      setError(`This link asks for an action WattWise does not handle (${mode}).`);
+      setError(`This link asks for an action Dagitab does not handle (${mode}).`);
       setPhase('error');
     };
 
@@ -177,7 +177,7 @@ export const AuthActionPage = () => {
     return (
       <AuthLayout
         title="This link didn't work"
-        subtitle="Links from WattWise emails are single-use and short-lived."
+        subtitle="Links from Dagitab emails are single-use and short-lived."
         footer={
           <Link to="/login" className={styles.footerLink}>
             ← Back to sign in
@@ -203,7 +203,7 @@ export const AuthActionPage = () => {
         subtitle={
           isReset
             ? 'You can sign in with your new password now.'
-            : 'Your address is verified. WattWise can reach you.'
+            : 'Your address is verified. Dagitab can reach you.'
         }
         footer={
           <Link to="/login" className={styles.footerLink}>
@@ -231,7 +231,7 @@ export const AuthActionPage = () => {
   return (
     <AuthLayout
       title="Choose a new password"
-      subtitle={accountEmail ? `For ${accountEmail}` : 'For your WattWise account'}
+      subtitle={accountEmail ? `For ${accountEmail}` : 'For your Dagitab account'}
       footer={
         <Link to="/login" className={styles.footerLink}>
           ← Back to sign in

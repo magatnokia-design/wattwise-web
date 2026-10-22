@@ -88,7 +88,7 @@ export const AnalyticsPage = () => {
           are all zero, which is indistinguishable from a month of no usage -
           so the page says which it is rather than printing a confident ₱0.00. */}
       {showOfflineState ? (
-        <Banner tone="warn" title="Can't reach WattWise.">
+        <Banner tone="warn" title="Can't reach Dagitab.">
           The totals and charts below could not be loaded, so they are not your figures. Check your
           network and reload — nothing has been lost.
         </Banner>
@@ -227,7 +227,7 @@ export const AnalyticsPage = () => {
                   </OfflineState>
                 ) : (
                   <EmptyState icon="🔌" title="No appliance breakdown yet">
-                    Name the appliance on each outlet and WattWise attributes usage to it from the
+                    Name the appliance on each outlet and Dagitab attributes usage to it from the
                     next rollup.
                   </EmptyState>
                 )

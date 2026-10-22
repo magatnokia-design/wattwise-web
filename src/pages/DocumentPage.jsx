@@ -13,8 +13,8 @@ import documentStyles from './DocumentPage.module.css';
 
 const DOCUMENTS = {
   about: {
-    title: 'About WattWise',
-    lede: 'What WattWise is, what it does, and the limits it works within.',
+    title: 'About Dagitab',
+    lede: 'What Dagitab is, what it does, and the limits it works within.',
     sections: ABOUT_SECTIONS,
   },
   privacy: {
@@ -24,7 +24,7 @@ const DOCUMENTS = {
   },
   terms: {
     title: 'Terms & Conditions',
-    lede: 'What you are agreeing to when you use WattWise.',
+    lede: 'What you are agreeing to when you use Dagitab.',
     sections: TERMS_SECTIONS,
   },
 };

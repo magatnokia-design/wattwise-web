@@ -74,7 +74,7 @@ export const ForgotPasswordPage = () => {
          * phone app's ForgotPasswordScreen, which states the same three on send.
          *
          * The sender is named rather than just saying "check spam": since Auth
-         * mail moved onto Brevo with wattwise.site authenticated by DKIM+DMARC
+         * mail moved onto Brevo with dagitab.site authenticated by DKIM+DMARC
          * it lands in the inbox, so an exact address to search for beats
          * sending everyone to their spam folder first.
          */
@@ -88,7 +88,7 @@ export const ForgotPasswordPage = () => {
               The link <strong>expires in 1 hour</strong>.
             </li>
             <li>
-              It comes from <strong>WattWise &lt;support@wattwise.site&gt;</strong>. Search for that
+              It comes from <strong>Dagitab &lt;support@dagitab.site&gt;</strong>. Search for that
               address if it has not arrived, and check your spam folder.
             </li>
             <li>

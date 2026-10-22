@@ -23,7 +23,7 @@ import styles from './CostEstimator.module.css';
  */
 
 // Mirrors APPLIANCE_PROFILES in functions/src/lib/applianceDetector.js — the
-// eight WattWise can name, with the mean-power window each is matched against.
+// eight Dagitab can name, with the mean-power window each is matched against.
 const PRESETS = [
   { icon: '🔌', label: 'Phone charger', range: [2, 18], watts: 12 },
   { icon: '💡', label: 'LED lamp', range: [3, 22], watts: 9 },
@@ -93,7 +93,7 @@ export const CostEstimator = () => {
             ))}
           </div>
           <p className={styles.presetNote}>
-            Those are the wattage windows WattWise matches against when it identifies
+            Those are the wattage windows Dagitab matches against when it identifies
             an appliance — not measurements. Move the slider to your own figure.
           </p>
         </div>

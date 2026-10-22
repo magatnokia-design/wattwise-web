@@ -41,7 +41,7 @@ test('a run of identical refusals collapses to one row', () => {
 test('a different event in the middle breaks the run', () => {
   const groups = groupSecurityRows([
     row({ id: 'a' }),
-    row({ id: 'b', type: 'device_linked', title: 'WattWise unit linked', tone: 'info' }),
+    row({ id: 'b', type: 'device_linked', title: 'Dagitab unit linked', tone: 'info' }),
     row({ id: 'c' }),
   ]);
 

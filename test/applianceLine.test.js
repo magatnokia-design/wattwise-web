@@ -49,7 +49,7 @@ test('no readings never claims the outlet is empty, or that it is running', () =
 });
 
 test('no readings outranks an unsupported verdict', () => {
-  // "Not something WattWise monitors" is a conclusion drawn from readings, so
+  // "Not something Dagitab monitors" is a conclusion drawn from readings, so
   // it cannot outlive them.
   const result = line({
     telemetryFresh: false,
@@ -117,7 +117,7 @@ test('unsupported outranks changed', () => {
     scope: { unsupported: true, unsupportedReason: 'no_match' },
   });
 
-  assert.equal(result.text, 'Not something WattWise monitors');
+  assert.equal(result.text, 'Not something Dagitab monitors');
   assert.equal(result.tone, 'unsupported');
 });
 
@@ -159,7 +159,7 @@ test('an over-power load says it draws too much, with the wattage', () => {
     scope: { unsupported: true, unsupportedReason: 'over_power', measuredPowerW: 912.4 },
   });
 
-  assert.equal(result.text, 'Draws more than WattWise supports · 912 W');
+  assert.equal(result.text, 'Draws more than Dagitab supports · 912 W');
   assert.equal(result.tone, 'unsupported');
 });
 
@@ -188,14 +188,14 @@ test('no_match keeps the original wording, and a missing wattage does not print 
   const noMatch = line({
     scope: { unsupported: true, unsupportedReason: 'no_match' },
   });
-  assert.equal(noMatch.text, 'Not something WattWise monitors');
+  assert.equal(noMatch.text, 'Not something Dagitab monitors');
 
   // measuredPowerW is only written on the over-power case, so the other branch
   // must not assume it.
   const noWatts = line({
     scope: { unsupported: true, unsupportedReason: 'over_power' },
   });
-  assert.equal(noWatts.text, 'Draws more than WattWise supports');
+  assert.equal(noWatts.text, 'Draws more than Dagitab supports');
   assert.ok(!/NaN|undefined/.test(noWatts.text));
 });
 
@@ -244,5 +244,5 @@ test('unsupported wins even before the outlet has a name', () => {
     scope: { unsupported: true, unsupportedReason: 'no_match' },
   });
 
-  assert.equal(result.text, 'Not something WattWise monitors');
+  assert.equal(result.text, 'Not something Dagitab monitors');
 });

@@ -7,7 +7,7 @@ const MESSAGES = {
   'auth/user-not-found': 'No account found with this email.',
   'auth/wrong-password': 'That email and password do not match an account.',
   'auth/too-many-requests': 'Too many attempts. Wait a moment and try again.',
-  'auth/network-request-failed': 'Could not reach WattWise. Check your connection.',
+  'auth/network-request-failed': 'Could not reach Dagitab. Check your connection.',
   'auth/email-already-in-use': 'An account already uses this email.',
   'auth/invalid-email': 'That email address is not valid.',
   'auth/weak-password': 'Pick a stronger password.',
@@ -20,7 +20,7 @@ const MESSAGES = {
     + 'a lowercase letter and a number.',
   'auth/operation-not-allowed': 'Email sign-in is not enabled for this project.',
   'auth/unauthorized-domain':
-    'This site is not an authorised domain for the WattWise Firebase project. Add it under Authentication → Settings → Authorized domains.',
+    'This site is not an authorised domain for the Dagitab Firebase project. Add it under Authentication → Settings → Authorized domains.',
 
   // Action-code failures, from the links in Firebase's emails. Both of the
   // first two present identically to a user, and both mean "ask for a new
@@ -30,10 +30,10 @@ const MESSAGES = {
     'This link has expired. Reset links last one hour — request a new one below.',
   'auth/invalid-action-code':
     'This link is no longer valid. It may have been used already, or replaced by a newer one — request a fresh link below.',
-  'auth/user-disabled': 'This account has been disabled. Contact support@wattwise.site.',
+  'auth/user-disabled': 'This account has been disabled. Contact support@dagitab.site.',
 
   // Raised by the sendPasswordResetEmail / sendVerificationEmail callables,
-  // which throttle to one message per address per minute. WattWise sends its own
+  // which throttle to one message per address per minute. Dagitab sends its own
   // auth mail because Firebase will not let this project brand its templates,
   // and that makes the reset endpoint the one a stranger can trigger.
   'resource-exhausted':

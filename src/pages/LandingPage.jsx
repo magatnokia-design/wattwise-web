@@ -47,7 +47,7 @@ const FEATURES = [
     icon: '🔎',
     title: 'It suggests what is plugged in',
     body:
-      'Eight appliance profiles matched from the load pattern. It only ever suggests — WattWise never renames an outlet on its own.',
+      'Eight appliance profiles matched from the load pattern. It only ever suggests — Dagitab never renames an outlet on its own.',
   },
   {
     icon: '🛡️',
@@ -59,7 +59,7 @@ const FEATURES = [
     icon: '🚨',
     title: 'It notices a relay that will not open',
     body:
-      'If an outlet is switched off but current keeps flowing, WattWise says so instead of showing it as off. This found a real welded contact.',
+      'If an outlet is switched off but current keeps flowing, Dagitab says so instead of showing it as off. This found a real welded contact.',
   },
   {
     icon: '⏱️',
@@ -132,7 +132,7 @@ export const LandingPage = () => (
         <a
           className={styles.brandLink}
           href="#top"
-          aria-label="WattWise — back to top"
+          aria-label="Dagitab — back to top"
           onClick={(event) => {
             event.preventDefault();
             scrollToTop();
@@ -172,7 +172,7 @@ export const LandingPage = () => (
             Know what every outlet costs you — and switch it off from anywhere.
           </h1>
           <p className={styles.heroLead}>
-            WattWise measures each of your two outlets with its own meter, prices the energy
+            Dagitab measures each of your two outlets with its own meter, prices the energy
             against your real electricity tariff, and cuts the power when a load goes past a
             limit you set.
           </p>
@@ -217,7 +217,7 @@ export const LandingPage = () => (
       {/* Features */}
       <section className={styles.section} id="what">
         <div className={styles.sectionHead}>
-          <h2 className={styles.sectionTitle}>What WattWise does</h2>
+          <h2 className={styles.sectionTitle}>What Dagitab does</h2>
         </div>
 
         <ul className={styles.featureGrid}>
@@ -238,7 +238,7 @@ export const LandingPage = () => (
         <div className={styles.sectionHead}>
           <h2 className={styles.sectionTitle}>Four stages, not an on/off switch</h2>
           <p className={styles.sectionLead}>
-            A load does not go straight from fine to cut off. WattWise warns twice first, and the
+            A load does not go straight from fine to cut off. Dagitab warns twice first, and the
             thresholds below are the ones the system really uses.
           </p>
         </div>
@@ -301,7 +301,7 @@ export const LandingPage = () => (
           <h2 className={styles.sectionTitle}>Questions worth asking first</h2>
           <p className={styles.sectionLead}>
             These are taken from the app&rsquo;s Help Center word for word, including the parts
-            that say what WattWise cannot do.
+            that say what Dagitab cannot do.
           </p>
         </div>
 

@@ -85,12 +85,12 @@ export const BudgetPage = () => {
       */}
       {monthlyBudget <= 0 ? (
         <Banner tone="info" title="No monthly budget set yet.">
-          Set one in the WattWise app to turn on the 50 / 75 / 90 / 100% alerts. It appears here as
+          Set one in the Dagitab app to turn on the 50 / 75 / 90 / 100% alerts. It appears here as
           soon as you do.
         </Banner>
       ) : (
         <Banner tone="info">
-          Change your monthly budget in the WattWise app. Everything on this page stays live either
+          Change your monthly budget in the Dagitab app. Everything on this page stays live either
           way.
         </Banner>
       )}
@@ -159,7 +159,7 @@ export const BudgetPage = () => {
               </>
             ) : (
               <EmptyState icon="💰" title="No budget set">
-                WattWise still records what you spend — a budget just adds the alerts and the
+                Dagitab still records what you spend — a budget just adds the alerts and the
                 projection.
               </EmptyState>
             )}

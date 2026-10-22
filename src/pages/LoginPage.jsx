@@ -52,7 +52,7 @@ export const LoginPage = () => {
   return (
     <AuthLayout
       title="Sign in"
-      subtitle="Use the same account as the WattWise app on your phone."
+      subtitle="Use the same account as the Dagitab app on your phone."
       backTo="/"
       backLabel="Back to home"
       footer={

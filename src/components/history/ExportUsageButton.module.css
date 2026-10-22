@@ -9,7 +9,7 @@
 }
 
 /* Yellow, because this is the one control on the page that takes data out of
-   WattWise rather than moving around inside it. Reads as a note, not a
+   Dagitab rather than moving around inside it. Reads as a note, not a
    warning. */
 .caption {
   font-size: 0.72rem;

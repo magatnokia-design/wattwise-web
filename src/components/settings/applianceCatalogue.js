@@ -1,5 +1,5 @@
 /*
- * What WattWise can and cannot monitor, for the reference card in Settings.
+ * What Dagitab can and cannot monitor, for the reference card in Settings.
  *
  * ⚠️ This is a HAND-COPY of data that lives in the phone repo. That is exactly
  * the arrangement that let `OnboardingScreen.js` drift to 7 appliances with

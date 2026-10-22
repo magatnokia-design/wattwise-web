@@ -100,7 +100,7 @@
 /*
  * Which half gives way when the row is squeezed.
  *
- * The phone hit this as a hard overflow (603cf24): "Not measured by WattWise"
+ * The phone hit this as a hard overflow (603cf24): "Not measured by Dagitab"
  * ran into "₱1172.83 under (99.1%)" with nothing between them, because
  * space-between does not prevent overlap when neither child carries flex. The
  * `gap` above already makes that collision impossible here, and HTML wraps text

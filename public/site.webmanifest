@@ -1,6 +1,6 @@
 {
-  "name": "WattWise",
-  "short_name": "WattWise",
+  "name": "Dagitab",
+  "short_name": "Dagitab",
   "description": "Measure each outlet separately, price it on your real electricity tariff, and cut the power when a load passes your limit.",
   "start_url": "/",
   "scope": "/",

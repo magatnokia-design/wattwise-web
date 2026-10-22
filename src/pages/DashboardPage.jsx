@@ -186,7 +186,7 @@ export const DashboardPage = () => {
         * Deliberately not dismissible, which is the one way it differs from
         * CutoffNotice below. A cutoff is an event that has finished — the outlet
         * is off, the danger passed, and dismissing it is reasonable. This is a
-        * standing fault: the outlet is live, WattWise cannot open it, and the
+        * standing fault: the outlet is live, Dagitab cannot open it, and the
         * only thing that ends the condition is someone physically unplugging the
         * appliance. A banner the user can wave away would let the system go
         * quiet about the one state it cannot fix.
@@ -305,7 +305,7 @@ export const DashboardPage = () => {
             readings have arrived in the last 12 seconds, so everything above stays at zero.
           </p>
           <p style={{ fontSize: 13, color: 'var(--ww-text-light)', marginTop: 10 }}>
-            This does not necessarily mean the ESP32 is offline. WattWise only sees it when it
+            This does not necessarily mean the ESP32 is offline. Dagitab only sees it when it
             sends a reading — checking for commands is silent. <strong
               style={{ color: 'var(--ww-text-dark)' }}
             >Toggling either outlet usually wakes it up.</strong> Refreshing this page will not:

@@ -197,7 +197,7 @@ export const OutletCard = ({
    * through renameApplianceProfile and carries the outlet with it.
    *
    * Both paths below still reach registerApplianceProfile, which is what learns
-   * the signature — so accepting a suggestion teaches WattWise exactly as typing
+   * the signature — so accepting a suggestion teaches Dagitab exactly as typing
    * a name used to.
    */
   const submitName = async (name, options) => {
@@ -242,7 +242,7 @@ export const OutletCard = ({
                  where it can actually be read. */
               title={
                 unsupported
-                  ? 'The readings do not match any appliance WattWise monitors. It covers low-voltage devices up to 500 W per outlet. Usage and cost are still recorded.'
+                  ? 'The readings do not match any appliance Dagitab monitors. It covers low-voltage devices up to 500 W per outlet. Usage and cost are still recorded.'
                   : identityChanged && drawing
                     ? `Named ${applianceName}, but the readings do not match it`
                     : undefined
@@ -301,7 +301,7 @@ export const OutletCard = ({
       {/* `&& !unsupported` is belt-and-braces: the backend sets appliance to
           null for an out-of-scope run, so suggestionPending should already be
           false. Offering "This looks like X" directly under "Not something
-          WattWise monitors" would contradict itself, so guard it here too. */}
+          Dagitab monitors" would contradict itself, so guard it here too. */}
       {suggestion?.showBadge && !unsupported ? (
         <div className={styles.suggestion}>
           {trust.trusted ? (
@@ -341,13 +341,13 @@ export const OutletCard = ({
              * measured perfectly.
              *
              * No primary button in this branch. Offering "Use this name" under
-             * "WattWise is not sure" contradicts itself, and the 50% leader has
+             * "Dagitab is not sure" contradicts itself, and the 50% leader has
              * no more claim than the 45% behind it.
              */
             <>
               <div className={styles.suggestionHead}>
                 <span aria-hidden="true">🤔</span>
-                <span>WattWise is not sure what this is</span>
+                <span>Dagitab is not sure what this is</span>
               </div>
 
               <p className={styles.suggestionMeta}>
@@ -400,7 +400,7 @@ export const OutletCard = ({
           */}
           <p className={styles.suggestionHint}>
             Not one of these? Pick the closest anyway, then rename it under
-            Settings. WattWise saves how <em>this</em> appliance draws power, not
+            Settings. Dagitab saves how <em>this</em> appliance draws power, not
             the name it started from.
           </p>
         </div>
@@ -414,7 +414,7 @@ export const OutletCard = ({
                 and no signature worth learning. Say what is still true instead
                 — metering is unaffected, only identification is. */}
             {unsupported
-              ? 'WattWise identifies low-voltage appliances up to 500 W. Usage and cost are still being recorded.'
+              ? 'Dagitab identifies low-voltage appliances up to 500 W. Usage and cost are still being recorded.'
               /* Idle, but the outlet carries a name. Offering "rename it" alone
                  directly under "No appliance detected yet" reads as a
                  contradiction — the reader is told there is no appliance and
@@ -434,7 +434,7 @@ export const OutletCard = ({
                 ? `This outlet is named ${applianceName}. Nothing is drawing, so there is nothing to detect right now. Rename it under Settings → Learned appliances.`
                 : applianceName
                   ? 'Rename it under Settings → Learned appliances.'
-                  : 'Run the appliance for a minute and WattWise will suggest a name.'}
+                  : 'Run the appliance for a minute and Dagitab will suggest a name.'}
           </p>
         </div>
       )}

@@ -11,7 +11,7 @@ import styles from './SupportedAppliances.module.css';
 /*
  * A static reference, and it has to be static.
  *
- * The detector can say "not something WattWise monitors" only for loads between
+ * The detector can say "not something Dagitab monitors" only for loads between
  * the catalogue's ceiling and the outlet's: anything over 500 W is cut by the
  * firmware after 3 seconds, which is 2 telemetry posts where a classification
  * needs 4. So for a kettle or an iron — the appliances a user is most likely to
@@ -21,12 +21,12 @@ import styles from './SupportedAppliances.module.css';
 export const SupportedAppliances = () => (
   <Card>
     <CardHeader
-      title="What WattWise can monitor"
+      title="What Dagitab can monitor"
       subtitle="Low-voltage appliances, and the limits enforced on the device."
     />
 
     <p className={styles.lede}>
-      WattWise recognises these on its own. It does not need to be told what is
+      Dagitab recognises these on its own. It does not need to be told what is
       plugged in — it measures how the appliance draws power and matches that
       against the list.
     </p>
@@ -43,7 +43,7 @@ export const SupportedAppliances = () => (
     <div className={styles.guidance}>
       <p className={styles.guidanceTitle}>Not seeing your appliance?</p>
       <p className={styles.guidanceBody}>
-        These eight are the only names WattWise can guess from wattage alone.
+        These eight are the only names Dagitab can guess from wattage alone.
         <strong> Pick whichever is closest, then rename it.</strong> The
         signature it saves is measured from <em>your</em> appliance, so the name
         it started from stops mattering — a low-power ceiling fan may overlap

@@ -227,7 +227,7 @@ export const ComparisonPage = () => {
         <>
           <Card>
             <CardHeader
-              title={`What WattWise measured — ${monthLabel}`}
+              title={`What Dagitab measured — ${monthLabel}`}
               subtitle={
                 hasUsage
                   ? `${totals.daysRecorded} ${totals.daysRecorded === 1 ? 'day' : 'days'} recorded, from outlet 1 and outlet 2 only. `
@@ -342,7 +342,7 @@ export const ComparisonPage = () => {
           <Card>
             <CardHeader
               title={`Actual PELCO III bill — ${monthLabel}`}
-              subtitle="The only check that grades WattWise's estimate against the real thing."
+              subtitle="The only check that grades Dagitab's estimate against the real thing."
               action={
                 <div className={styles.row}>
                   <Button size="sm" variant="secondary" onClick={openForm}>
@@ -366,10 +366,10 @@ export const ComparisonPage = () => {
 
             {accuracy && !hasUsage ? (
               /*
-                A bill filed against a month WattWise never measured — which is
+                A bill filed against a month Dagitab never measured — which is
                 the normal case for anyone entering an old bill, and the case
                 this screen actively encourages. Running it through the rows
-                below would print "WattWise estimated ₱0.00" and score the gap
+                below would print "Dagitab estimated ₱0.00" and score the gap
                 at 100%, reporting an absence of data as a total failure of the
                 estimate. So the estimate line says what is true instead.
               */
@@ -379,11 +379,11 @@ export const ComparisonPage = () => {
                   <strong className="ww-num">{formatCurrency(accuracy.actualCost)}</strong>
                 </div>
                 <div className={comparisonStyles.accuracyRow}>
-                  <span>WattWise measured</span>
+                  <span>Dagitab measured</span>
                   <strong>Nothing yet</strong>
                 </div>
                 <p className={comparisonStyles.accuracyNote}>
-                  Your {monthLabel} bill is saved. WattWise has no recorded usage for that month, so
+                  Your {monthLabel} bill is saved. Dagitab has no recorded usage for that month, so
                   there is nothing to grade it against yet — the check appears once the outlets have
                   reported for a full day of that month.
                 </p>
@@ -418,7 +418,7 @@ export const ComparisonPage = () => {
                 */}
                 <div className={`${comparisonStyles.accuracyRow} ${comparisonStyles.accuracyTotal}`}>
                   <span>
-                    {accuracy.measuresLessThanBill ? 'Not measured by WattWise' : 'Difference'}
+                    {accuracy.measuresLessThanBill ? 'Not measured by Dagitab' : 'Difference'}
                   </span>
                   <strong className="ww-num">
                     {accuracy.direction === 'over' ? '+' : '−'}
@@ -439,7 +439,7 @@ export const ComparisonPage = () => {
                   <div className={comparisonStyles.modelCheck}>
                     <div className={comparisonStyles.accuracyRow}>
                       <span>
-                        WattWise&apos;s rates on the bill&apos;s own{' '}
+                        Dagitab&apos;s rates on the bill&apos;s own{' '}
                         {accuracy.modelCheck.billedKWh.toFixed(0)} kWh
                       </span>
                       <strong className="ww-num">
@@ -465,7 +465,7 @@ export const ComparisonPage = () => {
                 {/*
                   The badge states the verdict; this states why, which is the
                   part a reader actually needs. A large gap here is almost
-                  always scope — the bill covers the apartment, WattWise covers
+                  always scope — the bill covers the apartment, Dagitab covers
                   two outlets — and that is not something the badge can convey.
 
                   From comparisonHelpers rather than written here, so both
@@ -545,7 +545,7 @@ export const ComparisonPage = () => {
               silently corrupts the comparison. A bill arrives the month after
               the electricity was used, so filing the paper in your hand under
               the current month lines PELCO's previous month up against
-              WattWise's current one, and the gap gets reported as error. */}
+              Dagitab's current one, and the gap gets reported as error. */}
           <Banner tone="warn">
             File this under the month the electricity was <strong>used</strong>, not the month the
             bill arrived. Check the billing period printed on it — a bill received now usually

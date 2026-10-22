@@ -79,7 +79,7 @@ test('every state returns a tone the Badge component knows', () => {
 /*
  * The stuck relay outranks even a command in flight.
  *
- * This is the one badge state that describes an outlet WattWise does not
+ * This is the one badge state that describes an outlet Dagitab does not
  * control. Everything else on this pill is a report about a system that is
  * working; "Will not switch off" is the admission that it is not, and the user's
  * next action is physical rather than on screen. It has to sit above

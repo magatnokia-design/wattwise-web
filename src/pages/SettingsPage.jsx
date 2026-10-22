@@ -359,7 +359,7 @@ export const SettingsPage = () => {
           <Card>
             <CardHeader
               title="Learned appliances"
-              subtitle="Signatures WattWise matches future runs against."
+              subtitle="Signatures Dagitab matches future runs against."
             />
             {savedAppliances.length === 0 ? (
               <EmptyState icon="🧠" title="Nothing learned yet">
@@ -401,7 +401,7 @@ export const SettingsPage = () => {
 
           {/* Directly under Learned appliances: that card is what this one ends
               by pointing at, and the two answer the same question from opposite
-              ends — what WattWise knows already, and what it has learned here. */}
+              ends — what Dagitab knows already, and what it has learned here. */}
           <SupportedAppliances />
         </div>
 
@@ -445,7 +445,7 @@ export const SettingsPage = () => {
 
           <Card>
             <CardHeader
-              title="WattWise Hub"
+              title="Dagitab Hub"
               action={
                 <Badge tone={HEALTH_TONE[settings.esp32HealthStatus] || 'neutral'}>
                   {formatDeviceHealthValue(settings.esp32HealthStatus, settings.esp32LastSeenAtMs)}
@@ -517,7 +517,7 @@ export const SettingsPage = () => {
           <p className={styles.muted}>
             The signature keeps its measurements — only the label changes. Any
             outlet currently named <strong>{renameTarget}</strong> is renamed
-            with it, so WattWise still recognises this appliance afterwards.
+            with it, so Dagitab still recognises this appliance afterwards.
           </p>
         </div>
       </Modal>
@@ -550,7 +550,7 @@ export const SettingsPage = () => {
 
           <p className={styles.muted}>
             There is no undo. Getting it back means plugging the appliance in and
-            letting WattWise measure a full run again. If you only want to change
+            letting Dagitab measure a full run again. If you only want to change
             the name, close this and use <strong>Rename</strong> — that keeps the
             measurements.
           </p>

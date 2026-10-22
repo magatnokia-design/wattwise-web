@@ -90,7 +90,7 @@ export class ErrorBoundary extends Component {
         <p style={{ marginTop: 8, fontSize: 13.5, lineHeight: 1.55, color: 'var(--ww-text-light)' }}>
           {offlineChunk
             ? 'This page is downloaded the first time you open it, and the download could not reach the server. Nothing is broken and nothing has been lost.'
-            : 'Something broke while drawing this page. Nothing was lost — your outlets, readings and history are unaffected, and the rest of WattWise still works.'}
+            : 'Something broke while drawing this page. Nothing was lost — your outlets, readings and history are unaffected, and the rest of Dagitab still works.'}
         </p>
         <p style={{ marginTop: 10, fontSize: 13.5, lineHeight: 1.55, color: 'var(--ww-text-light)' }}>
           {offlineChunk

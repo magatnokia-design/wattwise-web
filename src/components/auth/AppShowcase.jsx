@@ -42,7 +42,7 @@ export const AppShowcase = () => {
               <span className={styles.dot} />
               <span className={styles.dot} />
               <span className={styles.dot} />
-              <span className={styles.urlBar}>wattwise.site</span>
+              <span className={styles.urlBar}>dagitab.site</span>
             </div>
             <div className={styles.screen}>
               <Illustration />

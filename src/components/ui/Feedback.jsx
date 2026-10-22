@@ -45,7 +45,7 @@ export const EmptyState = ({ icon = '⚡', title, children }) => (
  * resolves itself.
  */
 export const OfflineState = ({
-  title = "Can't reach WattWise",
+  title = "Can't reach Dagitab",
   children = 'Your data is safe — the page just needs a connection to load it. Check your network, then try again.',
   onRetry,
   retryLabel = 'Try again',

@@ -25,14 +25,14 @@ import styles from './MonthRail.module.css';
  * you can click, not the only way in.
  */
 /*
- * Which rate set produced the peso figure. WattWise measured the kWh either
+ * Which rate set produced the peso figure. Dagitab measured the kWh either
  * way - only the pricing differs - so the distinction is worth four words
  * rather than a badge.
  */
 const RAIL_BASIS = {
   final: ' · final statement',
   statement: ' · same as your statement',
-  estimate: ' measured by WattWise',
+  estimate: ' measured by Dagitab',
 };
 
 export const MonthRail = ({ monthOptions, monthTotals, month, onSelect, loading }) => {
@@ -73,7 +73,7 @@ export const MonthRail = ({ monthOptions, monthTotals, month, onSelect, loading 
               <span className="ww-num">{totals.kWh.toFixed(2)} kWh</span>
               {' · '}
               <span className="ww-num">{formatCurrency(totals.cost)}</span>
-              {/* Which rate set that peso figure came from. WattWise measured
+              {/* Which rate set that peso figure came from. Dagitab measured
                   the kWh either way; only the pricing differs, and a finalized
                   month is priced with PELCO III's official rates rather than
                   the ones in Settings. */}

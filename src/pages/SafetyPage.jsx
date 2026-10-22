@@ -240,7 +240,7 @@ export const SafetyPage = () => {
 
       {!protectionEnabled ? (
         <Banner tone="alert" title="Automatic cut-off is off.">
-          WattWise will still warn you, but it will not switch an outlet off when a threshold is
+          Dagitab will still warn you, but it will not switch an outlet off when a threshold is
           crossed.
         </Banner>
       ) : null}
@@ -258,7 +258,7 @@ export const SafetyPage = () => {
                   subtitle={
                     telemetryFresh
                       ? 'Live against your thresholds'
-                      : 'Waiting for the WattWise Hub to report'
+                      : 'Waiting for the Dagitab Hub to report'
                   }
                 />
                 <div className={styles.stack}>

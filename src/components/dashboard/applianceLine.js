@@ -113,13 +113,13 @@ export const resolveApplianceLine = ({
     if (scope.unsupportedReason === 'over_power') {
       return {
         text: Number.isFinite(watts) && watts > 0
-          ? `Draws more than WattWise supports · ${watts.toFixed(0)} W`
-          : 'Draws more than WattWise supports',
+          ? `Draws more than Dagitab supports · ${watts.toFixed(0)} W`
+          : 'Draws more than Dagitab supports',
         tone: 'unsupported',
       };
     }
 
-    return { text: 'Not something WattWise monitors', tone: 'unsupported' };
+    return { text: 'Not something Dagitab monitors', tone: 'unsupported' };
   }
 
   if (!hasIdentity) {
