@@ -1,0 +1,154 @@
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 7px 14px;
+  border: 1px solid var(--ww-border);
+  border-radius: 999px;
+  background: var(--ww-white);
+  color: var(--ww-text-dark);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--ww-primary);
+}
+
+.chipActive {
+  background: var(--ww-primary);
+  border-color: var(--ww-primary);
+  color: var(--ww-white);
+  font-weight: 600;
+}
+
+.dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dateField {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ww-text-light);
+}
+
+.dateField input {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--ww-border);
+  border-radius: var(--ww-radius-sm);
+  background: var(--ww-bg);
+  color: var(--ww-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.dateField input:focus-visible {
+  outline: 2px solid var(--ww-primary);
+  outline-offset: 1px;
+}
+
+.result {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ww-border);
+}
+
+.result > div {
+  display: grid;
+  gap: 2px;
+}
+
+.resultLabel {
+  font-size: 13px;
+  color: var(--ww-text-light);
+}
+
+.resultValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ww-text);
+  letter-spacing: -0.02em;
+}
+
+.resultCost {
+  color: var(--ww-primary);
+}
+
+.rows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin: 12px 0;
+}
+
+.rows div {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.rows dt {
+  color: var(--ww-text-light);
+}
+
+.rows dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ww-text);
+}
+
+.pace {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--ww-radius-sm);
+  background: var(--ww-tint-success);
+  color: #00401f;
+  font-size: 14px;
+}
+
+.paceOver {
+  background: var(--ww-tint-error);
+  color: #991b1b;
+}
+
+.footnote {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--ww-text-light);
+}
+
+.problem {
+  margin: 4px 0 0;
+  color: var(--ww-error);
+  font-size: 14px;
+}
+
+.retry {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--ww-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}

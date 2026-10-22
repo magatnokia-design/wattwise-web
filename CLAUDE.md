@@ -61,6 +61,7 @@ certainly does.
 | `src/utils/datetime.js`, `src/utils/liveUsage.js` | Pure JS |
 | `src/utils/applianceBreakdown.js` | The per-day appliance attribution and the six-row fold. Mirrors `functions/src/lib/invoice.js` + `invoicePdf.js`, so the emailed statement and both clients itemise a month identically. |
 | `src/constants/colors.js` | Theme tokens. `src/styles/theme.css` mirrors them as `--ww-*` - change both. |
+| `src/utils/rangeUsage.js`, `src/screens/BudgetTracking/hooks/useRangeUsage.js` | The Budget screen's "Check your usage" date range: arithmetic and data hook. Pure JS / hooks over copied services. `test/rangeUsage.test.js` exists in both repos. |
 | `src/constants/brandMark.js` | The Dagitab logo as path data. **Generated** in the phone repo by `scripts/generate-brand.js`; never hand-edit either copy. |
 | `src/screens/*/utils/*.js` | `historyHelpers`, `scheduleHelpers`, `comparisonHelpers`, `budgetHelpers`, `safetyHelpers`, `settingsHelpers`, `notificationHelpers` — all pure JS |
 

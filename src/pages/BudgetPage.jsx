@@ -1,4 +1,6 @@
 import useBudgetTracking from '../screens/BudgetTracking/hooks/useBudgetTracking';
+import useRangeUsage from '../screens/BudgetTracking/hooks/useRangeUsage';
+import { RangeUsageCard } from '../components/budget/RangeUsageCard';
 import {
   formatCurrency,
   getBudgetStatus,
@@ -29,6 +31,7 @@ export const BudgetPage = () => {
     // Leaving it unbound is what makes setMonthlyBudget unreachable from the
     // web, rather than merely un-clicked.
   } = useBudgetTracking();
+  const rangeUsage = useRangeUsage();
 
   const percentUsed = monthlyBudget > 0 ? (currentSpending / monthlyBudget) * 100 : 0;
   const status = getBudgetStatus(currentSpending, monthlyBudget);
@@ -115,6 +118,16 @@ export const BudgetPage = () => {
           caption="Across the month so far"
         />
       </StatGrid>
+
+      <RangeUsageCard
+        range={rangeUsage.range}
+        setRange={rangeUsage.setRange}
+        summary={rangeUsage.summary}
+        status={rangeUsage.status}
+        message={rangeUsage.message}
+        onRetry={rangeUsage.reload}
+        monthlyBudget={monthlyBudget}
+      />
 
       <div className={styles.split}>
         <div className={styles.stack}>
