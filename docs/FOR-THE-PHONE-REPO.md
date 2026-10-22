@@ -108,8 +108,9 @@ Moved under the list and rewritten as the instruction:
 > **Not seeing your appliance?** These eight are the only names WattWise can
 > guess from wattage alone. **Pick whichever is closest, then rename it.** The
 > signature it saves is measured from *your* appliance, so the name it started
-> from stops mattering — a 14 W ceiling fan will suggest LED Lamp, and once
-> renamed it is a ceiling fan every time it comes back.
+> from stops mattering — a low-power ceiling fan may overlap with an LED Lamp,
+> so pick the fan when it is offered and once renamed it is a ceiling fan every
+> time it comes back.
 
 And the same line on the suggestion card itself, because that is where the
 choice is made and Settings is a navigation away:

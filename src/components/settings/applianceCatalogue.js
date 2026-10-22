@@ -25,7 +25,7 @@
 export const DETECTABLE_APPLIANCES = [
   { name: 'Phone Charger', typical: '2–18 W' },
   { name: 'LED Lamp', typical: '3–22 W' },
-  { name: 'Electric Fan', typical: '22–95 W' },
+  { name: 'Electric Fan', typical: '8–95 W' },
   { name: 'Laptop Charger', typical: '18–80 W' },
   { name: 'Monitor', typical: '14–50 W' },
   { name: 'Speaker', typical: '5–45 W' },
