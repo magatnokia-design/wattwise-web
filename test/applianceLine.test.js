@@ -89,13 +89,13 @@ test('a confirmed match reports the name', () => {
   assert.equal(result.tone, 'named');
 });
 
-test('a recognised match says so', () => {
+test('a recognised match shows just the name', () => {
   const result = line({
     applianceName: "Nokia's Fan",
     identity: { state: 'confirmed', namedAs: "Nokia's Fan", recognised: true },
   });
 
-  assert.equal(result.text, "Nokia's Fan · recognised");
+  assert.equal(result.text, "Nokia's Fan");
 });
 
 test('a contradicted name is doubted, not replaced', () => {

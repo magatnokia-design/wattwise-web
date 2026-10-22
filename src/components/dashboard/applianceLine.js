@@ -145,7 +145,8 @@ export const resolveApplianceLine = ({
 
   if (identity.state === 'confirmed' && name) {
     return {
-      text: identity.recognised ? `${name} · recognised` : name,
+      // Name only - the " · recognised" suffix was removed (Oct 2026).
+      text: name,
       tone: 'named',
     };
   }
