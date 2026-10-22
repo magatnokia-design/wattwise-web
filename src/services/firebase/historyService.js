@@ -9,6 +9,7 @@ import {
   startAfter,
   doc,
   getDoc,
+  getCountFromServer,
 } from 'firebase/firestore';
 import { db } from './config';
 import { isUnconfirmedEmpty, UNREACHABLE_READ_RESULT } from '../../utils/connectivity';
@@ -123,6 +124,23 @@ export const historyService = {
     }
   },
 
+  /**
+   * How many activity rows the account has, so the Activity tab can say
+   * "Page 2 of 7" rather than just "Page 2" (Oct 2026). An aggregation query:
+   * the server counts without sending the documents, billed as one read per
+   * thousand. Resolves to null when the count cannot be had (offline), and the
+   * screen then falls back to the page number alone.
+   */
+  countActivityLogs: async (userId) => {
+    try {
+      const logsRef = collection(db, 'users', userId, 'history_logs');
+      const snapshot = await getCountFromServer(logsRef);
+      return snapshot.data().count;
+    } catch (error) {
+      return null;
+    }
+  },
+
   // Get daily usage history with optional date range.
   getDailyUsage: async (userId, filters = {}, lastDoc = null, limitCount = 30) => {
     try {
@@ -203,9 +221,9 @@ export const historyService = {
         usage.push({ id: doc.id, ...doc.data() });
       });
 
-      // The read behind Analytics and the Comparison month totals. An empty
-      // cache here is what produced "Nothing recorded for Aug 2026" on a
-      // browser with no connection and a month of readings on the server.
+      // The read behind Compare Usage and the Analytics month totals. An empty
+      // cache here is what produced "Nothing recorded for Aug 2026" on a phone
+      // with no connection and a month of readings on the server.
       if (isUnconfirmedEmpty(usage.length, snapshot.metadata)) {
         return UNREACHABLE_READ_RESULT;
       }
