@@ -14,7 +14,7 @@
  * version. `RELEASES_URL` is the fallback for anyone arriving after a newer build
  * is out.
  */
-export const ANDROID_VERSION = '1.1.33';
+export const ANDROID_VERSION = '1.1.34';
 
 export const REPO_URL = 'https://github.com/magatnokia-design/WattWise';
 
