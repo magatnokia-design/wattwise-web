@@ -4,7 +4,9 @@ import {
   signInWithEmailAndPassword,
   signOut,
   reload,
-  updateProfile
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
 import { httpsCallable } from 'firebase/functions';
 import { auth, functions } from "./config";
@@ -64,6 +66,43 @@ export const authService = {
         console.error('Login error:', error);
       }
       return { success: false, error: error.message, code: error.code };
+    }
+  },
+
+  /**
+   * Continue with Google, in a popup. Web-only: the phone uses the native
+   * account picker (src/services/auth/googleSignIn.js in the phone repo).
+   *
+   * Creates the account on first use - which makes this the web's only way to
+   * create one, since /register redirects to /login. useAuth then builds the
+   * account's Firestore documents through ensureUserInitialized, as it does for
+   * every sign-in, and Google addresses arrive verified.
+   *
+   * A popup rather than signInWithRedirect: the auth domain is
+   * wattwise-fe394.firebaseapp.com, a different site from dagitab.site, and
+   * browsers that partition third-party storage (Safari, Chrome's tracking
+   * protection) lose the redirect result on the way back. The popup does not
+   * depend on that storage.
+   */
+  signInWithGoogle: async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      // Always show the account chooser, so a shared computer does not
+      // silently sign the next person into the last account Google remembers.
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const userCredential = await signInWithPopup(auth, provider);
+      return { success: true, user: userCredential.user };
+    } catch (error) {
+      // Closing the popup, or a second click replacing the first, is not a
+      // failure to report.
+      if (error?.code === 'auth/popup-closed-by-user'
+        || error?.code === 'auth/cancelled-popup-request') {
+        return { success: false, cancelled: true };
+      }
+      if (!isExpectedAuthError(error?.code) && error?.code !== 'auth/popup-blocked') {
+        console.error('Google sign-in error:', error);
+      }
+      return { success: false, error: error?.message, code: error?.code };
     }
   },
 

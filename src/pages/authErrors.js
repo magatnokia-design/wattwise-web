@@ -18,7 +18,11 @@ const MESSAGES = {
   'auth/password-does-not-meet-requirements':
     'Password must be at least 8 characters and include an uppercase letter, '
     + 'a lowercase letter and a number.',
-  'auth/operation-not-allowed': 'Email sign-in is not enabled for this project.',
+  'auth/operation-not-allowed': 'This sign-in method is not enabled for this project.',
+  // Continue with Google. The popup is opened from the click, so a blocker
+  // firing means the browser is set to block every popup on this site.
+  'auth/popup-blocked':
+    'Your browser blocked the Google sign-in window. Allow pop-ups for dagitab.site, then try again.',
   'auth/unauthorized-domain':
     'This site is not an authorised domain for the Dagitab Firebase project. Add it under Authentication → Settings → Authorized domains.',
 

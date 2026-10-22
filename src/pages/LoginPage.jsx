@@ -6,6 +6,7 @@ import { TextField } from '../components/ui/Field';
 import { Button } from '../components/ui/Button';
 import { Banner } from '../components/ui/Feedback';
 import { describeAuthError } from './authErrors';
+import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 import styles from './AuthLayout.module.css';
 
 export const LoginPage = () => {
@@ -90,6 +91,8 @@ export const LoginPage = () => {
         <Button type="submit" loading={loading}>
           Sign in
         </Button>
+
+        <GoogleSignInButton onError={setError} disabled={loading} />
       </form>
     </AuthLayout>
   );

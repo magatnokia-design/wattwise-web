@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import AppShell from './components/layout/AppShell';
+import PublicDocumentLayout, { PUBLIC_DOCUMENT_TITLES } from './components/layout/PublicDocumentLayout';
 import { ErrorBoundary } from './components/layout/ErrorBoundary';
 import { Spinner } from './components/ui/Feedback';
 
@@ -95,6 +96,13 @@ const ShellGate = () => {
   if (user) return <AppShell />;
 
   if (location.pathname === '/') return <LandingPage />;
+
+  // About, Privacy and Terms are public: a policy has to be readable before
+  // there is an account, and Google's OAuth branding check reads /privacy
+  // signed out. Same DocumentPage, outside the shell.
+  if (PUBLIC_DOCUMENT_TITLES[location.pathname]) {
+    return <PublicDocumentLayout pathname={location.pathname} />;
+  }
 
   return <Navigate to="/login" replace state={{ from: location }} />;
 };

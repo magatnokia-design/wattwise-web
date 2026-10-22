@@ -6,7 +6,7 @@
   "description": "Browser client for WattWise — 2-outlet ESP32 energy monitoring, against the same Firebase project as the Android app.",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender-documents.mjs",
     "preview": "vite preview",
     "lint": "eslint src test",
     "verify": "npm run lint && npm run check:imports && npm test && npm run build",
