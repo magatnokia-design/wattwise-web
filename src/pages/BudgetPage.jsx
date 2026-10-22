@@ -19,7 +19,7 @@ export const BudgetPage = () => {
     daysInMonth,
     currentDay,
     budgetHistory,
-    loading,
+    hasLoaded,
     showOfflineState,
     handleRefresh,
     // handleSetBudget is deliberately not pulled in — see the banner below.
@@ -33,7 +33,8 @@ export const BudgetPage = () => {
   const statusColor = getBudgetStatusColor(percentUsed);
   const remaining = monthlyBudget - currentSpending;
 
-  if (loading && monthlyBudget === 0 && currentSpending === 0) {
+  // Nothing read yet this session: a spinner, not a ₱0 budget.
+  if (!hasLoaded && !showOfflineState) {
     return <Spinner label="Loading budget" />;
   }
 
