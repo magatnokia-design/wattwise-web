@@ -70,8 +70,8 @@
 
 .banner.good {
   background: var(--ww-tint-success);
-  border-color: #a7f3d0;
-  color: #065f46;
+  border-color: #b4e5c2;
+  color: #005a2b;
 }
 
 .banner.info {

@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import AppShowcase from '../components/auth/AppShowcase';
 import PowerPreview from '../components/auth/PowerPreview';
-import { BoltMark } from '../components/ui/BoltMark';
 import { Wordmark } from '../components/ui/Wordmark';
 import styles from './AuthLayout.module.css';
 
@@ -51,10 +50,7 @@ export const AuthLayout = ({
         ) : null}
 
         <div className={styles.brand}>
-          <span className={styles.brandMark} aria-hidden="true">
-            <BoltMark height={16} />
-          </span>
-          <Wordmark className={styles.brandName} />
+          <Wordmark height={32} />
         </div>
 
         {/* The form sits on a raised card. On a plain white page a white form

@@ -34,7 +34,7 @@
 
 .dotOn {
   background: var(--ww-primary);
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.16);
+  box-shadow: 0 0 0 4px rgba(0, 141, 67, 0.16);
 }
 
 .names {
@@ -189,7 +189,7 @@
   margin-top: var(--ww-space-4);
   padding: var(--ww-space-3) var(--ww-space-4);
   background: var(--ww-tint-success);
-  border: 1px solid #a7f3d0;
+  border: 1px solid #b4e5c2;
   border-radius: var(--ww-radius-sm);
 }
 
@@ -198,14 +198,14 @@
   align-items: flex-start;
   gap: 8px;
   font-size: 13px;
-  color: #065f46;
+  color: #005a2b;
 }
 
 .suggestionMeta {
   margin-top: 4px;
   padding-left: 24px;
   font-size: 12px;
-  color: #047857;
+  color: #006b33;
 }
 
 /* Quieter than the suggestion above it: standing guidance, not this run's
@@ -213,10 +213,10 @@
 .suggestionHint {
   margin-top: var(--ww-space-3);
   padding-top: var(--ww-space-3);
-  border-top: 1px solid #a7f3d0;
+  border-top: 1px solid #b4e5c2;
   font-size: 11.5px;
   line-height: 1.5;
-  color: #047857;
+  color: #006b33;
 }
 
 .suggestionActions {
@@ -233,16 +233,16 @@
   gap: 6px;
   margin-top: var(--ww-space-3);
   padding-top: var(--ww-space-3);
-  border-top: 1px solid #a7f3d0;
+  border-top: 1px solid #b4e5c2;
 }
 
 .candidatesLabel {
   font-size: 12px;
-  color: #047857;
+  color: #006b33;
 }
 
 .candidate {
-  border: 1px solid #6ee7b7;
+  border: 1px solid #84d79c;
   background: var(--ww-white);
   color: var(--ww-primary-dark);
   border-radius: 999px;

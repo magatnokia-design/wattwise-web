@@ -22,8 +22,14 @@
  *   - 96 is Google's stated preference: at least 48px and a multiple of 48.
  *   - 180 is what iOS uses for a home-screen bookmark.
  *   - 192/512 are the PWA manifest sizes Android reads.
- *   - The maskable variant is padded, because Android crops a maskable icon to
- *     whatever shape the launcher wants and an unpadded bolt loses its tips.
+ *   - The maskable variant is the app's two Android adaptive layers stacked -
+ *     gradient behind, the D scaled into the safe zone in front - because
+ *     Android crops a maskable icon to whatever shape the launcher wants, and
+ *     that is precisely the problem the adaptive layers already solve.
+ *
+ * Also copies the app's email-logo.png: the mail header loads it from this
+ * site's URL (MAIL_LOGO_URL), so the app repo owns the drawing and this one
+ * hosts it.
  */
 
 const fs = require('node:fs');
@@ -54,12 +60,12 @@ const loadSharp = () => {
 
 const sharp = loadSharp();
 
-const SOURCE = path.resolve(__dirname, '../../WattWise/assets/icon.png');
+const APP_ASSETS = path.resolve(__dirname, '../../WattWise/assets');
+const SOURCE = path.join(APP_ASSETS, 'icon.png');
+const ADAPTIVE_BACKGROUND = path.join(APP_ASSETS, 'adaptive-icon-background.png');
+const ADAPTIVE_FOREGROUND = path.join(APP_ASSETS, 'adaptive-icon.png');
+const EMAIL_LOGO = path.join(APP_ASSETS, 'email-logo.png');
 const OUT = path.resolve(__dirname, '../public');
-
-// Matches the icon's own background, so the padded maskable variant does not
-// show a seam where the artwork ends.
-const BRAND_GREEN = { r: 0x10, g: 0xb9, b: 0x81, alpha: 1 };
 
 const square = (size) => sharp(SOURCE)
   .resize(size, size, { fit: 'cover' })
@@ -121,20 +127,22 @@ const run = async () => {
   write('icon-512.png', await square(512));
 
   // Android's maskable icons are cropped to the launcher's shape - a circle on
-  // most phones. The safe zone is the middle 80%, so the artwork is inset and
-  // the gap filled with the same green rather than left transparent.
-  const inset = Math.round(512 * 0.8);
-  const padding = Math.round((512 - inset) / 2);
-  write('icon-maskable-512.png', await sharp({
-    create: { width: 512, height: 512, channels: 4, background: BRAND_GREEN },
-  })
-    .composite([{
-      input: await sharp(SOURCE).resize(inset, inset, { fit: 'cover' }).png().toBuffer(),
-      top: padding,
-      left: padding,
-    }])
+  // most phones. Insetting icon.png and padding it with flat green (what this
+  // did for the WattWise bolt) leaves a visible seam against a gradient, so the
+  // app's adaptive layers are stacked instead: their D already sits inside the
+  // safe zone. Composite at full size first - sharp applies resize before
+  // composite in a single pipeline.
+  const layered = await sharp(ADAPTIVE_BACKGROUND)
+    .composite([{ input: ADAPTIVE_FOREGROUND }])
+    .png()
+    .toBuffer();
+  write('icon-maskable-512.png', await sharp(layered)
+    .resize(512, 512)
+    .flatten({ background: '#008D43' })
     .png({ compressionLevel: 9 })
     .toBuffer());
+
+  write('email-logo.png', fs.readFileSync(EMAIL_LOGO));
 };
 
 run().catch((error) => {

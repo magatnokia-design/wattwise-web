@@ -124,7 +124,7 @@ export const UsageChart = ({ series = [], outlet1Name, outlet2Name, effectiveRat
                 unit=" kWh"
               />
               <Tooltip
-                cursor={{ fill: 'rgba(16, 185, 129, 0.06)' }}
+                cursor={{ fill: 'rgba(0, 141, 67, 0.06)' }}
                 content={
                   <CustomTooltip
                     effectiveRate={effectiveRate}

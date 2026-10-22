@@ -39,24 +39,6 @@
   gap: 9px;
 }
 
-.brandMark {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: var(--ww-radius-sm);
-  background: var(--ww-primary);
-  color: var(--ww-white);
-  flex-shrink: 0;
-}
-
-.brandName {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--ww-text-dark);
-}
-
 .navLinks {
   display: flex;
   align-items: center;
@@ -116,7 +98,7 @@
   font-weight: 700;
   letter-spacing: -0.035em;
   text-wrap: balance;
-  color: #064e3b;
+  color: #00401f;
 }
 
 .heroLead {
@@ -181,8 +163,8 @@
 .heroFigure {
   padding: var(--ww-space-5);
   border-radius: var(--ww-radius-lg);
-  border: 1px solid #a7f3d0;
-  background: linear-gradient(160deg, #f0fdf9 0%, #d1fae5 60%, #a7f3d0 100%);
+  border: 1px solid #b4e5c2;
+  background: linear-gradient(160deg, #f0fdf9 0%, #d3f0dc 60%, #b4e5c2 100%);
 }
 
 /* PowerPreview clamps itself against viewport *height* because on the sign-in
@@ -216,7 +198,7 @@
   font-weight: 700;
   letter-spacing: -0.03em;
   text-wrap: balance;
-  color: #064e3b;
+  color: #00401f;
 }
 
 .sectionLead {
@@ -395,15 +377,15 @@
   padding: clamp(28px, 5vw, 52px);
   text-align: center;
   border-radius: var(--ww-radius-lg);
-  border: 1px solid #a7f3d0;
-  background: linear-gradient(160deg, #f0fdf9 0%, #d1fae5 100%);
+  border: 1px solid #b4e5c2;
+  background: linear-gradient(160deg, #f0fdf9 0%, #d3f0dc 100%);
 }
 
 .downloadTitle {
   font-size: clamp(23px, 3.2vw, 32px);
   font-weight: 700;
   letter-spacing: -0.03em;
-  color: #064e3b;
+  color: #00401f;
 }
 
 .downloadLead {
@@ -411,7 +393,7 @@
   max-width: 56ch;
   font-size: 14.5px;
   line-height: 1.6;
-  color: #047857;
+  color: #006b33;
 }
 
 .download .ctaRow {
@@ -423,7 +405,7 @@
   max-width: 52ch;
   font-size: 12.5px;
   line-height: 1.55;
-  color: #047857;
+  color: #006b33;
 }
 
 /* Footer */

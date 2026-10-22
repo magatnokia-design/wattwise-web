@@ -60,7 +60,8 @@ certainly does.
 | `src/utils/billing.js` | PELCO III tariff math. Do not reimplement. |
 | `src/utils/datetime.js`, `src/utils/liveUsage.js` | Pure JS |
 | `src/utils/applianceBreakdown.js` | The per-day appliance attribution and the six-row fold. Mirrors `functions/src/lib/invoice.js` + `invoicePdf.js`, so the emailed statement and both clients itemise a month identically. |
-| `src/constants/colors.js` | Theme tokens |
+| `src/constants/colors.js` | Theme tokens. `src/styles/theme.css` mirrors them as `--ww-*` - change both. |
+| `src/constants/brandMark.js` | The Dagitab logo as path data. **Generated** in the phone repo by `scripts/generate-brand.js`; never hand-edit either copy. |
 | `src/screens/*/utils/*.js` | `historyHelpers`, `scheduleHelpers`, `comparisonHelpers`, `budgetHelpers`, `safetyHelpers`, `settingsHelpers`, `notificationHelpers` — all pure JS |
 
 ### Rewrite these
@@ -237,7 +238,8 @@ These come from the hardware and the parent project. Do not relax them.
 
 - **Exactly 2 outlets** (`outlet1`, `outlet2`). Stable IDs. Never build a
   "add another outlet" flow.
-- **Green/white theme only**, from the copied `colors.js`. Primary `#10B981`.
+- **Dagitab palette only**, from the copied `colors.js`: primary `#008D43`, `#50D52B`
+  for decoration (never text - 1.93:1 on white), navy `#071B2C` text, white.
   Minimal UI: white cards, rounded corners, subdued borders, dim-overlay modals.
 - **No mock or dummy data, ever.** Use `0` or real Firebase data. An empty
   dashboard is correct until hardware reports.

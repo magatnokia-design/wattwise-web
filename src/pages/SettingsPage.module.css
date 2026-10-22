@@ -16,15 +16,15 @@
   gap: var(--ww-space-4);
   padding: 10px 14px;
   background: var(--ww-tint-success);
-  border: 1px solid #a7f3d0;
+  border: 1px solid #b4e5c2;
   border-radius: var(--ww-radius-sm);
   font-size: 13px;
-  color: #065f46;
+  color: #005a2b;
 }
 
 .rateTotal strong {
   font-size: 15px;
-  color: #064e3b;
+  color: #00401f;
 }
 
 .outletBlock {
@@ -89,7 +89,7 @@
   background: var(--ww-tint-success);
   border-radius: var(--ww-radius-sm);
   font-size: 13px;
-  color: #065f46;
+  color: #005a2b;
 }
 
 .applianceList {

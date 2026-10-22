@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BoltMark } from '../ui/BoltMark';
+import { BrandMark } from '../ui/BrandMark';
 import styles from './AppShowcase.module.css';
 
 /**
@@ -69,7 +69,7 @@ const Illustration = ({ compact = false }) => (
     aria-hidden="true"
   >
     <span className={styles.placeholderMark}>
-      <BoltMark height={compact ? 18 : 24} />
+      <BrandMark size={compact ? 20 : 28} />
     </span>
     <span className={styles.placeholderBars}>
       <i />

@@ -15,7 +15,7 @@
   padding: clamp(16px, 3vh, 40px) var(--ww-space-5);
   overflow: hidden;
   background:
-    radial-gradient(60% 55% at 12% 8%, rgba(16, 185, 129, 0.14), transparent 70%),
+    radial-gradient(60% 55% at 12% 8%, rgba(0, 141, 67, 0.14), transparent 70%),
     radial-gradient(55% 50% at 92% 96%, rgba(4, 120, 87, 0.12), transparent 70%),
     linear-gradient(180deg, #ffffff 0%, var(--ww-bg) 100%);
 }
@@ -52,26 +52,6 @@
   justify-content: center;
   gap: 9px;
   margin-bottom: clamp(14px, 2.4vh, 22px);
-}
-
-/* Solid green with a white bolt, matching the favicon and the email logo. The
-   pale tint that was here held an orange emoji, so the tile read as a third
-   version of a mark that is meant to be one thing everywhere. */
-.brandMark {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--ww-radius-sm);
-  background: var(--ww-primary);
-  color: var(--ww-white);
-  font-size: 16px;
-}
-
-.brandName {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ww-text-dark);
 }
 
 .title {
@@ -147,7 +127,7 @@
   flex-direction: column;
   justify-content: center;
   padding: clamp(16px, 3vh, 36px) var(--ww-space-5);
-  background: linear-gradient(160deg, #f0fdf9 0%, #d1fae5 55%, #a7f3d0 100%);
+  background: linear-gradient(160deg, #f0fdf9 0%, #d3f0dc 55%, #b4e5c2 100%);
   border-left: 1px solid var(--ww-border);
   overflow: hidden;
 }
@@ -159,7 +139,7 @@
   inset: -30%;
   background:
     radial-gradient(closest-side, rgba(255, 255, 255, 0.85), transparent) 22% 28% / 55% 55% no-repeat,
-    radial-gradient(closest-side, rgba(16, 185, 129, 0.28), transparent) 78% 72% / 60% 60% no-repeat;
+    radial-gradient(closest-side, rgba(0, 141, 67, 0.28), transparent) 78% 72% / 60% 60% no-repeat;
   animation: drift 22s ease-in-out infinite alternate;
   pointer-events: none;
 }
@@ -203,7 +183,7 @@
   line-height: 1.25;
   font-weight: 700;
   letter-spacing: -0.03em;
-  color: #064e3b;
+  color: #00401f;
 }
 
 .featureList {
@@ -238,7 +218,7 @@
 
 .feature:hover {
   background: rgba(255, 255, 255, 0.95);
-  border-color: #6ee7b7;
+  border-color: #84d79c;
   transform: translateX(3px);
   box-shadow: 0 6px 18px rgba(4, 120, 87, 0.1);
 }
@@ -253,13 +233,13 @@
   font-size: 13px;
   font-weight: 700;
   line-height: 1.35;
-  color: #064e3b;
+  color: #00401f;
 }
 
 .featureBody {
   font-size: 12px;
   line-height: 1.4;
-  color: #047857;
+  color: #006b33;
 }
 
 @media (max-width: 980px) {

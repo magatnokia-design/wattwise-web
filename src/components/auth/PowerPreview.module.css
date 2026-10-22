@@ -20,7 +20,7 @@
 /* Hub */
 .hubBody {
   fill: var(--ww-white);
-  stroke: #6ee7b7;
+  stroke: #84d79c;
   stroke-width: 2;
   transition: stroke 0.3s ease, filter 0.3s ease;
 }
@@ -31,7 +31,7 @@
 }
 
 .hubBolt {
-  fill: #a7f3d0;
+  fill: #b4e5c2;
   transition: fill 0.3s ease;
 }
 
@@ -42,7 +42,7 @@
 /* Wires */
 .wireTrack {
   fill: none;
-  stroke: #a7f3d0;
+  stroke: #b4e5c2;
   stroke-width: 3;
   stroke-linecap: round;
 }
@@ -104,7 +104,7 @@
 
 .socket {
   fill: var(--ww-white);
-  stroke: #6ee7b7;
+  stroke: #84d79c;
   stroke-width: 2;
   transition: fill 0.25s ease, stroke 0.25s ease, filter 0.25s ease;
 }
@@ -142,7 +142,7 @@
 }
 
 .prong {
-  fill: #a7f3d0;
+  fill: #b4e5c2;
   transition: fill 0.25s ease;
 }
 
@@ -153,7 +153,7 @@
 .nodeLabel {
   font-size: 11px;
   font-weight: 600;
-  fill: #065f46;
+  fill: #005a2b;
 }
 
 .nodeState {
@@ -173,7 +173,7 @@
   align-items: center;
   gap: 7px;
   font-size: 12px;
-  color: #047857;
+  color: #006b33;
 }
 
 .captionDot {

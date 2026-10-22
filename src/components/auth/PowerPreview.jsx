@@ -43,8 +43,8 @@ export const PowerPreview = () => {
       >
         <defs>
           <linearGradient id="ww-wire" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#047857" />
-            <stop offset="100%" stopColor="#10B981" />
+            <stop offset="0%" stopColor="#006b33" />
+            <stop offset="100%" stopColor="#008D43" />
           </linearGradient>
         </defs>
 

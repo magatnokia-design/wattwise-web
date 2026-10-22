@@ -4,7 +4,6 @@ import BackToTop from '../components/landing/BackToTop';
 import CostEstimator from '../components/landing/CostEstimator';
 import FaqSection from '../components/landing/FaqSection';
 import SafetyDemo from '../components/landing/SafetyDemo';
-import { BoltMark } from '../components/ui/BoltMark';
 import { Wordmark } from '../components/ui/Wordmark';
 import {
   ANDROID_APK_SIZE_MB,
@@ -140,10 +139,7 @@ export const LandingPage = () => (
           }}
         >
           <span className={styles.brand}>
-            <span className={styles.brandMark} aria-hidden="true">
-              <BoltMark height={16} />
-            </span>
-            <Wordmark className={styles.brandName} />
+            <Wordmark height={28} />
           </span>
         </a>
 
@@ -359,10 +355,7 @@ export const LandingPage = () => (
     <footer className={styles.footer}>
       <div className={styles.footerInner}>
         <span className={styles.brand}>
-          <span className={styles.brandMark} aria-hidden="true">
-            <BoltMark height={14} />
-          </span>
-          <Wordmark className={styles.brandName} />
+          <Wordmark height={22} />
         </span>
 
         <nav className={styles.footerLinks}>

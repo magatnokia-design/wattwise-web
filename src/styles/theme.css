@@ -5,39 +5,41 @@
  * verbatim from the phone app. JS reads COLORS/CHART_COLORS; CSS reads these.
  * If one changes, change the other — colors.js is the source.
  *
- * Green and white only. No dark mode: the parent project is a light green/white
- * app and a second palette would be a new design, not a port.
+ * The Dagitab palette: the logo's greens, its navy for text, and white. No
+ * dark mode: the parent project is a light app and a second palette would be a
+ * new design, not a port. #50d52b (primary-light, series-2) is decoration only -
+ * 1.93:1 against white, so never text and never a ground for it.
  */
 
 :root {
   /* COLORS */
-  --ww-primary: #10b981;
-  --ww-primary-dark: #059669;
-  --ww-primary-light: #34d399;
+  --ww-primary: #008d43;
+  --ww-primary-dark: #007a3a;
+  --ww-primary-light: #50d52b;
 
   --ww-white: #ffffff;
   --ww-bg: #f9fafb;
 
-  --ww-text: #111827;
-  --ww-text-light: #6b7280;
-  --ww-text-dark: #1f2937;
+  --ww-text: #071b2c;
+  --ww-text-light: #5b6878;
+  --ww-text-dark: #1c2e40;
 
   --ww-border: #e5e7eb;
   --ww-error: #ef4444;
-  --ww-success: #10b981;
+  --ww-success: #008d43;
   --ww-warning: #f59e0b;
 
-  --ww-overlay: rgba(0, 0, 0, 0.5);
+  --ww-overlay: rgba(7, 27, 44, 0.5);
 
   /* CHART_COLORS */
-  --ww-series-1: #047857;
-  --ww-series-2: #10b981;
+  --ww-series-1: #006b33;
+  --ww-series-2: #50d52b;
   --ww-track: #e5e7eb;
   --ww-grid: #f3f4f6;
 
   /* Tints, used only for status backgrounds. Same values the phone app's
      helpers return, so a "warning" chip reads the same on both clients. */
-  --ww-tint-success: #ecfdf5;
+  --ww-tint-success: #ecf8ef;
   --ww-tint-warning: #fffbeb;
   --ww-tint-limit: #fff7ed;
   --ww-tint-error: #fef2f2;
@@ -53,15 +55,15 @@
    * the sidebar, the canvas and every card sat within 2% of white with a 5%
    * shadow between them, and the whole app read as one flat sheet.
    *
-   * Still green and white. The tint is a desaturated step toward the theme
+   * Still the brand palette. The tint is a desaturated step toward the theme
    * green, and the wash is `--ww-primary` at 8% — a light source near the
    * sidebar, so the page has a direction rather than a colour.
    */
   --ww-canvas: #f4f7f6;
   --ww-canvas-wash: radial-gradient(
     1100px 620px at 6% -8%,
-    rgba(16, 185, 129, 0.08),
-    rgba(16, 185, 129, 0) 62%
+    rgba(0, 141, 67, 0.08),
+    rgba(0, 141, 67, 0) 62%
   );
 
   /* One step above --ww-shadow-sm. Cards need an edge to read as a surface,
@@ -91,7 +93,7 @@
 
   /* Soft focus ring. Used as a box-shadow so it sits flush against a control's
      own border instead of stacking a second detached outline around it. */
-  --ww-ring: 0 0 0 3px rgba(16, 185, 129, 0.18);
+  --ww-ring: 0 0 0 3px rgba(0, 141, 67, 0.18);
   --ww-border-hover: #d1d5db;
 
   --ww-sidebar-width: 248px;

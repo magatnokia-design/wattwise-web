@@ -142,8 +142,8 @@
 /* Result panel */
 .result {
   padding: var(--ww-space-5);
-  background: linear-gradient(165deg, #ecfdf5 0%, #d1fae5 100%);
-  border: 1px solid #a7f3d0;
+  background: linear-gradient(165deg, #ecf8ef 0%, #d3f0dc 100%);
+  border: 1px solid #b4e5c2;
   border-radius: var(--ww-radius);
   position: sticky;
   top: var(--ww-space-5);
@@ -164,20 +164,20 @@
   line-height: 1.05;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
-  color: #064e3b;
+  color: #00401f;
 }
 
 .resultSub {
   margin-top: 4px;
   font-size: 13px;
   font-variant-numeric: tabular-nums;
-  color: #047857;
+  color: #006b33;
 }
 
 .blocks {
   margin-top: var(--ww-space-4);
   padding-top: var(--ww-space-4);
-  border-top: 1px solid #a7f3d0;
+  border-top: 1px solid #b4e5c2;
   list-style: none;
   display: flex;
   flex-direction: column;
@@ -190,20 +190,20 @@
   justify-content: space-between;
   gap: var(--ww-space-3);
   font-size: 12.5px;
-  color: #047857;
+  color: #006b33;
 }
 
 .blockAmount {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #064e3b;
+  color: #00401f;
 }
 
 .disclosure {
   margin-top: var(--ww-space-4);
   font-size: 11.5px;
   line-height: 1.55;
-  color: #047857;
+  color: #006b33;
 }
 
 @media (max-width: 900px) {

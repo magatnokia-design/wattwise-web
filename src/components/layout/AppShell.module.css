@@ -48,23 +48,13 @@
   border-bottom: 1px solid var(--ww-border);
 }
 
-/* Solid green with a white bolt — same lockup as the favicon and email logo. */
-.brandMark {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--ww-radius-sm);
-  background: var(--ww-primary);
-  color: var(--ww-white);
-  flex-shrink: 0;
-}
-
+/* Holds the <Wordmark> SVG, which is the whole logo - the D is its mark, so
+   the green tile that sat beside the old text wordmark is gone. Block display
+   drops the inline baseline gap an SVG would otherwise leave under itself. */
 .brandName {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ww-text-dark);
-  letter-spacing: -0.01em;
+  display: block;
+  line-height: 0;
+  margin-bottom: 4px;
 }
 
 .brandSub {

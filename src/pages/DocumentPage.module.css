@@ -24,7 +24,7 @@
 }
 
 .bullets li::marker {
-  color: var(--ww-primary, #10B981);
+  color: var(--ww-primary, #008D43);
 }
 
 /* The safety limits are the one section a reader must not skim past. */
