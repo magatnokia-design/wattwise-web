@@ -29,11 +29,17 @@
          its own generic mark beside wattwise.site in the search results.
 
          Keep these as files. Any future "tidy-up" back into a data URI silently
-         reintroduces exactly that bug, and it will not be visible in a browser. -->
-    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
-    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
-    <link rel="manifest" href="/site.webmanifest" />
+         reintroduces exactly that bug, and it will not be visible in a browser.
+
+         The ?v= is a cache key, not decoration. Browsers keep a favicon in
+         their own store keyed by URL and ignore the HTTP cache headers for it,
+         so after the WattWise -> Dagitab rebrand (22 Oct 2026) tabs kept showing
+         the old bolt while the server already sent the D. Bump it whenever the
+         icon files change. -->
+    <link rel="icon" href="/favicon.ico?v=2" sizes="16x16 32x32 48x48" />
+    <link rel="icon" type="image/png" href="/favicon-96x96.png?v=2" sizes="96x96" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest?v=2" />
     <title>Dagitab</title>
   </head>
   <body>
