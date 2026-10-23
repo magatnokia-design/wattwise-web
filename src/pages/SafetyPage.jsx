@@ -6,6 +6,7 @@ import {
   getAlertIcon,
   getSafetyStageConfig,
   getStatusColor,
+  getWorstStatus,
   SAFETY_LIMITS,
   findLimitOutOfRange,
 } from '../screens/PowerSafetyManagement/utils/safetyHelpers';
@@ -16,7 +17,6 @@ import { Modal } from '../components/ui/Modal';
 import { TextField } from '../components/ui/Field';
 import { Badge, Banner, EmptyState, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
-import { EMERGENCY_CONTACTS, EMERGENCY_GUIDANCE } from '../constants/emergency';
 import safetyStyles from './SafetyPage.module.css';
 import { Icon, hasIcon } from '../components/ui/Icon';
 
@@ -46,6 +46,21 @@ const rangeHint = (key) => {
  * while the relay is off IS a real measurement — the PZEM sits on the mains side
  * — and still gets graded normally, because telemetry is arriving.
  */
+const ALERTS_FIRST = 3;
+const ALERTS_MORE = 5;
+
+// "Outlet 1 · Voltage" style limit lines under each reading.
+const limitText = (key, thresholds) => {
+  if (key.endsWith('voltage')) return `${thresholds.voltage.min}–${thresholds.voltage.max} V allowed`;
+  if (key.endsWith('current')) return `up to ${thresholds.current.max} A`;
+  return `up to ${thresholds.power.max} W`;
+};
+
+// Titles written by older backend builds start with an emoji; the icon beside
+// the row already says what kind of alert it is.
+const cleanTitle = (title) =>
+  String(title || 'Alert').replace(/^[^A-Za-z0-9₱(]+/, '').trim() || 'Alert';
+
 const NO_READING = { label: 'No reading', bg: 'var(--ww-grid)', color: 'var(--ww-text-light)' };
 
 /*
@@ -134,6 +149,8 @@ export const SafetyPage = () => {
     previousStage.current = safetyStage;
   }, [safetyStage, handleRefresh]);
 
+  // Alert history shows 3, then 5 more per "Show more" (Oct 2026, as on the phone).
+  const [alertsShown, setAlertsShown] = useState(ALERTS_FIRST);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -235,17 +252,30 @@ export const SafetyPage = () => {
     return <Spinner label="Loading safety state" />;
   }
 
+  const visibleAlerts = alertHistory.slice(0, alertsShown);
+  const hiddenAlerts = alertHistory.length - visibleAlerts.length;
+
   return (
     <div className={styles.page}>
+      {/* Compact (Oct 2026), as on the phone: the stage in its own colour with a
+          pulse while it is anything but Normal, and the switch beside it. */}
       <div
         className={safetyStyles.stage}
         style={{ background: stage.bgColor, borderColor: stage.color }}
       >
-        <div>
-          <p className={safetyStyles.stageLabel} style={{ color: stage.color }}>
+        <div className={safetyStyles.stageHead}>
+          <span
+            className={`${safetyStyles.stageDot} ${stage.pulseMs ? safetyStyles.stageDotPulse : ''}`}
+            style={{
+              background: stage.color,
+              color: stage.color,
+              animationDuration: stage.pulseMs ? `${stage.pulseMs}ms` : undefined,
+            }}
+            aria-hidden="true"
+          />
+          <p className={safetyStyles.stageLabel} style={{ color: stage.textColor || stage.color }}>
             {stage.label}
           </p>
-          <p className={safetyStyles.stageDescription}>{stage.description}</p>
         </div>
         <div className={safetyStyles.stageControl}>
           <span className={styles.muted}>Auto cut-off</span>
@@ -258,9 +288,8 @@ export const SafetyPage = () => {
       </div>
 
       {!protectionEnabled ? (
-        <Banner tone="alert" title="Automatic cut-off is off.">
-          Dagitab will still warn you, but it will not switch an outlet off when a threshold is
-          crossed.
+        <Banner tone="alert" title="Auto cut-off is off.">
+          Dagitab only warns - it will not switch an outlet off.
         </Banner>
       ) : null}
 
@@ -270,92 +299,103 @@ export const SafetyPage = () => {
             {[
               { label: 'Outlet 1', readings: outlet1Status },
               { label: 'Outlet 2', readings: outlet2Status },
-            ].map((outlet) => (
-              <Card key={outlet.label}>
-                <CardHeader
-                  title={outlet.label}
-                  subtitle={
-                    telemetryFresh
-                      ? 'Live against your thresholds'
-                      : 'Waiting for the Dagitab Hub to report'
-                  }
-                />
-                <div className={styles.stack}>
-                  {readingRow(outlet.label, outlet.readings, thresholds, telemetryFresh).map((reading) => (
-                    <div key={reading.key} className={safetyStyles.reading}>
-                      <div className={safetyStyles.readingHead}>
+            ].map((outlet) => {
+              const rows = readingRow(outlet.label, outlet.readings, thresholds, telemetryFresh);
+              const worst = telemetryFresh
+                ? getWorstStatus(...rows.map((row) => row.status))
+                : NO_READING;
+              return (
+                <Card key={outlet.label}>
+                  <div className={safetyStyles.outletHead}>
+                    <h2 className={safetyStyles.outletName}>{outlet.label}</h2>
+                    <span
+                      className={safetyStyles.readingChip}
+                      style={{ background: worst.bg, color: worst.color }}
+                    >
+                      {worst.label}
+                    </span>
+                  </div>
+                  <div className={safetyStyles.metrics}>
+                    {rows.map((reading) => (
+                      <div key={reading.key} className={safetyStyles.metric}>
                         <span className={safetyStyles.readingLabel}>{reading.label}</span>
-                        <span
-                          className={safetyStyles.readingChip}
-                          style={{ background: reading.status.bg, color: reading.status.color }}
+                        {/* No number while telemetry is stale: a minutes-old
+                            value in the largest type reads as the value now. */}
+                        <p
+                          className={safetyStyles.readingValue}
+                          style={reading.fresh && reading.status.label !== 'Normal'
+                            ? { color: reading.status.color }
+                            : undefined}
                         >
-                          {reading.status.label}
-                        </span>
+                          {reading.fresh ? (
+                            <>
+                              <span className="ww-num">{reading.value.toFixed(reading.digits)}</span>
+                              <span className={safetyStyles.readingUnit}>{reading.unit}</span>
+                            </>
+                          ) : (
+                            <span className={safetyStyles.readingIdle}>—</span>
+                          )}
+                        </p>
+                        <span className={safetyStyles.metricLimit}>{limitText(reading.key, thresholds)}</span>
                       </div>
-                      {/* No number at all while telemetry is stale. Withholding
-                          only the verdict was not enough: "237.8 V" set in the
-                          largest type on the card, beside a grey chip reading
-                          "No reading", still reads as the voltage right now.
-                          The value is minutes old and the device may be
-                          unplugged. An em dash cannot be misread. */}
-                      <p className={safetyStyles.readingValue}>
-                        {reading.fresh ? (
-                          <>
-                            <span className="ww-num">{reading.value.toFixed(reading.digits)}</span>
-                            <span className={safetyStyles.readingUnit}>{reading.unit}</span>
-                          </>
-                        ) : (
-                          <span className={safetyStyles.readingIdle}>—</span>
-                        )}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            ))}
+                    ))}
+                  </div>
+                </Card>
+              );
+            })}
           </div>
 
           <Card>
-            <CardHeader
-              title="Alert history"
-              subtitle="Recorded when a threshold was crossed or the cut-off fired."
-            />
+            <CardHeader title="Alert history" />
             {alertHistory.length === 0 ? (
               <EmptyState icon="shield-checkmark-outline" title="No safety alerts">
-                Nothing has crossed a threshold. This is the state you want.
+                Nothing has crossed a limit.
               </EmptyState>
             ) : (
-              <ul className={safetyStyles.alerts}>
-                {alertHistory.map((alert) => {
-                  const icon = getAlertIcon(alert.type);
-                  return (
-                    <li key={alert.id} className={safetyStyles.alert}>
-                      <span
-                        className={safetyStyles.alertIcon}
-                        style={{ background: icon.bg, color: icon.color }}
-                        aria-hidden="true"
-                      >
-                        <Icon name={alertIconName(icon.name)} />
-                      </span>
-                      <div className={safetyStyles.alertBody}>
-                        <p className={safetyStyles.alertTitle}>{alert.title}</p>
-                        <p className={safetyStyles.alertMessage}>{alert.message}</p>
-                      </div>
-                      <div className={safetyStyles.alertMeta}>
-                        {alert.outlet ? <Badge tone="neutral">Outlet {alert.outlet}</Badge> : null}
-                        <span className={styles.muted}>{formatAlertTime(alert.timestamp)}</span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+              <>
+                <ul className={safetyStyles.alerts}>
+                  {visibleAlerts.map((alert) => {
+                    const icon = getAlertIcon(alert.type);
+                    return (
+                      <li key={alert.id} className={safetyStyles.alert}>
+                        <span
+                          className={safetyStyles.alertIcon}
+                          style={{ background: icon.bg, color: icon.color }}
+                          aria-hidden="true"
+                        >
+                          <Icon name={alertIconName(icon.name)} />
+                        </span>
+                        <div className={safetyStyles.alertBody}>
+                          <p className={safetyStyles.alertTitle}>{cleanTitle(alert.title)}</p>
+                          <p className={safetyStyles.alertMessage}>{alert.message}</p>
+                        </div>
+                        <div className={safetyStyles.alertMeta}>
+                          {alert.outlet ? <Badge tone="neutral">Outlet {alert.outlet}</Badge> : null}
+                          <span className={styles.muted}>{formatAlertTime(alert.timestamp)}</span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {hiddenAlerts > 0 ? (
+                  <div className={safetyStyles.more}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setAlertsShown((count) => count + ALERTS_MORE)}
+                    >
+                      Show more ({hiddenAlerts})
+                    </Button>
+                  </div>
+                ) : null}
+              </>
             )}
           </Card>
         </div>
 
         <Card>
           <CardHeader
-            title="Thresholds"
+            title="Limits"
             action={
               <Button size="sm" variant="secondary" onClick={openEditor}>
                 Edit
@@ -371,35 +411,12 @@ export const SafetyPage = () => {
             </div>
             <div className={safetyStyles.thresholdRow}>
               <dt>Current</dt>
-              <dd className="ww-num">max {thresholds.current.max} A</dd>
+              <dd className="ww-num">up to {thresholds.current.max} A</dd>
             </div>
             <div className={safetyStyles.thresholdRow}>
               <dt>Power</dt>
-              <dd className="ww-num">max {thresholds.power.max} W</dd>
+              <dd className="ww-num">up to {thresholds.power.max} W</dd>
             </div>
-          </dl>
-          <p className={styles.muted} style={{ marginTop: 12 }}>
-            The firmware enforces a hard limit of {MAX_POWER_W} W per outlet and 1000 W in total,
-            regardless of what is set here.
-          </p>
-        </Card>
-
-        {/*
-          Emergency numbers, rendered as text. No tel: href and no click
-          handler anywhere in this block - a mis-tap that calls the fire
-          service is worse than typing the digits, and this page is reached by
-          people browsing settings, not only by people in trouble.
-        */}
-        <Card>
-          <CardHeader title="In an emergency" />
-          <p className={styles.muted}>{EMERGENCY_GUIDANCE}</p>
-          <dl className={safetyStyles.thresholds} style={{ marginTop: 12 }}>
-            {EMERGENCY_CONTACTS.map((contact) => (
-              <div className={safetyStyles.thresholdRow} key={contact.number}>
-                <dt>{contact.label}</dt>
-                <dd className="ww-num">{contact.number}</dd>
-              </div>
-            ))}
           </dl>
         </Card>
       </div>

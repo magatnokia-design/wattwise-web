@@ -92,22 +92,15 @@ const mapUsageRecord = (record = {}) => {
 
 const normalizeUsageHistory = (records = []) => records.map(mapUsageRecord);
 
+// A year of daily rows - the longest range the export allows (MAX_RANGE_DAYS).
+// Each row is one small document, so this is one modest read.
+const USAGE_READ_LIMIT = 366;
+
 export const useHistory = () => {
-  // An empty log is not on its own evidence that nothing has happened on this
-  // account - it is also what an unread collection looks like.
-  const load = useLoadOutcome();
-
-  // Pending decision on a listener snapshot that was empty and came from the
-  // cache. Cancelled the moment the server confirms anything.
-  const unconfirmedTimer = useRef(null);
-  const clearUnconfirmed = useCallback(() => {
-    if (unconfirmedTimer.current) {
-      clearTimeout(unconfirmedTimer.current);
-      unconfirmedTimer.current = null;
-    }
-  }, []);
-
   const [activityLogs, setActivityLogs] = useState([]);
+  // Total activity rows on the account, for "Page 2 of 7". null until counted.
+  const [activityTotal, setActivityTotal] = useState(null);
+  const countedNewestRef = useRef(null);
   const [storedUsage, setStoredUsage] = useState([]);
   const [usageRange, setUsageRange] = useState({ startDate: null, endDate: null });
   const [outlets, setOutlets] = useState([]);
@@ -118,10 +111,27 @@ export const useHistory = () => {
   // same kWh. Same omission the comparison screen had.
   const [supplyRates, setSupplyRates] = useState(null);
   const [loading, setLoading] = useState(false);
+  // Separate from `loading`, which belongs to the activity log. One flag for
+  // both meant the usage read finishing cleared the activity spinner (and the
+  // other way round), so either tab could flash "No Activity Yet" mid-load.
+  const [usageLoading, setUsageLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastDoc, setLastDoc] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const lastDocRef = useRef(null);
+
+  // Pending decision on a listener snapshot that was empty and came from the
+  // cache. Cancelled the moment the server confirms anything.
+  const unconfirmedTimer = useRef(null);
+  const clearUnconfirmed = useCallback(() => {
+    if (unconfirmedTimer.current) {
+      clearTimeout(unconfirmedTimer.current);
+      unconfirmedTimer.current = null;
+    }
+  }, []);
+  // An empty log and an unreadable one are the same zero rows on screen. This
+  // is what separates "you have no activity" from "I could not fetch any".
+  const load = useLoadOutcome();
 
   // Live telemetry, so today's row moves as usage accumulates.
   useEffect(() => {
@@ -192,14 +202,17 @@ export const useHistory = () => {
       setLastDoc(result.lastDoc);
       lastDocRef.current = result.lastDoc;
       setHasMore(result.hasMore);
+      load.succeeded();
 
     } catch (err) {
       setError(err.message);
+      // Ends the load without asserting the log is empty.
+      load.failed(err);
       console.error('Error fetching activity logs:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [load.succeeded, load.failed]);
 
   // Subscribe to activity logs in real time (latest page only).
   const subscribeActivityLogs = useCallback((filters = {}, limitCount = 20) => {
@@ -217,14 +230,27 @@ export const useHistory = () => {
       (logs, meta) => {
         const normalizedLogs = normalizeActivityLogs(logs);
         setActivityLogs(normalizedLogs);
+
+        // Re-counted only when the newest row changes - a new switch - not on
+        // every snapshot, so paging back and forth costs nothing extra.
+        const newestId = logs[0]?.id || null;
+        if (newestId !== countedNewestRef.current) {
+          countedNewestRef.current = newestId;
+          historyService.countActivityLogs(userId).then((total) => {
+            if (Number.isFinite(total)) setActivityTotal(total);
+          });
+        }
         setHasMore(normalizedLogs.length >= limitCount);
         lastDocRef.current = null;
         setLastDoc(null);
         setLoading(false);
 
-        // Held rather than acted on: a listener's first snapshot comes from the
-        // cache even when the server is a moment behind, so an empty one is not
-        // yet evidence of anything. See UNCONFIRMED_GRACE_MS.
+        // A listener reports an offline cold start through this success path,
+        // not the error one below: an empty snapshot marked as served from
+        // cache. Treating it as a real answer is what made an untouched
+        // account and an unreachable one look identical. Held briefly rather
+        // than acted on, because the first snapshot is served from cache even
+        // when the server is a moment behind - see UNCONFIRMED_GRACE_MS.
         if (isUnconfirmedEmpty(normalizedLogs.length, meta)) {
           if (!unconfirmedTimer.current) {
             unconfirmedTimer.current = setTimeout(() => {
@@ -247,18 +273,20 @@ export const useHistory = () => {
       limitCount
     );
 
-    // The pending decision belongs to this subscription, so it dies with it - a
-    // filter change tears the listener down and the timer would otherwise fire
-    // against the next one.
+    // The pending unconfirmed-empty decision belongs to this subscription, so
+    // it has to die with it - a filter change tears the listener down and the
+    // timer would otherwise fire against the next one.
     return () => {
       clearUnconfirmed();
       unsubscribe();
     };
-  }, [clearUnconfirmed, load.succeeded, load.failed]);
+  }, [load.succeeded, load.failed, clearUnconfirmed]);
 
-  // Fetch usage history (daily summaries)
-  const fetchUsageHistory = useCallback(async (startDate, endDate) => {
-    setLoading(true);
+  // Fetch usage history (daily summaries). No range means every day on the
+  // account, newest first, up to a year - the list pages through it on the
+  // phone (Oct 2026), so it is read once rather than 30 days at a time.
+  const fetchUsageHistory = useCallback(async (startDate = null, endDate = null) => {
+    setUsageLoading(true);
     setError(null);
     
     try {
@@ -269,7 +297,7 @@ export const useHistory = () => {
         userId,
         { startDate, endDate },
         null,
-        30
+        USAGE_READ_LIMIT
       );
 
       if (!result.success) {
@@ -281,12 +309,43 @@ export const useHistory = () => {
       load.succeeded();
     } catch (err) {
       setError(err.message);
+      // A failed range read must not price the header at zero pesos as though
+      // the user had genuinely consumed nothing over it.
       load.failed(err);
       console.error('Error fetching usage history:', err);
     } finally {
-      setLoading(false);
+      setUsageLoading(false);
     }
-  }, []);
+  }, [load.succeeded, load.failed]);
+
+  /**
+   * The rows an export of `startDate`..`endDate` should contain, read fresh
+   * for that range rather than taken from the list - the export picks its own
+   * dates now (Oct 2026), and they need not match what is on screen. Today is
+   * spliced in from live telemetry when the range covers it, the same as the
+   * list. Returns { success, rows } or { success: false, error }.
+   */
+  const fetchUsageForExport = useCallback(async (startDate, endDate) => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return { success: false, error: 'You are signed out.' };
+
+    const result = await historyService.getDailyUsage(
+      userId,
+      { startDate, endDate },
+      null,
+      USAGE_READ_LIMIT
+    );
+    if (!result.success) {
+      return { success: false, error: result.error || 'The usage could not be read.' };
+    }
+
+    const liveToday = buildLiveTodayEntry(outlets, { rateProfileId, supplyRates });
+    const inRange = !!liveToday && liveToday.date >= startDate && liveToday.date <= endDate;
+    return {
+      success: true,
+      rows: normalizeUsageHistory(withLiveToday(result.data, inRange ? liveToday : null)),
+    };
+  }, [outlets, rateProfileId, supplyRates]);
 
   // Today has no rolled-up document until midnight Manila, so it is assembled
   // from live outlet telemetry and merged in here. Without this the current day
@@ -311,8 +370,10 @@ export const useHistory = () => {
 
   return {
     activityLogs,
+    activityTotal,
     usageHistory,
     loading,
+    usageLoading,
     error,
     hasMore,
     // The screen prices its header total from the range's total energy rather
@@ -320,10 +381,13 @@ export const useHistory = () => {
     // were priced with - the profile AND the user's own Block 1 figures.
     rateProfileId,
     supplyRates,
+    // "No Activity Yet", and the zeroed Records / kWh / Cost header, are all
+    // claims about the account. They need a read that came back.
     showEmptyState: load.showEmptyState,
     showOfflineState: load.showOfflineState,
     fetchActivityLogs,
     subscribeActivityLogs,
     fetchUsageHistory,
+    fetchUsageForExport,
   };
 };

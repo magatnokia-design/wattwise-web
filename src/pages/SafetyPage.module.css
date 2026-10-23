@@ -161,3 +161,76 @@
   font-weight: 600;
   color: var(--ww-text-dark);
 }
+
+/* Compact layout (Oct 2026), as on the phone. */
+.stageHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stageDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* A halo in the stage's own colour; faster as the stage gets worse
+   (warning 1400 ms, limit 1000 ms, cut-off 650 ms - getSafetyStageConfig). */
+.stageDotPulse {
+  animation-name: stagePulse;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-out;
+}
+
+@keyframes stagePulse {
+  0% { box-shadow: 0 0 0 0 currentColor; }
+  70% { box-shadow: 0 0 0 10px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stageDotPulse { animation: none; }
+}
+
+.outletHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.outletName {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ww-text-dark);
+  margin: 0;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.metric {
+  padding: 8px 10px;
+  border: 1px solid var(--ww-border);
+  border-radius: var(--ww-radius-sm);
+  min-width: 0;
+}
+
+.metricLimit {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--ww-text-light);
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
