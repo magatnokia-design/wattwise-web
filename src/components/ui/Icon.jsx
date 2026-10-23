@@ -1,5 +1,11 @@
 import {
   IoAlertCircle,
+  IoTrashOutline,
+  IoPulseOutline,
+  IoPersonOutline,
+  IoLockClosedOutline,
+  IoInformationCircleOutline,
+  IoCreateOutline,
   IoAlertCircleOutline,
   IoBarChartOutline,
   IoBatteryCharging,
@@ -65,6 +71,12 @@ import { PiFan } from 'react-icons/pi';
  * Imported one by one so the bundle carries only these, not the whole set.
  */
 const ICONS = {
+  'trash-outline': IoTrashOutline,
+  'pulse-outline': IoPulseOutline,
+  'person-outline': IoPersonOutline,
+  'lock-closed-outline': IoLockClosedOutline,
+  'information-circle-outline': IoInformationCircleOutline,
+  'create-outline': IoCreateOutline,
   'alert-circle': IoAlertCircle,
   'alert-circle-outline': IoAlertCircleOutline,
   'bar-chart-outline': IoBarChartOutline,

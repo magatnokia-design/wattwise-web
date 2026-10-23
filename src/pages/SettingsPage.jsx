@@ -12,18 +12,18 @@ import {
   normalizeSupplyRates,
   sumSupplyRates,
 } from '../utils/billing';
-import { Card, CardHeader } from '../components/ui/Card';
-import SupportedAppliances from '../components/settings/SupportedAppliances';
 import SecurityActivityCard from '../components/settings/SecurityActivityCard';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from '../components/ui/Button';
 import { Switch } from '../components/ui/Switch';
 import { Modal } from '../components/ui/Modal';
 import { TextField } from '../components/ui/Field';
-import { Badge, Banner, EmptyState, Spinner } from '../components/ui/Feedback';
+import { Badge, Banner, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
 import settingsStyles from './SettingsPage.module.css';
 import { formatLastSeen } from '../components/settings/lastSeen';
+import { Icon } from '../components/ui/Icon';
+import { Link } from 'react-router-dom';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 // '2026-09' -> 'Sep 2026'
@@ -31,6 +31,73 @@ const formatRatesMonth = (key) => {
   const [y, m] = String(key || '').split('-').map(Number);
   return y && m ? `${MONTHS[m - 1]} ${y}` : '';
 };
+
+// A titled group of rows, as the phone's SectionHeader + SectionCard.
+const Section = ({ title, count = null, children }) => (
+  <section className={settingsStyles.section}>
+    <h2 className={settingsStyles.sectionTitle}>
+      {title}
+      {count ? <span className={settingsStyles.sectionCount}>{count}</span> : null}
+    </h2>
+    <div className={settingsStyles.sectionCard}>{children}</div>
+  </section>
+);
+
+// One line: icon, label (+ subtitle), an optional value, and either an action
+// or a chevron when the whole row opens something.
+const Row = ({ icon, label, subtitle, value, action, onClick, to, href }) => {
+  const body = (
+    <>
+      <span className={settingsStyles.rowIcon} aria-hidden="true"><Icon name={icon} /></span>
+      <span className={settingsStyles.rowText}>
+        <span className={settingsStyles.rowLabel}>{label}</span>
+        {subtitle ? <span className={settingsStyles.rowSub}>{subtitle}</span> : null}
+      </span>
+      {value ? <span className={settingsStyles.rowValue}>{value}</span> : null}
+      {action ? <span className={settingsStyles.rowAction}>{action}</span> : null}
+      {!action && (onClick || to || href) ? (
+        <span className={settingsStyles.rowChevron} aria-hidden="true"><Icon name="chevron-forward" /></span>
+      ) : null}
+    </>
+  );
+  if (to) return <Link to={to} className={`${settingsStyles.listRow} ${settingsStyles.listRowLink}`}>{body}</Link>;
+  if (href) return <a href={href} className={`${settingsStyles.listRow} ${settingsStyles.listRowLink}`}>{body}</a>;
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={`${settingsStyles.listRow} ${settingsStyles.listRowLink}`}>
+        {body}
+      </button>
+    );
+  }
+  return <div className={settingsStyles.listRow}>{body}</div>;
+};
+
+const RowButton = ({ icon, label, onClick, danger = false }) => (
+  <button
+    type="button"
+    className={`${settingsStyles.rowButton} ${danger ? settingsStyles.rowButtonDanger : ''}`}
+    onClick={onClick}
+    aria-label={label}
+    title={label}
+  >
+    <Icon name={icon} />
+  </button>
+);
+
+// An icon for a saved appliance, from words in its name - the same idea as the
+// phone's applianceIcon.js, in the icons this site carries.
+const APPLIANCE_ICON_RULES = [
+  [/\b(electric\s*)?fan\b|ceiling/i, 'fan'],
+  [/laptop|notebook|macbook/i, 'laptop-outline'],
+  [/phone|charger|charging|iphone|android|tablet|ipad/i, 'phone-portrait-outline'],
+  [/\btv\b|television/i, 'tv-outline'],
+  [/monitor|display|screen/i, 'desktop-outline'],
+  [/lamp|light|bulb|\bled\b/i, 'bulb-outline'],
+  [/speaker|sound|audio|radio/i, 'volume-high-outline'],
+  [/console|playstation|\bps[45]\b|xbox|switch|game/i, 'game-controller-outline'],
+];
+const applianceIconName = (name) =>
+  (APPLIANCE_ICON_RULES.find(([pattern]) => pattern.test(String(name || ''))) || [null, 'power-outline'])[1];
 
 const HEALTH_TONE = {
   online: 'good',
@@ -91,6 +158,10 @@ export const SettingsPage = () => {
    */
   // The rate form is folded away: rates are automatic (Oct 2026).
   const [showRateForm, setShowRateForm] = useState(false);
+  // Dialogs, one per row that needs more than a line (Oct 2026).
+  const [rateOpen, setRateOpen] = useState(false);
+  const [nameOpen, setNameOpen] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
   const [switchingRates, setSwitchingRates] = useState(false);
   const [renameTarget, setRenameTarget] = useState(null);
   const [renameDraft, setRenameDraft] = useState('');
@@ -187,7 +258,8 @@ export const SettingsPage = () => {
       setNameStatus({ tone: 'alert', message: result.error });
       return;
     }
-    setNameStatus({ tone: 'good', message: 'Name updated.' });
+    setNameStatus(null);
+    setNameOpen(false);
     refresh();
   };
 
@@ -266,48 +338,144 @@ export const SettingsPage = () => {
   };
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${settingsStyles.column}`}>
       {error ? <Banner tone="alert">{error}</Banner> : null}
 
-      <div className={styles.split}>
-        <div className={styles.stack}>
-          {/* Block 1 rates — the only tariff input the user controls, and what
-              every peso figure in the app is priced against. */}
-          <Card>
-            <CardHeader
-              title="Electricity rate"
-              action={settings.rateMode === 'manual'
-                ? <Badge tone="neutral">Your own rate</Badge>
-                : <Badge tone="good">Automatic</Badge>}
+      {/* Organised like the phone's Settings (Oct 2026): titled sections, each
+          one card of compact rows, with anything longer opening in a dialog.
+          "What Dagitab can monitor" was removed on request. */}
+      <Section title="Account">
+        <Row
+          icon="person-outline"
+          label={settings.profileName && settings.profileName !== 'User' ? settings.profileName : 'Your name'}
+          subtitle={settings.email}
+          action={<RowButton icon="create-outline" label="Edit name" onClick={() => setNameOpen(true)} />}
+        />
+      </Section>
+
+      <Section title="Energy">
+        <Row
+          icon="receipt-outline"
+          label="Electricity rate"
+          subtitle={settings.rateMode === 'manual' ? 'Your own rate' : `Automatic${settings.ratesSourceMonth ? ` · PELCO III ${formatRatesMonth(settings.ratesSourceMonth)}` : ''}`}
+          value={`₱${Number(settings.supplyRates?.generation || 0).toFixed(4)}/kWh`}
+          onClick={() => setRateOpen(true)}
+        />
+      </Section>
+
+      <Section title="Dagitab Hub">
+        <Row
+          icon="hardware-chip-outline"
+          label={settings.esp32DeviceId || 'Dagitab Hub'}
+          subtitle={settings.esp32Linked ? `Last command: ${formatAckStatusValue(settings.esp32LastAckStatus)}` : 'Pair it in the Dagitab app'}
+          action={(
+            <Badge tone={HEALTH_TONE[settings.esp32HealthStatus] || 'neutral'}>
+              {settings.esp32Linked
+                ? formatDeviceHealthValue(settings.esp32HealthStatus, settings.esp32LastSeenAtMs)
+                : 'Not linked'}
+            </Badge>
+          )}
+        />
+        <Row icon="pulse-outline" label="Hub activity" onClick={() => setActivityOpen(true)} />
+      </Section>
+
+      <Section title="Saved appliances" count={savedAppliances.length || null}>
+        {savedAppliances.length === 0 ? (
+          <Row icon="pricetags-outline" label="No saved appliances yet" subtitle="Name one while it runs" />
+        ) : (
+          savedAppliances.map((appliance) => (
+            <Row
+              key={appliance.label}
+              icon={applianceIconName(appliance.label)}
+              label={appliance.label}
+              subtitle={formatLastSeen(appliance.lastSeen)}
+              value={`~${appliance.meanPower.toFixed(0)} W`}
+              action={(
+                <>
+                  <RowButton icon="create-outline" label={`Rename ${appliance.label}`} onClick={() => openRename(appliance.label)} />
+                  <RowButton icon="trash-outline" label={`Forget ${appliance.label}`} danger onClick={() => setForgetTarget(appliance.label)} />
+                </>
+              )}
             />
+          ))
+        )}
+      </Section>
 
-            {/* Automatic since Oct 2026: Dagitab reads PELCO III's official
-                generation rate every month (applyPelcoRates). The form is for
-                the exception - a bill showing a different rate. */}
-            <div className={settingsStyles.rateTotal}>
-              <span>
-                {settings.rateMode === 'manual'
-                  ? 'Generation rate'
-                  : `PELCO III${settings.ratesSourceMonth ? ` · ${formatRatesMonth(settings.ratesSourceMonth)}` : ''}`}
-              </span>
-              <strong className="ww-num">
-                ₱{Number(settings.supplyRates?.generation || 0).toFixed(4)}/kWh
-              </strong>
-            </div>
+      <Section title="Notifications">
+        <Row
+          icon={settings.notifications ? 'notifications-outline' : 'notifications-outline'}
+          label="Notifications"
+          subtitle={settings.notifications ? 'Safety, budget and Hub alerts' : 'Off'}
+          action={(
+            <Switch checked={settings.notifications} onChange={updateNotifications} label="Notifications" />
+          )}
+        />
+      </Section>
 
-            <div className={styles.rowEnd} style={{ marginTop: 12 }}>
-              {settings.rateMode === 'manual' ? (
-                <Button size="sm" variant="secondary" loading={switchingRates} onClick={handleUseAutomatic}>
-                  Use the automatic rate
-                </Button>
-              ) : null}
-              <Button size="sm" variant="secondary" onClick={() => setShowRateForm((value) => !value)}>
-                {showRateForm ? 'Close' : settings.rateMode === 'manual' ? 'Edit my rate' : 'Use my own rate'}
+      <Section title="About">
+        <Row icon="help-circle-outline" label="Help" to="/help" />
+        <Row icon="information-circle-outline" label="About Dagitab" to="/about" />
+        <Row icon="lock-closed-outline" label="Privacy" to="/privacy" />
+        <Row icon="document-text-outline" label="Terms" to="/terms" />
+        <Row icon="mail-outline" label="Support" value="support@dagitab.site" href="mailto:support@dagitab.site" />
+      </Section>
+
+      <Modal
+        open={nameOpen}
+        onClose={() => setNameOpen(false)}
+        title="Your name"
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setNameOpen(false)}>Cancel</Button>
+            <Button onClick={saveName}>Save</Button>
+          </>
+        )}
+      >
+        <div className={styles.stack}>
+          <TextField
+            label="Display name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Your name"
+          />
+          {nameStatus ? <Banner tone={nameStatus.tone}>{nameStatus.message}</Banner> : null}
+        </div>
+      </Modal>
+
+      <Modal open={activityOpen} onClose={() => setActivityOpen(false)} title="Hub activity" width={520}>
+        <SecurityActivityCard userId={user?.uid} bare />
+      </Modal>
+
+      <Modal
+        open={rateOpen}
+        onClose={() => setRateOpen(false)}
+        title="Electricity rate"
+        width={480}
+      >
+        <div className={styles.stack}>
+          {/* Automatic since Oct 2026: Dagitab reads PELCO III's official
+              generation rate every month (applyPelcoRates). The form is for the
+              exception - a bill showing a different rate. */}
+          <div className={settingsStyles.rateTotal}>
+            <span>{settings.rateMode === 'manual' ? 'Your own rate' : `Automatic${settings.ratesSourceMonth ? ` · PELCO III ${formatRatesMonth(settings.ratesSourceMonth)}` : ''}`}</span>
+            <strong className="ww-num">₱{Number(settings.supplyRates?.generation || 0).toFixed(4)}/kWh</strong>
+          </div>
+
+          <div className={styles.rowEnd}>
+            {settings.rateMode === 'manual' ? (
+              <Button size="sm" variant="secondary" loading={switchingRates} onClick={handleUseAutomatic}>
+                Use the automatic rate
               </Button>
-            </div>
+            ) : null}
+            {!showRateForm ? (
+              <Button size="sm" variant="secondary" onClick={() => setShowRateForm(true)}>
+                {settings.rateMode === 'manual' ? 'Edit my rate' : 'Use my own rate'}
+              </Button>
+            ) : null}
+          </div>
 
-            {showRateForm ? (
-            <div className={styles.stack} style={{ marginTop: 16 }}>
+          {showRateForm ? (
+            <>
               {primaryField ? (
                 <TextField
                   label={primaryField.label}
@@ -342,163 +510,31 @@ export const SettingsPage = () => {
                       value={rateDraft[field.key] ?? ''}
                       onChange={(event) => setRate(field.key, event.target.value)}
                       error={rateErrors[field.key]}
-                      hint={`Default ${field.defaultValue}`}
                     />
                   ))}
                 </div>
               ) : null}
 
-              <div className={settingsStyles.rateTotal}>
-                <span>Block 1 total</span>
-                <strong className="ww-num">₱{rateTotal.toFixed(4)}/kWh</strong>
-              </div>
-
-              {rateStatus ? <Banner tone={rateStatus.tone}>{rateStatus.message}</Banner> : null}
-
               <div className={styles.rowEnd}>
-                {/* Named for what it does. "Reset" reads as though it wipes the
-                    saved rates; it only puts the boxes back to what is already
-                    stored and touches nothing in Firestore. The owner said
-                    outright they would not click it, for fear of losing their
-                    figures. */}
                 <Button
                   variant="secondary"
                   onClick={() => {
                     setRateDraft(ratesToDraft(settings.supplyRates));
                     setRateErrors({});
                     setRateStatus(null);
+                    setShowRateForm(false);
                   }}
                 >
-                  Discard changes
+                  Cancel
                 </Button>
-                <Button loading={savingRates} onClick={saveRates}>
-                  Save rates
-                </Button>
+                <Button loading={savingRates} onClick={saveRates}>Save my rate</Button>
               </div>
+            </>
+          ) : null}
 
-            </div>
-            ) : null}
-            {!showRateForm && rateStatus ? <Banner tone={rateStatus.tone}>{rateStatus.message}</Banner> : null}
-          </Card>
-
-
-          <Card>
-            <CardHeader
-              title="Saved appliances"
-            />
-            {savedAppliances.length === 0 ? (
-              <EmptyState icon="pricetags-outline" title="No saved appliances yet" />
-            ) : (
-              <ul className={settingsStyles.applianceList}>
-                {savedAppliances.map((appliance) => (
-                  <li key={appliance.label} className={settingsStyles.appliance}>
-                    <div>
-                      <p className={settingsStyles.applianceName}>{appliance.label}</p>
-                      <p className={styles.muted}>
-                        {formatLastSeen(appliance.lastSeen)} · <span className="ww-num">~{appliance.meanPower.toFixed(0)} W</span>
-                      </p>
-                    </div>
-                    <div className={styles.row}>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => openRename(appliance.label)}
-                      >
-                        Rename
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={() => setForgetTarget(appliance.label)}
-                      >
-                        Forget
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          {/* Directly under Learned appliances: that card is what this one ends
-              by pointing at, and the two answer the same question from opposite
-              ends — what Dagitab knows already, and what it has learned here. */}
-          <SupportedAppliances />
+          {rateStatus ? <Banner tone={rateStatus.tone}>{rateStatus.message}</Banner> : null}
         </div>
-
-        <div className={styles.stack}>
-          {/* Above Account, not below: this is the card someone goes looking
-              for after something worrying, and it should already be in view. */}
-          <SecurityActivityCard userId={user?.uid} />
-
-          <Card>
-            <CardHeader title="Account" />
-            <div className={styles.stack}>
-              <TextField
-                label="Display name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Your name"
-              />
-              <TextField label="Email" value={settings.email} readOnly disabled />
-              {nameStatus ? <Banner tone={nameStatus.tone}>{nameStatus.message}</Banner> : null}
-              <div className={styles.rowEnd}>
-                <Button variant="secondary" onClick={saveName}>
-                  Save name
-                </Button>
-              </div>
-
-              <hr className={styles.divider} />
-
-              <div className={settingsStyles.toggleRow}>
-                <div>
-                  <p className={settingsStyles.toggleLabel}>Notifications</p>
-                </div>
-                <Switch
-                  checked={settings.notifications}
-                  onChange={updateNotifications}
-                  label="Notifications"
-                />
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <CardHeader
-              title="Dagitab Hub"
-              action={
-                <Badge tone={HEALTH_TONE[settings.esp32HealthStatus] || 'neutral'}>
-                  {formatDeviceHealthValue(settings.esp32HealthStatus, settings.esp32LastSeenAtMs)}
-                </Badge>
-              }
-            />
-
-            {/*
-              Read-only by design. Pairing lives in the phone app, which owns the
-              QR scanner and flashes the token to the firmware. A token typed
-              here has no such check: one wrong character silently unbinds a
-              working device, with a 15-minute grace window as the only warning
-              anyone gets. There is exactly one ESP32 on this account, so the
-              upside of editing it here is nil against that downside.
-            */}
-            <div className={styles.stack}>
-              <div className={settingsStyles.deviceMeta}>
-                <span>Device ID</span>
-                <strong>{settings.esp32DeviceId || 'Not paired'}</strong>
-              </div>
-
-              <div className={settingsStyles.deviceMeta}>
-                <span>Last command ack</span>
-                <strong>{formatAckStatusValue(settings.esp32LastAckStatus)}</strong>
-              </div>
-
-              {!settings.esp32Linked ? (
-                <p className={styles.muted}>Pair it in the Dagitab app.</p>
-              ) : null}
-            </div>
-          </Card>
-        </div>
-      </div>
+      </Modal>
 
       <Modal
         open={!!renameTarget}

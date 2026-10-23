@@ -25,7 +25,7 @@ import styles from './SecurityActivityCard.module.css';
  * `securityActivityGrouping.js` for why the raw one-card-per-event form made
  * this card unreadable.
  */
-export const SecurityActivityCard = ({ userId }) => {
+export const SecurityActivityCard = ({ userId, bare = false }) => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -56,21 +56,18 @@ export const SecurityActivityCard = ({ userId }) => {
   const hidden = Math.max(0, groups.length - INITIAL_VISIBLE);
   const visible = expanded ? groups : groups.slice(0, INITIAL_VISIBLE);
 
+  // bare: no card or heading, for the Settings Hub activity dialog.
+  const Wrapper = bare ? 'div' : Card;
   return (
-    <Card>
-      <CardHeader
-        title="Hub activity"
-      />
+    <Wrapper>
+      {bare ? null : <CardHeader title="Hub activity" />}
 
       {loading ? (
         <Spinner label="Loading security activity" />
       ) : error ? (
         <p className={styles.error}>{error}</p>
       ) : groups.length === 0 ? (
-        <EmptyState icon="shield-checkmark-outline" title="Nothing to report">
-          Nothing unusual has happened on your account. Device changes and refused
-          sign-ins would appear here.
-        </EmptyState>
+        <EmptyState icon="shield-checkmark-outline" title="Nothing to report" />
       ) : (
         <>
           <ul className={styles.list}>
@@ -110,7 +107,7 @@ export const SecurityActivityCard = ({ userId }) => {
           ) : null}
         </>
       )}
-    </Card>
+    </Wrapper>
   );
 };
 
