@@ -6,6 +6,8 @@ import {
   getAlertIcon,
   getSafetyStageConfig,
   getStatusColor,
+  SAFETY_LIMITS,
+  findLimitOutOfRange,
 } from '../screens/PowerSafetyManagement/utils/safetyHelpers';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -19,7 +21,15 @@ import safetyStyles from './SafetyPage.module.css';
 
 // safetyService clamps whatever is saved to this, matching the firmware's
 // per-outlet limit. Offering a higher number in the form would be a lie.
-const MAX_POWER_W = 500;
+const MAX_POWER_W = SAFETY_LIMITS.powerMax.max;
+
+// "180–220 V" under each field, from the shared bounds (safetyHelpers.js,
+// byte-identical with the phone) - the meter reads 80-260 V and the relay is
+// rated 10 A, so a 500 V or 50 A limit could never fire.
+const rangeHint = (key) => {
+  const bound = SAFETY_LIMITS[key];
+  return `Allowed ${bound.min}–${bound.max} ${bound.unit}`;
+};
 
 /*
  * Shown instead of a threshold verdict when no telemetry has arrived recently.
@@ -197,6 +207,19 @@ export const SafetyPage = () => {
 
     if (next.voltage.min >= next.voltage.max) {
       setError('Minimum voltage must be below the maximum.');
+      return;
+    }
+
+    // Refused, not clamped (Oct 2026), as on the phone. Power alone stays
+    // clamped above, for the reason given there; the backend clamps all four.
+    const outOfRange = findLimitOutOfRange({
+      voltageMin: next.voltage.min,
+      voltageMax: next.voltage.max,
+      currentMax: next.current.max,
+      powerMax: next.power.max,
+    });
+    if (outOfRange) {
+      setError(outOfRange);
       return;
     }
 
@@ -411,6 +434,7 @@ export const SafetyPage = () => {
                 suffix="V"
                 value={draft.voltageMin}
                 onChange={editDraft('voltageMin')}
+                hint={rangeHint('voltageMin')}
               />
               <TextField
                 label="Voltage max"
@@ -418,6 +442,7 @@ export const SafetyPage = () => {
                 suffix="V"
                 value={draft.voltageMax}
                 onChange={editDraft('voltageMax')}
+                hint={rangeHint('voltageMax')}
               />
               <TextField
                 label="Current max"
@@ -426,6 +451,7 @@ export const SafetyPage = () => {
                 suffix="A"
                 value={draft.currentMax}
                 onChange={editDraft('currentMax')}
+                hint={rangeHint('currentMax')}
               />
               <TextField
                 label="Power max"
