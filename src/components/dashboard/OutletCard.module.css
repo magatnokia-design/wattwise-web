@@ -309,3 +309,175 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ---- The stand-out card (Oct 2026), after the phone's Outlets card ---- */
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  padding: 20px 22px;
+}
+
+/* A soft green wash and edge while the outlet is drawing power. */
+.cardLive {
+  border-color: #9fdcb3;
+  box-shadow: 0 0 0 1px rgba(0, 141, 67, 0.08), 0 10px 28px -12px rgba(0, 141, 67, 0.35);
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(80, 213, 43, 0.12), transparent 55%),
+    var(--ww-white);
+}
+
+.cardLive:hover {
+  border-color: #84d79c;
+}
+
+.cardFault {
+  border-color: #fca5a5;
+}
+
+.socket {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: var(--ww-grid);
+  color: var(--ww-text-light);
+  font-size: 22px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.socketOn {
+  background: var(--ww-tint-success);
+  color: var(--ww-primary);
+}
+
+.socketLive {
+  background: linear-gradient(135deg, var(--ww-primary-light), var(--ww-primary));
+  color: var(--ww-white);
+  box-shadow: 0 6px 16px -6px rgba(0, 141, 67, 0.6);
+}
+
+.name {
+  font-size: 18px;
+}
+
+.sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+}
+
+.subText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.namePencil {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ww-primary);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.namePencil:hover {
+  background: var(--ww-tint-success);
+}
+
+.live {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.liveValue {
+  font-size: 44px;
+}
+
+.spark {
+  width: 50%;
+  max-width: 220px;
+  height: 52px;
+  flex-shrink: 1;
+}
+
+.sparkArea {
+  fill: rgba(91, 104, 120, 0.08);
+}
+
+.sparkLine {
+  fill: none;
+  stroke: var(--ww-text-light);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.sparkLive .sparkArea {
+  fill: rgba(80, 213, 43, 0.18);
+}
+
+.sparkLive .sparkLine {
+  stroke: var(--ww-primary);
+}
+
+.metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 48px;
+  margin-top: 18px;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.08s ease, filter 0.15s ease, background 0.15s ease;
+}
+
+.toggle:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.toggle:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.toggleOn {
+  border: none;
+  background: var(--ww-primary);
+  color: var(--ww-white);
+}
+
+.toggleOn:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.toggleOff {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: var(--ww-error);
+}
+
+.toggleOff:hover:not(:disabled) {
+  background: #fee2e2;
+}

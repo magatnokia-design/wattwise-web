@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Card } from '../ui/Card';
-import { Switch } from '../ui/Switch';
+import { Icon } from '../ui/Icon';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Feedback';
 import { resolveApplianceLine } from './applianceLine';
@@ -54,6 +54,10 @@ export const OutletCard = ({
   disabled,
   onToggle,
   onRename,
+  // Opens Rename / Forget for the running appliance (DashboardPage).
+  onManageName,
+  // Recent power readings, oldest first, for the sparkline.
+  history = [],
 }) => {
   const [busy, setBusy] = useState(false);
   const [typedName, setTypedName] = useState('');
@@ -233,11 +237,19 @@ export const OutletCard = ({
     setTypedName('');
   };
 
+  // A name can be managed only while something is running - "Nothing plugged
+  // in" with a pencil beside it would offer to rename an appliance that is not
+  // there (as on the phone, Oct 2026).
+  const canManageName = drawing && !!applianceName && line.tone === 'named';
+  const watts = Number(metrics.power) || 0;
+
   return (
-    <Card className={styles.card}>
+    <Card className={`${styles.card} ${drawing ? styles.cardLive : ''} ${relayStuck ? styles.cardFault : ''}`}>
       <div className={styles.head}>
         <div className={styles.identity}>
-          <span className={`${styles.dot} ${isOn ? styles.dotOn : ''}`} aria-hidden="true" />
+          <span className={`${styles.socket} ${drawing ? styles.socketLive : isOn ? styles.socketOn : ''}`} aria-hidden="true">
+            <Icon name="power-outline" />
+          </span>
           <div className={styles.names}>
             <h2 className={styles.name}>{fallbackLabel}</h2>
             <p
@@ -248,46 +260,38 @@ export const OutletCard = ({
                     ? styles.subChanged
                     : ''
               } ${drawing ? '' : styles.subIdle}`}
-              /* The idle-with-a-name case used to live here too, and a tooltip
-                 was the wrong place for it: `title` needs a hover, and this page
-                 is served to tablets. On a touchscreen the card read "No
-                 appliance detected yet" above "Rename it under Settings" with
-                 nothing on screen reconciling the two. It is in the footer now,
-                 where it can actually be read. */
-              title={
-                unsupported
-                  ? 'The readings do not match any appliance Dagitab monitors. It covers low-voltage devices up to 500 W per outlet. Usage and cost are still recorded.'
-                  : identityChanged && drawing
-                    ? `Named ${applianceName}, but the readings do not match it`
-                    : undefined
-              }
             >
-              {applianceLine}
+              <span className={styles.subText}>{applianceLine}</span>
+              {canManageName ? (
+                <button
+                  type="button"
+                  className={styles.namePencil}
+                  onClick={onManageName}
+                  aria-label={`Rename or forget ${applianceName}`}
+                  title="Rename or forget"
+                >
+                  <Icon name="create-outline" />
+                </button>
+              ) : null}
             </p>
           </div>
         </div>
-
-        <div className={styles.controls}>
-          <Badge tone={badge.tone}>{badge.text}</Badge>
-          <Switch
-            checked={isOn}
-            disabled={disabled}
-            onChange={onToggle}
-            label={`Toggle ${fallbackLabel}${applianceName ? ` (${applianceName})` : ''}`}
-          />
-        </div>
+        <Badge tone={badge.tone}>{badge.text}</Badge>
       </div>
 
-      <div className={styles.liveRow}>
-        <p className={styles.liveValue}>
-          <span className="ww-num">{format(metrics.power, 1)}</span>
-          <span className={styles.liveUnit}>W</span>
-        </p>
-        <p className={styles.liveCaption}>drawing right now</p>
+      <div className={styles.live}>
+        <div>
+          <p className={styles.liveValue}>
+            <span className="ww-num">{format(watts, 1)}</span>
+            <span className={styles.liveUnit}>W</span>
+          </p>
+          <p className={styles.liveCaption}>{drawing ? 'drawing now' : telemetryFresh === false ? 'no reading' : 'not drawing'}</p>
+        </div>
+        <Sparkline points={history} live={drawing} />
       </div>
 
       <dl className={styles.metrics}>
-        {METRICS.map((metric) => (
+        {METRICS.filter((metric) => metric.key !== 'power').map((metric) => (
           <div key={metric.key} className={styles.metric}>
             <dt className={styles.metricLabel}>{metric.label}</dt>
             <dd className={styles.metricValue}>
@@ -360,7 +364,40 @@ export const OutletCard = ({
           </form>
         </div>
       ) : null}
+
+      <button
+        type="button"
+        className={`${styles.toggle} ${isOn ? styles.toggleOff : styles.toggleOn}`}
+        onClick={() => onToggle(!isOn)}
+        disabled={disabled}
+        aria-label={`Turn ${fallbackLabel} ${isOn ? 'off' : 'on'}`}
+      >
+        <Icon name="power-outline" />
+        {switching === 'on' ? 'Turning on…' : switching === 'off' ? 'Turning off…' : isOn ? 'Turn off' : 'Turn on'}
+      </button>
     </Card>
+  );
+};
+
+/*
+ * The outlet's last minute or so of readings as a line (Oct 2026) - one point
+ * per telemetry post, kept in the page, never stored. Nothing is drawn until
+ * there are two points to join.
+ */
+const Sparkline = ({ points = [], live = false }) => {
+  if (points.length < 2) return <div className={styles.spark} aria-hidden="true" />;
+  const max = Math.max(1, ...points);
+  const w = 160;
+  const h = 48;
+  const step = w / (points.length - 1);
+  const coords = points.map((value, index) => [index * step, h - (value / max) * (h - 4) - 2]);
+  const line = coords.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const area = `0,${h} ${line} ${w},${h}`;
+  return (
+    <svg className={`${styles.spark} ${live ? styles.sparkLive : ''}`} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label="Recent power">
+      <polygon points={area} className={styles.sparkArea} />
+      <polyline points={line} className={styles.sparkLine} />
+    </svg>
   );
 };
 

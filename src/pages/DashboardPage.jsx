@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useOutletControl } from '../screens/Dashboard/hooks/useOutletControl';
 import { useLiveOutlets } from '../hooks/useLiveOutlets';
 import { buildLiveAppliances } from '../utils/liveUsage';
@@ -6,9 +7,22 @@ import { describeRelayFault } from '../constants/relayFault';
 import { formatCurrency } from '../screens/BudgetTracking/utils/budgetHelpers';
 import OutletCard from '../components/dashboard/OutletCard';
 import CutoffNotice from '../components/dashboard/CutoffNotice';
-import { StatGrid, StatTile } from '../components/ui/StatTile';
 import { Banner, Spinner, Badge } from '../components/ui/Feedback';
+import { Icon } from '../components/ui/Icon';
+import { Modal } from '../components/ui/Modal';
+import { Button } from '../components/ui/Button';
+import { TextField } from '../components/ui/Field';
+import usePowerSafety from '../screens/PowerSafetyManagement/hooks/usePowerSafety';
+import { getSafetyStageConfig } from '../screens/PowerSafetyManagement/utils/safetyHelpers';
+import { useSchedule } from '../screens/Timer/hooks/useSchedule';
+import { outletService } from '../services/firebase';
+import { auth } from '../services/firebase/config';
 import styles from './page.module.css';
+import dashStyles from './DashboardPage.module.css';
+
+// Readings kept per outlet for the live graph - about a minute at the Hub's
+// 1.5 s active rate. Held in the page only, never stored.
+const HISTORY_POINTS = 40;
 
 const relativeAge = (timestampMs) => {
   if (!timestampMs) return 'never';
@@ -149,6 +163,62 @@ export const DashboardPage = () => {
     return result;
   };
 
+  // Safety status and timers for the header row.
+  const { safetyStage } = usePowerSafety();
+  const stage = getSafetyStageConfig(safetyStage, !telemetryFresh);
+  const { schedules } = useSchedule();
+  const activeTimers = (schedules || []).filter((item) => item?.active).length;
+
+  // One reading per telemetry post for each outlet's live graph.
+  const [history, setHistory] = useState({ 1: [], 2: [] });
+  const lastPostRef = useRef(0);
+  useEffect(() => {
+    if (!lastTelemetryMs || lastTelemetryMs === lastPostRef.current) return;
+    lastPostRef.current = lastTelemetryMs;
+    setHistory((prev) => ({
+      1: [...prev[1], Number(outlet1Metrics.power) || 0].slice(-HISTORY_POINTS),
+      2: [...prev[2], Number(outlet2Metrics.power) || 0].slice(-HISTORY_POINTS),
+    }));
+  }, [lastTelemetryMs, outlet1Metrics.power, outlet2Metrics.power]);
+
+  // Rename / Forget, opened from the pencil beside a running appliance's name.
+  const [manage, setManage] = useState(null);
+  const [manageDraft, setManageDraft] = useState('');
+  const [manageBusy, setManageBusy] = useState(false);
+  const [manageError, setManageError] = useState('');
+  const openManage = (number, name) => {
+    if (!name) return;
+    setManageError('');
+    setManage({ number, name, mode: 'choose' });
+  };
+  const closeManage = () => {
+    if (manageBusy) return;
+    setManage(null);
+  };
+  const saveRename = async () => {
+    const next = manageDraft.replace(/\s+/g, ' ').trim();
+    if (!next || !manage) return;
+    setManageBusy(true);
+    const result = await updateApplianceName(manage.number, next, { source: 'user_choice' });
+    setManageBusy(false);
+    if (!result.success) {
+      setManageError(result.error || 'The name was not saved.');
+      return;
+    }
+    setManage(null);
+  };
+  const confirmForget = async () => {
+    if (!manage) return;
+    setManageBusy(true);
+    const result = await outletService.removeApplianceProfile(auth.currentUser?.uid, manage.name);
+    setManageBusy(false);
+    if (!result.success) {
+      setManageError(result.error || `${manage.name} was not forgotten.`);
+      return;
+    }
+    setManage(null);
+  };
+
   if (isLoadingOutlets) {
     return <Spinner label="Loading outlets" />;
   }
@@ -182,36 +252,52 @@ export const DashboardPage = () => {
 
       <CutoffNotice outlets={outlets} />
 
-      <div className={styles.pageIntro}>
-        <Badge tone={telemetryFresh ? 'good' : 'neutral'}>
-          {telemetryFresh
-            ? 'Hub online'
-            : lastTelemetryMs > 0
-              ? `Hub offline · last heard ${relativeAge(lastTelemetryMs)}`
-              : 'Waiting for the Hub'}
-        </Badge>
+      {/* The phone's Outlets header (Oct 2026): the safety status on the left,
+          timers on the right - both open their pages. */}
+      <div className={dashStyles.topBar}>
+        <Link to="/safety" className={dashStyles.safetyPill} style={{ background: stage.bgColor, color: stage.textColor || stage.color, borderColor: stage.color }}>
+          <span
+            className={`${dashStyles.pillDot} ${stage.pulseMs ? dashStyles.pillDotPulse : ''}`}
+            style={{ background: stage.color, color: stage.color, animationDuration: stage.pulseMs ? `${stage.pulseMs}ms` : undefined }}
+            aria-hidden="true"
+          />
+          <Icon name="shield-checkmark-outline" />
+          {stage.short || stage.label}
+        </Link>
+        <Link to="/schedule" className={dashStyles.timersPill}>
+          <Icon name="timer-outline" />
+          Timers
+          {activeTimers > 0 ? <span className={dashStyles.pillCount}>{activeTimers}</span> : null}
+        </Link>
       </div>
 
-      <StatGrid>
-        <StatTile
-          label="Drawing now"
-          value={totalPowerW.toFixed(1)}
-          unit="W"
-          tone="primary"
-          icon="flash-outline"
-        />
-        <StatTile
-          label="Energy today"
-          value={totalEnergyKwh.toFixed(3)}
-          unit="kWh"
-          icon="battery-charging"
-        />
-        <StatTile
-          label="Cost today"
-          value={formatCurrency(estimatedCost)}
-          icon="wallet-outline"
-        />
-      </StatGrid>
+      {/* Right now, in one glance: the combined draw and today so far. */}
+      <div className={`${dashStyles.hero} ${totalPowerW > 0.5 && telemetryFresh ? dashStyles.heroLive : ''}`}>
+        <div className={dashStyles.heroMain}>
+          <span className={dashStyles.heroLabel}>
+            <span className={`${dashStyles.liveDot} ${telemetryFresh ? dashStyles.liveDotOn : ''}`} aria-hidden="true" />
+            {telemetryFresh ? 'Drawing now' : lastTelemetryMs > 0 ? `Hub offline · last heard ${relativeAge(lastTelemetryMs)}` : 'Waiting for the Hub'}
+          </span>
+          <p className={dashStyles.heroValue}>
+            <span className="ww-num">{totalPowerW.toFixed(1)}</span>
+            <span className={dashStyles.heroUnit}>W</span>
+          </p>
+        </div>
+        <div className={dashStyles.heroStats}>
+          <div>
+            <span>Today</span>
+            <strong className="ww-num">{totalEnergyKwh.toFixed(totalEnergyKwh < 1 ? 3 : 2)} kWh</strong>
+          </div>
+          <div>
+            <span>Cost today</span>
+            <strong className="ww-num">{formatCurrency(estimatedCost)}</strong>
+          </div>
+          <div>
+            <span>Outlets on</span>
+            <strong className="ww-num">{(outlet1Status ? 1 : 0) + (outlet2Status ? 1 : 0)} of 2</strong>
+          </div>
+        </div>
+      </div>
 
       {/* Both outlets side by side, above the fold. */}
       <div className={styles.pair}>
@@ -229,6 +315,8 @@ export const DashboardPage = () => {
           disabled={isToggling}
           onToggle={handleToggle(1)}
           onRename={handleRename(1)}
+          onManageName={() => openManage(1, outlet1ApplianceName)}
+          history={history[1]}
         />
         <OutletCard
           outletNumber={2}
@@ -244,6 +332,8 @@ export const DashboardPage = () => {
           disabled={isToggling}
           onToggle={handleToggle(2)}
           onRename={handleRename(2)}
+          onManageName={() => openManage(2, outlet2ApplianceName)}
+          history={history[2]}
         />
       </div>
 
@@ -263,6 +353,50 @@ export const DashboardPage = () => {
           Check its power and Wi-Fi. Toggles made here are sent when it reports again.
         </Banner>
       ) : null}
+      {/* Rename or forget the running appliance, as the phone's pencil does
+          (Oct 2026). Forget clears the outlet's name and the saved signature,
+          so Dagitab asks again the next time it runs. */}
+      <Modal
+        open={!!manage}
+        onClose={closeManage}
+        title={manage?.mode === 'forget' ? `Forget ${manage?.name}?` : manage?.mode === 'rename' ? 'Rename appliance' : manage?.name || ''}
+        width={420}
+        footer={manage?.mode === 'rename' ? (
+          <>
+            <Button variant="secondary" onClick={closeManage} disabled={manageBusy}>Cancel</Button>
+            <Button onClick={saveRename} loading={manageBusy} disabled={!manageDraft.trim()}>Save</Button>
+          </>
+        ) : manage?.mode === 'forget' ? (
+          <>
+            <Button variant="secondary" onClick={closeManage} disabled={manageBusy}>Keep</Button>
+            <Button variant="danger" onClick={confirmForget} loading={manageBusy}>Forget</Button>
+          </>
+        ) : (
+          <>
+            <Button variant="danger" onClick={() => setManage((m) => ({ ...m, mode: 'forget' }))}>Forget</Button>
+            <Button onClick={() => { setManageDraft(manage?.name || ''); setManage((m) => ({ ...m, mode: 'rename' })); }}>Rename</Button>
+          </>
+        )}
+      >
+        <div className={styles.stack}>
+          {manage?.mode === 'rename' ? (
+            <TextField
+              label={`Outlet ${manage?.number}'s appliance`}
+              value={manageDraft}
+              onChange={(event) => setManageDraft(event.target.value)}
+              maxLength={40}
+              autoFocus
+            />
+          ) : (
+            <p className={styles.muted}>
+              {manage?.mode === 'forget'
+                ? `Outlet ${manage?.number} goes back to unnamed, and the power pattern saved as ${manage?.name} is deleted.`
+                : 'Rename it, or forget it - Dagitab then asks again the next time it runs.'}
+            </p>
+          )}
+          {manageError ? <Banner tone="alert">{manageError}</Banner> : null}
+        </div>
+      </Modal>
     </div>
   );
 };
