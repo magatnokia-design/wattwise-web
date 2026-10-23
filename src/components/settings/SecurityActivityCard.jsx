@@ -59,8 +59,7 @@ export const SecurityActivityCard = ({ userId }) => {
   return (
     <Card>
       <CardHeader
-        title="Security activity"
-        subtitle="Sign-ins and device changes on your account, kept for 90 days."
+        title="Hub activity"
       />
 
       {loading ? (

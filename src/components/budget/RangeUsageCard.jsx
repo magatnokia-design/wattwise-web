@@ -20,11 +20,6 @@ const shortDate = (key) => {
   const [, m, d] = String(key).split('-').map(Number);
   return m && d ? `${MONTHS[m - 1]} ${d}` : '--';
 };
-const formatHour = (hour) => {
-  const h = Number(hour);
-  if (!Number.isFinite(h)) return null;
-  return `${h % 12 === 0 ? 12 : h % 12} ${h < 12 ? 'AM' : 'PM'}`;
-};
 const peso = (value) => `₱${Number(value || 0).toFixed(2)}`;
 
 // The range on the date button: "Oct 8, 2026", "Oct 1 – 22", "Sep 28 – Oct 5".
@@ -36,7 +31,6 @@ const formatRange = ({ startDate, endDate }) => {
   }
   return `${shortDate(startDate)} – ${shortDate(endDate)}`;
 };
-const kwh = (value) => `${Number(value || 0).toFixed(2)} kWh`;
 
 export const RangeUsageCard = ({
   range,
@@ -66,41 +60,16 @@ export const RangeUsageCard = ({
 
   const hasBudget = monthlyBudget > 0;
   const paceOver = hasBudget && summary.monthPaceCost > monthlyBudget;
-  const tips = status === 'ready' ? buildBudgetTips(summary, insights, { monthlyBudget, daysInMonth }) : [];
+  // One tip, the most specific the figures support (as on the phone).
+  const tip = status === 'ready'
+    ? buildBudgetTips(summary, insights, { monthlyBudget, daysInMonth })[0]
+    : null;
+  const change = insights?.change || null;
 
-
-  const periodWord = summary.days === 1 ? 'the day before' : `the ${summary.days} days before`;
-  const facts = [];
-  if (insights?.change) {
-    const { percent, previousCost } = insights.change;
-    facts.push({
-      tone: percent > 0 ? 'up' : 'down',
-      text: percent === 0
-        ? `Same as ${periodWord} (${peso(previousCost)}).`
-        : `${Math.abs(percent)}% ${percent > 0 ? 'more' : 'less'} than ${periodWord} (${peso(previousCost)}).`,
-    });
-  }
-  if (insights?.day?.peakPower > 0) {
-    const hour = formatHour(insights.day.peakHour);
-    facts.push({ text: `Highest draw was ${insights.day.peakPower.toFixed(0)} W${hour ? ` around ${hour}` : ''}.` });
-  }
-  if (insights?.topAppliance) {
-    const top = insights.topAppliance;
-    facts.push({ text: `${top.name} used ${top.share}% of the energy (${peso(top.cost)}).` });
-  }
-  if (insights?.busiest) {
-    facts.push({ text: `Busiest day: ${shortDate(insights.busiest.date)} — ${peso(insights.busiest.cost)}.` });
-  }
-  if (insights?.quietest && insights.quietest.date !== insights.busiest?.date) {
-    facts.push({ text: `Quietest day: ${shortDate(insights.quietest.date)} — ${peso(insights.quietest.cost)}.` });
-  }
 
   return (
     <Card>
-      <CardHeader
-        title="Check your usage"
-        subtitle="Pick dates, or one day, to see what you used and how to save."
-      />
+      <CardHeader title="Check your usage" />
 
       <div className={styles.controls}>
         <div className={styles.presets} role="group" aria-label="Quick ranges">
@@ -166,55 +135,36 @@ export const RangeUsageCard = ({
         <>
           <div className={styles.result}>
             <div>
-              <span className={styles.resultLabel}>You used</span>
-              <strong className={styles.resultValue}>{kwh(summary.totalKwh)}</strong>
+              <span className={styles.resultLabel}>kWh used</span>
+              <strong className={styles.resultValue}>{Number(summary.totalKwh || 0).toFixed(2)}</strong>
             </div>
             <div>
-              <span className={styles.resultLabel}>It cost about</span>
+              <span className={styles.resultLabel}>Cost</span>
               <strong className={`${styles.resultValue} ${styles.resultCost}`}>{peso(summary.cost)}</strong>
             </div>
-            {!isSingleDay && summary.days > 0 ? (
-              <div>
-                <span className={styles.resultLabel}>Per day ({summary.days} days)</span>
-                <strong className={styles.resultValue}>{peso(summary.dailyCost)}</strong>
-              </div>
-            ) : null}
           </div>
 
-          <div className={styles.columns}>
-            {facts.length > 0 ? (
-              <section>
-                <h3>What stands out</h3>
-                <ul className={styles.list}>
-                  {facts.map((fact) => (
-                    <li key={fact.text} className={fact.tone === 'up' ? styles.up : styles.down}>{fact.text}</li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
-            <section>
-              <h3>Tips to save</h3>
-              <ul className={`${styles.list} ${styles.tips}`}>
-                {tips.map((tip) => <li key={tip}>{tip}</li>)}
-              </ul>
-            </section>
-          </div>
-
-          {summary.days > 0 && summary.totalKwh > 0 ? (
-            <p className={`${styles.pace} ${paceOver ? styles.paceOver : ''}`}>
-              At this rate, a full month costs about {peso(summary.monthPaceCost)}
-              {hasBudget
-                ? paceOver
-                  ? ` — more than your ${peso(monthlyBudget)} budget.`
-                  : ` — within your ${peso(monthlyBudget)} budget.`
-                : '.'}
+          {change && change.percent !== 0 ? (
+            <p className={change.percent > 0 ? styles.changeUp : styles.changeDown}>
+              <Icon name={change.percent > 0 ? 'caret-up' : 'caret-down'} />
+              {Math.abs(change.percent)}% {change.percent > 0 ? 'more' : 'less'} than the{' '}
+              {summary.days === 1 ? 'day' : 'days'} before
             </p>
           ) : null}
 
-          <p className={styles.footnote}>
-            {summary.includesToday ? 'Today counts what you have used so far. ' : ''}
-            Costs are the electricity at your rates. Your bill also adds a small monthly meter charge.
-          </p>
+          {summary.days > 0 && summary.totalKwh > 0 ? (
+            <p className={`${styles.pace} ${paceOver ? styles.paceOver : ''}`}>
+              Full month at this pace: <strong className="ww-num">{peso(summary.monthPaceCost)}</strong>
+              {hasBudget ? (paceOver ? ' · over budget' : ' · within budget') : ''}
+            </p>
+          ) : null}
+
+          {tip ? (
+            <p className={styles.tip}>
+              <Icon name="bulb-outline" />
+              {tip}
+            </p>
+          ) : null}
         </>
       )}
     </Card>

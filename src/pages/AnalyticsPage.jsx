@@ -1,24 +1,24 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useLiveOutlets } from '../hooks/useLiveOutlets';
 import { useAnalytics, ANALYTICS_TABS } from '../hooks/useAnalytics';
 import { formatCurrency } from '../screens/BudgetTracking/utils/budgetHelpers';
 import { Card, CardHeader } from '../components/ui/Card';
 import { StatGrid, StatTile } from '../components/ui/StatTile';
-import { DataTable } from '../components/ui/DataTable';
-import { Badge, Banner, EmptyState, OfflineState, Spinner } from '../components/ui/Feedback';
+import { Badge, Banner, EmptyState, Spinner } from '../components/ui/Feedback';
 import UsageChart from '../components/charts/UsageChart';
 import BillBreakdown from '../components/analytics/BillBreakdown';
 import styles from './page.module.css';
 
 const PERIOD_LABEL = {
   Daily: 'today',
-  Weekly: 'the last 7 days',
+  Weekly: 'this week',
   Monthly: 'this month',
 };
 
 export const AnalyticsPage = () => {
   const [tab, setTab] = useState('Daily');
+  // Folded by default, as on the phone - it is long and rarely the question.
+  const [showBill, setShowBill] = useState(false);
   const { outlets, rateProfileId, supplyRates, hasSupplyRates, telemetryFresh } = useLiveOutlets();
   const {
     summary,
@@ -84,20 +84,13 @@ export const AnalyticsPage = () => {
 
   return (
     <div className={styles.page}>
-      {/* The totals below are summed from rolled-up days. With none read they
-          are all zero, which is indistinguishable from a month of no usage -
-          so the page says which it is rather than printing a confident ₱0.00. */}
+      {/* Simplified (Oct 2026), as on the phone: two figures, the chart, what
+          is running now, and the bill folded away. Removed on request: the
+          default-rates banner (rates are automatic), "Where the energy went",
+          the peak/average and busiest-day tiles, and every caption. */}
       {showOfflineState ? (
         <Banner tone="warn" title="Can't reach Dagitab.">
-          The totals and charts below could not be loaded, so they are not your figures. Check your
-          network and reload — nothing has been lost.
-        </Banner>
-      ) : null}
-
-      {!hasSupplyRates ? (
-        <Banner tone="warn" title="Priced with default rates.">
-          These totals are estimates until you enter your own PELCO III generation and transmission
-          rates. <Link to="/settings">Set them in Settings →</Link>
+          These figures could not be loaded.
         </Banner>
       ) : null}
 
@@ -116,232 +109,68 @@ export const AnalyticsPage = () => {
             </button>
           ))}
         </div>
-        {showLive ? <Badge tone="good">Includes today, live</Badge> : null}
+        {showLive ? <Badge tone="good">Live</Badge> : null}
       </div>
 
       <StatGrid>
         <StatTile
-          label="Energy"
-          value={summary.totalEnergy.toFixed(3)}
+          label={`Energy ${PERIOD_LABEL[tab]}`}
+          value={summary.totalEnergy.toFixed(2)}
           unit="kWh"
           tone="primary"
-          /* A quiet day reports zero and names when the last reading was, rather
-             than borrowing the last rolled-up day's figure and captioning it
-             "Measured today". */
-          caption={
-            summary.lastMeasuredDate
-              ? `Nothing measured today · last recorded ${summary.lastMeasuredDate}`
-              : `Measured ${PERIOD_LABEL[tab]}`
-          }
+          icon="flash-outline"
         />
         <StatTile
-          label="Cost"
+          label={`Cost ${PERIOD_LABEL[tab]}`}
           value={formatCurrency(summary.totalCost)}
-          /* "Effective" is total/kWh, which is a fair description of a whole
-             billing period and a nonsense one for anything shorter — early in a
-             period it smears the fixed P5.00 metering charge across whatever
-             energy exists, and reported P5,610/kWh. Only Monthly reports it. */
-          caption={
-            tab === 'Monthly'
-              ? `PELCO III · ${formatCurrency(summary.effectiveRate)}/kWh effective`
-              : `PELCO III · ${formatCurrency(summary.marginalRate)} per additional kWh`
-          }
-        />
-        {/* Daily shows watts, the other tabs kWh — so label, value and unit are
-            set together rather than a shared unit that only fits one of them. */}
-        <StatTile
-          /* Always the peak on this tab, never the live draw.
-             It used to switch to "Drawing now" whenever telemetry was fresh,
-             which meant the day's peak only ever rendered once the hardware went
-             quiet - the number this tile exists for was hidden for exactly as
-             long as the device was working. The peak is a property of the day,
-             and this is the page about the day.
-             Live draw is not lost: the Dashboard shows it three times over, in
-             the combined tile and on both outlet cards. */
-          label={tab === 'Daily' ? 'Peak power' : 'Daily average'}
-          value={
-            tab === 'Daily'
-              ? summary.peakPowerW.toFixed(1)
-              : summary.averageUsage.toFixed(3)
-          }
-          unit={tab === 'Daily' ? 'W' : 'kWh'}
-          /* `isLive`, not `showLive`: a day still in progress has a peak that can
-             still be beaten, and that stays true while the hardware is quiet.
-             Gating on freshness would call today's running high final the moment
-             telemetry paused. Today's peak hour is deliberately unreported - the
-             nightly rollup fills it in from peakPowerTodayAtMs. */
-          caption={
-            tab === 'Daily'
-              ? isLive
-                ? 'Highest so far today'
-                : summary.peakHour === 'N/A'
-                  ? 'Highest of the two outlets'
-                  : `Peak hour ${summary.peakHour}`
-              : 'Across the period'
-          }
-        />
-        <StatTile
-          label="Busiest day"
-          value={summary.busiestDay}
-          caption={
-            summary.peakUsage > 0 ? `${summary.peakUsage.toFixed(3)} kWh on that day` : 'No data yet'
-          }
+          icon="wallet-outline"
         />
       </StatGrid>
 
       <div className={styles.split}>
-        <div className={styles.stack}>
-          <Card>
-            <CardHeader
-              title={`Energy by outlet — ${PERIOD_LABEL[tab]}`}
-              subtitle="Stacked so the day's total and its split read at once."
+        <Card>
+          <CardHeader title="Energy by outlet" />
+          {loading ? (
+            <Spinner label="Loading usage" />
+          ) : (
+            <UsageChart
+              series={series}
+              outlet1Name={summary.outlet1Name}
+              outlet2Name={summary.outlet2Name}
+              // Marginal, not effective: a day's bar must not carry a share
+              // of the monthly metering fee it never incurred.
+              effectiveRate={summary.marginalRate}
             />
-            {loading ? (
-              <Spinner label="Loading usage" />
-            ) : (
-              <UsageChart
-                series={series}
-                outlet1Name={summary.outlet1Name}
-                outlet2Name={summary.outlet2Name}
-                /* Each bar is one day, and a day priced at the period's
-                   effective rate carries a share of the monthly metering fee it
-                   never incurred. Tooltips price marginally. */
-                effectiveRate={summary.marginalRate}
-              />
-            )}
-          </Card>
-
-          <Card>
-            <CardHeader
-              title="Where the energy went"
-              subtitle="Rolled up from the appliance names recorded on each day."
-            />
-            <DataTable
-              rowKey={(row) => row.applianceName}
-              defaultSort={{ key: 'energyKwh', direction: 'desc' }}
-              empty={
-                showOfflineState ? (
-                  <OfflineState title="Can't load the breakdown">
-                    The rolled-up days live on your account and need a connection to read. The
-                    figures above come from the same reads, so they are not complete either.
-                  </OfflineState>
-                ) : (
-                  <EmptyState icon="power-outline" title="No appliance breakdown yet">
-                    Name the appliance on each outlet and Dagitab attributes usage to it from the
-                    next rollup.
-                  </EmptyState>
-                )
-              }
-              columns={[
-                { key: 'applianceName', header: 'Appliance', sortable: true },
-                {
-                  key: 'energyKwh',
-                  header: 'Energy',
-                  align: 'right',
-                  sortable: true,
-                  render: (row) => (
-                    <span className="ww-num">{row.energyKwh.toFixed(3)} kWh</span>
-                  ),
-                },
-                {
-                  key: 'share',
-                  header: 'Share',
-                  align: 'right',
-                  sortable: true,
-                  sortValue: (row) => row.energyKwh,
-                  render: (row) => (
-                    <span className="ww-num">
-                      {summary.totalEnergy > 0
-                        ? `${((row.energyKwh / summary.totalEnergy) * 100).toFixed(0)}%`
-                        : '—'}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'cost',
-                  header: 'Cost',
-                  align: 'right',
-                  sortable: true,
-                  render: (row) => <span className="ww-num">{formatCurrency(row.cost)}</span>,
-                },
-              ]}
-              rows={summary.applianceUsage}
-            />
-          </Card>
-        </div>
+          )}
+        </Card>
 
         <div className={styles.stack}>
           <Card>
-            <CardHeader title="Right now" subtitle="What is drawing power at this moment." />
+            <CardHeader title="Right now" />
             {!telemetryFresh ? (
-              <EmptyState icon="cloud-offline-outline" title="No readings in the last 12 seconds">
-                The ESP32 may still be connected — Settings tracks that separately, because
-                checking for commands is silent. This panel only fills in while readings are
-                actually arriving. Toggling an outlet usually starts them again.
-              </EmptyState>
+              <EmptyState icon="cloud-offline-outline" title="No readings from the Hub" />
             ) : (
               <div className={styles.stack}>
                 {liveAppliances.map((appliance) => (
                   <div key={appliance.outletNumber} className="ww-live-row">
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                       <span style={{ fontWeight: 600, color: 'var(--ww-text-dark)' }}>
-                        {appliance.displayLabel || appliance.applianceName}
+                        Outlet {appliance.outletNumber}
                       </span>
-                      {/* Switching outranks both: during that window neither the
-                          commanded state nor the meter is the whole truth, and
-                          the transition is what is actually happening. */}
-                      <Badge
-                        tone={
-                          appliance.isSwitching
-                            ? 'warn'
-                            : appliance.isDrawing
-                              ? 'good'
-                              : appliance.isOn
-                                ? 'warn'
-                                : 'neutral'
-                        }
-                      >
+                      <span className="ww-num" style={{ fontWeight: 700 }}>
                         {appliance.isSwitching
-                          ? appliance.switchingTo === 'off'
-                            ? 'Switching off…'
-                            : 'Switching on…'
+                          ? (appliance.switchingTo === 'off' ? 'Switching off…' : 'Switching on…')
                           : appliance.isDrawing
-                            ? 'Drawing'
-                            : appliance.isOn
-                              ? 'Idle'
-                              : 'Off'}
-                      </Badge>
-                    </div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        gap: 12,
-                        fontSize: 12.5,
-                        color: 'var(--ww-text-light)',
-                        marginTop: 4,
-                      }}
-                    >
-                      <span className="ww-num">{appliance.powerW.toFixed(1)} W</span>
-                      <span className="ww-num">{appliance.energyKwh.toFixed(3)} kWh today</span>
-                      <span className="ww-num">{formatCurrency(appliance.costPerHour)}/hr</span>
+                            ? `${appliance.powerW.toFixed(1)} W`
+                            : appliance.isOn ? 'On · idle' : 'Off'}
+                      </span>
                     </div>
                   </div>
                 ))}
-
                 {drawing.length > 0 ? (
                   <p className={styles.muted}>
-                    Drawing <strong className="ww-num">{livePower.toFixed(1)} W</strong> combined —
-                    about <strong className="ww-num">{formatCurrency(liveCostPerHour)}</strong> per
-                    hour if it keeps running.
+                    <span className="ww-num">{formatCurrency(liveCostPerHour)}</span> per hour
                   </p>
-                ) : null}
-
-                {idleOn.length > 0 ? (
-                  <Banner tone="warn">
-                    Outlet {idleOn.map((appliance) => appliance.outletNumber).join(' and ')}{' '}
-                    {idleOn.length > 1 ? 'are' : 'is'} switched on but drawing nothing.
-                  </Banner>
                 ) : null}
               </div>
             )}
@@ -349,30 +178,44 @@ export const AnalyticsPage = () => {
 
           {budgetProjection ? (
             <Card>
-              <CardHeader title="Month-end projection" subtitle="At the current daily pace." />
-              <StatTile
-                label="Projected spend"
-                value={formatCurrency(budgetProjection.projected)}
-                tone={budgetProjection.percent > 100 ? 'danger' : 'primary'}
-                caption={
-                  budgetProjection.percent > 100
-                    ? `${(budgetProjection.percent - 100).toFixed(0)}% over your ${formatCurrency(
-                        budgetProjection.monthlyBudget
-                      )} budget`
-                    : `${budgetProjection.percent.toFixed(0)}% of your ${formatCurrency(
-                        budgetProjection.monthlyBudget
-                      )} budget`
-                }
-              />
+              <p className={styles.muted}>Month at this pace</p>
+              <p
+                className="ww-num"
+                style={{
+                  fontSize: 22,
+                  fontWeight: 800,
+                  color: budgetProjection.percent > 100 ? 'var(--ww-error)' : 'var(--ww-text-dark)',
+                }}
+              >
+                {formatCurrency(budgetProjection.projected)}
+              </p>
+              <Badge tone={budgetProjection.percent > 100 ? 'alert' : 'good'}>
+                {budgetProjection.percent > 100 ? 'Over budget' : 'Within budget'}
+              </Badge>
             </Card>
           ) : null}
 
           <Card>
             <CardHeader
-              title="PELCO III breakdown"
-              subtitle={`How ${formatCurrency(summary.totalCost)} is arrived at.`}
+              title="Bill breakdown"
+              action={(
+                <button
+                  type="button"
+                  className={styles.linkButton}
+                  onClick={() => setShowBill((value) => !value)}
+                  aria-expanded={showBill}
+                >
+                  {showBill ? 'Hide' : 'Show'}
+                </button>
+              )}
             />
-            <BillBreakdown bill={billDetails} isEstimate={!hasSupplyRates} />
+            {showBill ? (
+              <BillBreakdown bill={billDetails} isEstimate={!hasSupplyRates} />
+            ) : (
+              <p className="ww-num" style={{ fontSize: 15, fontWeight: 700, color: 'var(--ww-text-dark)' }}>
+                {formatCurrency(summary.totalCost)}
+              </p>
+            )}
           </Card>
         </div>
       </div>

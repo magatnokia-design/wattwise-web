@@ -303,8 +303,7 @@ export const OutletCard = ({
       {showSwapHint ? (
         <div className={styles.swapHint}>
           <p>
-            Different appliance detected. Switch this outlet off and on to measure it on its
-            own — otherwise this reading still includes the last one.
+            Different appliance detected. Switch this outlet off and on to measure it on its own.
           </p>
         </div>
       ) : null}
@@ -360,40 +359,7 @@ export const OutletCard = ({
             </Button>
           </form>
         </div>
-      ) : (
-        /* No suggestion to show. Nothing to offer either — naming happens by
-           accepting a measurement, so an outlet with no detection yet simply
-           waits for one rather than inviting a name the app cannot verify. */
-        <div className={styles.footer}>
-          <p className={styles.footerNote}>
-            {/* Naming advice would be wrong here: there is no profile to offer
-                and no signature worth learning. Say what is still true instead
-                — metering is unaffected, only identification is. */}
-            {unsupported
-              ? 'Dagitab identifies low-voltage appliances up to 500 W. Usage and cost are still being recorded.'
-              /* Idle, but the outlet carries a name. Offering "rename it" alone
-                 directly under "No appliance detected yet" reads as a
-                 contradiction — the reader is told there is no appliance and
-                 then told to rename one. Both halves are true and neither is
-                 the whole answer, so say which is which before the advice. */
-              /* Freshness first. `drawing` is false when the meter reads zero
-                 AND when no meter is reporting at all, and only one of those
-                 justifies "Nothing is drawing" - which is a claim about a
-                 measurement. During a power cut this sentence said it while
-                 the badge two lines above correctly read "No recent
-                 readings", so the same card asserted and disclaimed the same
-                 fact. applianceLine.js already guards this; this string was
-                 written separately and did not. */
-              : telemetryFresh === false && applianceName
-                ? `This outlet is named ${applianceName}. No readings are arriving, so nothing can be checked right now.`
-              : !drawing && applianceName
-                ? `Last named ${applianceName}. Switch it on and Dagitab checks what is plugged in.`
-                : applianceName
-                  ? 'Rename it under Settings → Saved appliances.'
-                  : 'Switch it on and Dagitab suggests a name, or asks what it is.'}
-          </p>
-        </div>
-      )}
+      ) : null}
     </Card>
   );
 };

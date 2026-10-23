@@ -149,3 +149,20 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* A text button in a card header - "Show" / "Hide" (Oct 2026). */
+.linkButton {
+  border: none;
+  background: transparent;
+  color: var(--ww-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--ww-radius-sm);
+}
+
+.linkButton:hover {
+  background: var(--ww-tint-success);
+}

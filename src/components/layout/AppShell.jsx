@@ -224,8 +224,7 @@ export const AppShell = () => {
             You are signed in as <strong>{displayName}</strong>.
           </p>
           <p style={{ fontSize: 13, color: 'var(--ww-text-light)' }}>
-            Your outlets keep running exactly as they are — schedules and safety cut-offs run on
-            the server, not in this browser. You will need your password to sign back in.
+            Your outlets and timers keep running.
           </p>
         </div>
       </Modal>

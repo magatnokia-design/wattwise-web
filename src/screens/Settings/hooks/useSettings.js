@@ -121,6 +121,10 @@ export const useSettings = () => {
         rateProfileId: preferencesData.rateProfileId || null,
         supplyRates: preferencesData.supplyRates || null,
         hasSupplyRates: preferencesData.hasSupplyRates === true,
+        // Automatic by default since Oct 2026: applyPelcoRates follows PELCO
+        // III's posted rate. 'manual' only after the user saves their own.
+        rateMode: preferencesData.rateMode || 'auto',
+        ratesSourceMonth: preferencesData.ratesSourceMonth || null,
         notifications: preferencesData.notificationsEnabled ?? true,
         monthlyBudget: Number(budgetData.monthlyBudget || profileData.monthlyBudget || 0),
         profileName: profileData.name || authUser?.displayName || 'User',
@@ -201,6 +205,8 @@ export const useSettings = () => {
         ...prev,
         supplyRates: result.data,
         hasSupplyRates: true,
+        rateMode: 'manual',
+        ratesSourceMonth: null,
       }));
 
       return { success: true };
@@ -210,6 +216,17 @@ export const useSettings = () => {
       return { success: false, error: err.message };
     }
   }, []);
+
+  // Back to the automatic rate: PELCO III's latest posted generation rate.
+  const switchToAutomaticRates = useCallback(async () => {
+    setError(null);
+    const userId = auth.currentUser?.uid;
+    if (!userId) return { success: false, error: 'User not authenticated' };
+    const result = await userService.adoptAutomaticRates(userId, { force: true });
+    if (!result.success) return result;
+    await fetchSettings();
+    return { success: true };
+  }, [fetchSettings]);
 
   const updateRateProfile = useCallback(async (rateProfileId) => {
     setError(null);
@@ -473,6 +490,7 @@ export const useSettings = () => {
     error,
     fetchSettings,
     updateSupplyRates,
+    switchToAutomaticRates,
     updateRateProfile,
     updateNotifications,
     updateDeviceSettings,

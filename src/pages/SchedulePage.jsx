@@ -138,25 +138,18 @@ export const SchedulePage = () => {
   return (
     <div className={styles.page}>
       <div className={styles.pageIntro}>
-        <p className={styles.lede}>
-          Timers run on the server, not in this tab — closing the browser does not stop them. The
-          ESP32 picks up the switch on its next poll.
-        </p>
         <Button onClick={() => setOpen(true)}>Add timer</Button>
       </div>
 
       {error ? <Banner tone="alert">{error}</Banner> : null}
 
       <Card>
-        <CardHeader title="Timers" subtitle={`${schedules.length} configured`} />
+        <CardHeader title="Timers" />
 
         {loading && !schedules.length ? (
           <Spinner label="Loading timers" />
         ) : schedules.length === 0 ? (
-          <EmptyState icon="timer-outline" title="No timers yet">
-            Add a countdown to switch an outlet off after a set time, or a weekly schedule to run it
-            at the same hour each day.
-          </EmptyState>
+          <EmptyState icon="timer-outline" title="No timers yet" />
         ) : (
           <ul className={scheduleStyles.list}>
             {schedules.map((schedule) => (
@@ -253,10 +246,7 @@ export const SchedulePage = () => {
             </p>
           ) : null}
 
-          <p style={{ fontSize: 13, color: 'var(--ww-text-light)' }}>
-            This cannot be undone, and the outlet stays exactly as it is now. To stop the timer
-            without losing it, switch it off instead.
-          </p>
+          <p style={{ fontSize: 13, color: 'var(--ww-text-light)' }}>This cannot be undone.</p>
         </div>
       </Modal>
 

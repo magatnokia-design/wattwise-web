@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useSettings } from '../screens/Settings/hooks/useSettings';
 import {
   formatAckStatusValue,
@@ -8,8 +7,7 @@ import {
 } from '../screens/Settings/utils/settingsHelpers';
 import { authService } from '../services/firebase';
 import { auth } from '../services/firebase/config';
-import {
-  RATE_EFFECTIVE_DATE,
+import {
   SUPPLY_RATE_FIELDS,
   normalizeSupplyRates,
   sumSupplyRates,
@@ -26,6 +24,13 @@ import { Badge, Banner, EmptyState, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
 import settingsStyles from './SettingsPage.module.css';
 import { formatLastSeen } from '../components/settings/lastSeen';
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// '2026-09' -> 'Sep 2026'
+const formatRatesMonth = (key) => {
+  const [y, m] = String(key || '').split('-').map(Number);
+  return y && m ? `${MONTHS[m - 1]} ${y}` : '';
+};
 
 const HEALTH_TONE = {
   online: 'good',
@@ -66,6 +71,7 @@ export const SettingsPage = () => {
     error,
     fetchSettings,
     updateSupplyRates,
+    switchToAutomaticRates,
     updateNotifications,
     // updateDeviceSettings / clearDeviceSettings are deliberately not pulled in.
     // Pairing is the phone app's job — see the ESP32 card below.
@@ -83,6 +89,9 @@ export const SettingsPage = () => {
    * `unknown`, and applianceIdentity would stop working on that outlet without
    * saying so.
    */
+  // The rate form is folded away: rates are automatic (Oct 2026).
+  const [showRateForm, setShowRateForm] = useState(false);
+  const [switchingRates, setSwitchingRates] = useState(false);
   const [renameTarget, setRenameTarget] = useState(null);
   const [renameDraft, setRenameDraft] = useState('');
   const [renaming, setRenaming] = useState(false);
@@ -246,6 +255,16 @@ export const SettingsPage = () => {
     return <Spinner label="Loading settings" />;
   }
 
+  const handleUseAutomatic = async () => {
+    setSwitchingRates(true);
+    const result = await switchToAutomaticRates();
+    setSwitchingRates(false);
+    setShowRateForm(false);
+    setRateStatus(result.success
+      ? { tone: 'good', message: 'Back on the automatic rate.' }
+      : { tone: 'alert', message: result.error || 'Could not switch to the automatic rate.' });
+  };
+
   return (
     <div className={styles.page}>
       {error ? <Banner tone="alert">{error}</Banner> : null}
@@ -256,21 +275,42 @@ export const SettingsPage = () => {
               every peso figure in the app is priced against. */}
           <Card>
             <CardHeader
-              title="PELCO III rates"
-              subtitle={`Block 1 — generation and transmission. Published monthly at pelco3.org; defaults track ${RATE_EFFECTIVE_DATE}.`}
+              title="Electricity rate"
+              action={settings.rateMode === 'manual'
+                ? <Badge tone="neutral">Your own rate</Badge>
+                : <Badge tone="good">Automatic</Badge>}
             />
 
-            {!settings.hasSupplyRates ? (
-              <Banner tone="warn" title="Using default rates.">
-                Enter the generation rate from your latest bill so estimates match what PELCO III
-                actually charges you.
-              </Banner>
-            ) : null}
+            {/* Automatic since Oct 2026: Dagitab reads PELCO III's official
+                generation rate every month (applyPelcoRates). The form is for
+                the exception - a bill showing a different rate. */}
+            <div className={settingsStyles.rateTotal}>
+              <span>
+                {settings.rateMode === 'manual'
+                  ? 'Generation rate'
+                  : `PELCO III${settings.ratesSourceMonth ? ` · ${formatRatesMonth(settings.ratesSourceMonth)}` : ''}`}
+              </span>
+              <strong className="ww-num">
+                ₱{Number(settings.supplyRates?.generation || 0).toFixed(4)}/kWh
+              </strong>
+            </div>
 
+            <div className={styles.rowEnd} style={{ marginTop: 12 }}>
+              {settings.rateMode === 'manual' ? (
+                <Button size="sm" variant="secondary" loading={switchingRates} onClick={handleUseAutomatic}>
+                  Use the automatic rate
+                </Button>
+              ) : null}
+              <Button size="sm" variant="secondary" onClick={() => setShowRateForm((value) => !value)}>
+                {showRateForm ? 'Close' : settings.rateMode === 'manual' ? 'Edit my rate' : 'Use my own rate'}
+              </Button>
+            </div>
+
+            {showRateForm ? (
             <div className={styles.stack} style={{ marginTop: 16 }}>
               {primaryField ? (
                 <TextField
-                  label={`${primaryField.label} (the one that moves each month)`}
+                  label={primaryField.label}
                   type="number"
                   step="0.0001"
                   prefix="₱"
@@ -336,37 +376,18 @@ export const SettingsPage = () => {
                 </Button>
               </div>
 
-              <p className={styles.muted}>
-                Blocks 2 and 3 (distribution, universal charges, VAT) are ERC constants and are not
-                editable — see the breakdown on <Link to="/analytics">Analytics</Link>. Current rates:{' '}
-                <a href="https://www.pelco3.org/rates.php" target="_blank" rel="noreferrer">
-                  pelco3.org/rates.php
-                </a>
-              </p>
-
-              {/* Asked often enough to be worth a link from the page that
-                  raises the question, rather than only from the sidebar. */}
-              <p className={styles.muted}>
-                Not sure which lines to fill in, or how close this will be to the
-                bill that arrives? <Link to="/help">Help Center</Link> answers
-                both. See also <Link to="/about">About</Link>,{' '}
-                <Link to="/privacy">Privacy</Link> and{' '}
-                <Link to="/terms">Terms</Link>.
-              </p>
             </div>
+            ) : null}
+            {!showRateForm && rateStatus ? <Banner tone={rateStatus.tone}>{rateStatus.message}</Banner> : null}
           </Card>
 
 
           <Card>
             <CardHeader
               title="Saved appliances"
-              subtitle="Named once, recognised by themselves on either outlet."
             />
             {savedAppliances.length === 0 ? (
-              <EmptyState icon="pricetags-outline" title="Nothing learned yet">
-                Name an appliance while it is running - pick the suggestion or type it - and it is
-                saved here.
-              </EmptyState>
+              <EmptyState icon="pricetags-outline" title="No saved appliances yet" />
             ) : (
               <ul className={settingsStyles.applianceList}>
                 {savedAppliances.map((appliance) => (
@@ -374,10 +395,8 @@ export const SettingsPage = () => {
                     <div>
                       <p className={settingsStyles.applianceName}>{appliance.label}</p>
                       <p className={styles.muted}>
-                        <span className="ww-num">{appliance.meanPower.toFixed(1)} W</span> average ·
-                        peak <span className="ww-num">{appliance.peakPower.toFixed(1)} W</span>
+                        {formatLastSeen(appliance.lastSeen)} · <span className="ww-num">~{appliance.meanPower.toFixed(0)} W</span>
                       </p>
-                      <p className={styles.muted}>{formatLastSeen(appliance.lastSeen)}</p>
                     </div>
                     <div className={styles.row}>
                       <Button
@@ -434,7 +453,6 @@ export const SettingsPage = () => {
               <div className={settingsStyles.toggleRow}>
                 <div>
                   <p className={settingsStyles.toggleLabel}>Notifications</p>
-                  <p className={styles.muted}>Budget, safety and device alerts.</p>
                 </div>
                 <Switch
                   checked={settings.notifications}
@@ -474,11 +492,9 @@ export const SettingsPage = () => {
                 <strong>{formatAckStatusValue(settings.esp32LastAckStatus)}</strong>
               </div>
 
-              <p className={styles.muted}>
-                {settings.esp32Linked
-                  ? 'Paired. To re-pair or move this device to another account, use the phone app — it scans the QR code and checks the token against the firmware.'
-                  : 'No device paired yet. Pair it in the phone app, which scans the QR code on the Hub. It will appear here once it reports.'}
-              </p>
+              {!settings.esp32Linked ? (
+                <p className={styles.muted}>Pair it in the Dagitab app.</p>
+              ) : null}
             </div>
           </Card>
         </div>
@@ -516,11 +532,7 @@ export const SettingsPage = () => {
             }}
           />
 
-          <p className={styles.muted}>
-            The signature keeps its measurements — only the label changes. Any
-            outlet currently named <strong>{renameTarget}</strong> is renamed
-            with it, so Dagitab still recognises this appliance afterwards.
-          </p>
+
         </div>
       </Modal>
 
@@ -544,18 +556,10 @@ export const SettingsPage = () => {
           {forgetError ? <Banner tone="alert">{forgetError}</Banner> : null}
 
           <p className={styles.muted}>
-            <strong>{forgetTarget}</strong> and the power measurements behind it
-            are deleted. Detection falls back to the built-in profiles, so this
-            appliance is recognised by its general shape rather than by how yours
-            actually draws.
+            Dagitab will ask for its name again the next time it runs.
           </p>
 
-          <p className={styles.muted}>
-            There is no undo. Getting it back means plugging the appliance in and
-            letting Dagitab measure a full run again. If you only want to change
-            the name, close this and use <strong>Rename</strong> — that keeps the
-            measurements.
-          </p>
+
         </div>
       </Modal>
     </div>

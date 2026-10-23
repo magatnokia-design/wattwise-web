@@ -1,17 +1,13 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useOutletControl } from '../screens/Dashboard/hooks/useOutletControl';
 import { useLiveOutlets } from '../hooks/useLiveOutlets';
 import { buildLiveAppliances } from '../utils/liveUsage';
-import { useDismissibleNotice } from '../hooks/useDismissibleNotice';
 import { describeRelayFault } from '../constants/relayFault';
 import { formatCurrency } from '../screens/BudgetTracking/utils/budgetHelpers';
 import OutletCard from '../components/dashboard/OutletCard';
 import CutoffNotice from '../components/dashboard/CutoffNotice';
 import { StatGrid, StatTile } from '../components/ui/StatTile';
 import { Banner, Spinner, Badge } from '../components/ui/Feedback';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
 import styles from './page.module.css';
 
 const relativeAge = (timestampMs) => {
@@ -47,9 +43,6 @@ export const DashboardPage = () => {
     totalEnergyKwh,
     totalPowerW,
     estimatedCost,
-    estimatedCostPerHour,
-    effectiveRate,
-    hasSupplyRates,
     isToggling,
     toggleOutlet,
     updateApplianceName,
@@ -136,7 +129,6 @@ export const DashboardPage = () => {
     return appliance?.relayStuck === true;
   };
 
-  const rateNotice = useDismissibleNotice('rate-notice');
   const [toggleError, setToggleError] = useState('');
 
   const handleToggle = (outletNumber) => async (nextStatus) => {
@@ -163,21 +155,6 @@ export const DashboardPage = () => {
 
   return (
     <div className={styles.page}>
-      {!hasSupplyRates && rateNotice.visible ? (
-        <Banner
-          tone="warn"
-          title="Using default PELCO III rates."
-          action={
-            <Button size="sm" variant="secondary" onClick={rateNotice.dismiss}>
-              Dismiss
-            </Button>
-          }
-        >
-          Every peso figure below is an estimate until you enter your own
-          generation and transmission rates. <Link to="/settings">Set them in Settings →</Link>
-        </Banner>
-      ) : null}
-
       {toggleError ? <Banner tone="alert">{toggleError}</Banner> : null}
 
       {/* Above the fold and above the outlet cards: this explains why one of
@@ -206,16 +183,12 @@ export const DashboardPage = () => {
       <CutoffNotice outlets={outlets} />
 
       <div className={styles.pageIntro}>
-        <p className={styles.lede}>
-          Live readings from your ESP32. Both outlets update without refreshing, and a toggle here
-          switches the physical relay.
-        </p>
         <Badge tone={telemetryFresh ? 'good' : 'neutral'}>
           {telemetryFresh
-            ? `Hardware reporting · ${relativeAge(lastTelemetryMs)}`
+            ? 'Hub online'
             : lastTelemetryMs > 0
-              ? `No telemetry · last seen ${relativeAge(lastTelemetryMs)}`
-              : 'No telemetry yet'}
+              ? `Hub offline · last heard ${relativeAge(lastTelemetryMs)}`
+              : 'Waiting for the Hub'}
         </Badge>
       </div>
 
@@ -226,30 +199,17 @@ export const DashboardPage = () => {
           unit="W"
           tone="primary"
           icon="flash-outline"
-          caption="Both outlets combined"
         />
         <StatTile
           label="Energy today"
           value={totalEnergyKwh.toFixed(3)}
           unit="kWh"
           icon="battery-charging"
-          caption="Since midnight, Manila time"
         />
         <StatTile
           label="Cost today"
           value={formatCurrency(estimatedCost)}
           icon="wallet-outline"
-          /* The marginal rate now, not total/kWh — useOutletControl returns it
-             under the same name. Calling it "effective" here was the caption
-             that read P5610.00/kWh beside a 16 W lamp. */
-          caption={`PELCO III · ${formatCurrency(effectiveRate)} per additional kWh`}
-        />
-        <StatTile
-          label="Running cost"
-          value={formatCurrency(estimatedCostPerHour)}
-          unit="/hr"
-          icon="time-outline"
-          caption="At the current draw"
         />
       </StatGrid>
 
@@ -299,24 +259,9 @@ export const DashboardPage = () => {
         used to, points them at the wrong thing.
       */}
       {!telemetryFresh ? (
-        <Card>
-          <p style={{ fontSize: 13, color: 'var(--ww-text-light)' }}>
-            <strong style={{ color: 'var(--ww-text-dark)' }}>Nothing is reporting.</strong> No
-            readings have arrived in the last 12 seconds, so everything above stays at zero.
-          </p>
-          <p style={{ fontSize: 13, color: 'var(--ww-text-light)', marginTop: 10 }}>
-            This does not necessarily mean the ESP32 is offline. Dagitab only sees it when it
-            sends a reading — checking for commands is silent. <strong
-              style={{ color: 'var(--ww-text-dark)' }}
-            >Toggling either outlet usually wakes it up.</strong> Refreshing this page will not:
-            there is no newer reading to fetch.
-          </p>
-          <p style={{ fontSize: 13, color: 'var(--ww-text-light)', marginTop: 10 }}>
-            If it stays quiet after a toggle, then check it is powered and still linked under{' '}
-            <Link to="/settings">Settings</Link>. Either way, toggles queued here are picked up as
-            soon as it reports again.
-          </p>
-        </Card>
+        <Banner tone="warn" title="No readings from the Hub.">
+          Check its power and Wi-Fi. Toggles made here are sent when it reports again.
+        </Banner>
       ) : null}
     </div>
   );

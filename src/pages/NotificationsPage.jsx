@@ -3,7 +3,7 @@ import {
   describeNotificationDetails,
   formatNotificationDate,
   formatNotificationTime,
-  getNotificationColor,
+  getNotificationColor,
 } from '../screens/Notifications/utils/notificationHelpers';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -28,10 +28,6 @@ export const NotificationsPage = () => {
   return (
     <div className={styles.page}>
       <div className={styles.pageIntro}>
-        <p className={styles.lede}>
-          The same alerts the phone app pushes — budget thresholds, safety cut-offs, device events.
-          Reading one here marks it read everywhere.
-        </p>
         <div className={styles.row}>
           <Button size="sm" variant="secondary" onClick={markAllAsRead} disabled={unreadCount === 0}>
             Mark all read
@@ -52,7 +48,7 @@ export const NotificationsPage = () => {
               ? 'Not loaded'
               : unreadCount > 0
                 ? `${unreadCount} unread`
-                : 'Everything here has been read'
+                : 'All read'
           }
         />
 
@@ -67,10 +63,7 @@ export const NotificationsPage = () => {
             are still there.
           </OfflineState>
         ) : notifications.length === 0 ? (
-          <EmptyState icon="notifications-outline" title="Nothing yet">
-            Alerts appear when a budget threshold is crossed, a timer fires, or the safety cut-off
-            trips.
-          </EmptyState>
+          <EmptyState icon="notifications-outline" title="You're all caught up" />
         ) : (
           <ul className={notificationStyles.list}>
             {notifications.map((notification) => (

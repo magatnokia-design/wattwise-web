@@ -45,12 +45,6 @@ export const BudgetPage = () => {
   if (showOfflineState) {
     return (
       <div className={styles.page}>
-        <div className={styles.pageIntro}>
-          <p className={styles.lede}>
-            Spending is recomputed from the daily rollups each night, so it never double-counts a
-            re-run.
-          </p>
-        </div>
         <Card>
           <OfflineState onRetry={handleRefresh}>
             Your budget and this month&apos;s spending are stored on your account, and the page
@@ -63,36 +57,8 @@ export const BudgetPage = () => {
 
   return (
     <div className={styles.page}>
-      <div className={styles.pageIntro}>
-        <p className={styles.lede}>
-          Spending is recomputed from the daily rollups each night, so it never double-counts a
-          re-run.
-        </p>
-      </div>
-
-      {/*
-        The amount is set on the phone only — one writer, deliberately.
-        `setMonthlyBudget` clears the 50/75/90/100% alert flags when the figure
-        changes, because those flags record crossings against a budget that no
-        longer exists. Writing from here left them set, and handleBudgetAlerts
-        skips any threshold already marked true, so changing the budget on the
-        web silenced alerts for the rest of the month while doing it on the
-        phone worked. Same account, same action, different outcome.
-
-        Per §12 this is a pointer, not a gate: everything the page shows still
-        works here, and nothing about the budget is hidden behind the app.
-      */}
-      {monthlyBudget <= 0 ? (
-        <Banner tone="info" title="No monthly budget set yet.">
-          Set one in the Dagitab app to turn on the 50 / 75 / 90 / 100% alerts. It appears here as
-          soon as you do.
-        </Banner>
-      ) : (
-        <Banner tone="info">
-          Change your monthly budget in the Dagitab app. Everything on this page stays live either
-          way.
-        </Banner>
-      )}
+      {/* The amount is set on the phone only - one writer, deliberately:
+          setMonthlyBudget there also clears the 50/75/90/100% alert flags. */}
 
       {/* Same order as the phone: the budget, then any dates, then the month
           at a glance. The stat tiles, Previous months table and By outlet card
@@ -100,7 +66,6 @@ export const BudgetPage = () => {
       <Card>
         <CardHeader
           title="This month"
-          subtitle={monthlyBudget > 0 ? status.message : 'Set a budget to track progress'}
         />
 
         {monthlyBudget > 0 ? (
@@ -138,8 +103,7 @@ export const BudgetPage = () => {
           </>
         ) : (
           <EmptyState icon="wallet-outline" title="No budget set">
-            Dagitab still records what you spend — a budget just adds the alerts and the
-            projection.
+            Set one in the Dagitab app.
           </EmptyState>
         )}
       </Card>

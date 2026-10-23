@@ -2,13 +2,10 @@ import { useState } from 'react';
 import useReferenceComparison from '../screens/ReferenceComparison/hooks/useReferenceComparison';
 import {
   buildTrend,
-  explainAccuracy,
   formatMonthLabel,
-  describeCostBasis,
   labelCostBasis,
 } from '../screens/ReferenceComparison/utils/comparisonHelpers';
 import { formatCurrency } from '../screens/BudgetTracking/utils/budgetHelpers';
-import { foldApplianceRows } from '../utils/applianceBreakdown';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -22,8 +19,6 @@ import comparisonStyles from './ComparisonPage.module.css';
 const DELTAS = [
   { key: 'energy', label: 'Energy', unit: ' kWh', digits: 2 },
   { key: 'cost', label: 'Cost', currency: true },
-  { key: 'outlet1', label: 'Outlet 1', unit: ' kWh', digits: 2 },
-  { key: 'outlet2', label: 'Outlet 2', unit: ' kWh', digits: 2 },
 ];
 
 // Which field on the month's totals each row reads. The measured figure is
@@ -71,16 +66,6 @@ export const ComparisonPage = () => {
     previousRecorded: previousTotals.daysRecorded,
   });
   const hasUsage = totals.daysRecorded > 0;
-
-  // The same fold the emailed statement uses: six named rows, and a residual
-  // summed from the tail itself so the block can only restate figures that
-  // exist. Kept identical on purpose - two surfaces itemising one month by
-  // different rules is the bug this block was added to close.
-  const applianceRows = foldApplianceRows(totals.appliances);
-  const applianceKwh = applianceRows.reduce(
-    (sum, row) => sum + (Number(row.energyKwh) || 0),
-    0
-  );
 
   const openForm = () => {
     setForm({
@@ -201,14 +186,6 @@ export const ComparisonPage = () => {
 
   return (
     <div className={styles.page}>
-      <div className={styles.pageIntro}>
-        <p className={styles.lede}>
-          Pick one month. Everything below is about that month: what the hardware measured, how
-          that compares with the month before it, and how the estimate lines up with the PELCO III
-          bill covering the same electricity.
-        </p>
-      </div>
-
       {error ? <Banner tone="alert">{error}</Banner> : null}
 
       <Card>
@@ -227,13 +204,8 @@ export const ComparisonPage = () => {
         <>
           <Card>
             <CardHeader
-              title={`What Dagitab measured — ${monthLabel}`}
-              subtitle={
-                hasUsage
-                  ? `${totals.daysRecorded} ${totals.daysRecorded === 1 ? 'day' : 'days'} recorded, from outlet 1 and outlet 2 only. `
-                    + describeCostBasis(totals.costBasis, monthLabel)
-                  : undefined
-              }
+              title={monthLabel}
+              action={totals.costBasis === 'final' ? <Badge tone="good">Final</Badge> : null}
             />
 
             {hasUsage ? (
@@ -245,11 +217,8 @@ export const ComparisonPage = () => {
                 {trend.available ? (
                   <div className={comparisonStyles.trend} data-tone={trend.tone}>
                     <p className={comparisonStyles.trendHeadline}>{trend.headline}</p>
-                    <p className={comparisonStyles.trendDetail}>{trend.detail}</p>
                   </div>
-                ) : (
-                  <p className={comparisonStyles.trendMuted}>{trend.detail}</p>
-                )}
+                ) : null}
 
                 <div className={comparisonStyles.deltaGrid}>
                   {DELTAS.map((entry) => renderMetric(entry.key))}
@@ -262,87 +231,20 @@ export const ComparisonPage = () => {
                     July's configured ones and report the gap as a change in
                     consumption. So the comparison stays like-for-like and the
                     basis is stated rather than left to be inferred. */}
-                {totals.costBasis === 'estimate' ? null : (
-                  <p className={comparisonStyles.basisNote}>
-                    {monthLabel} comes to{' '}
-                    <span className="ww-num">{formatCurrency(totals.cost)}</span>.{' '}
-                    {describeCostBasis(totals.costBasis, monthLabel)} Any change shown against{' '}
-                    {previousLabel} prices both months with your own rates, so the two are
-                    measured the same way.
-                  </p>
-                )}
-
-                {/* Where it went.
-                    The two outlet tiles above answer "which of the two sockets";
-                    this answers "which appliance", and they are not the same
-                    question. Outlet totals carry the name each outlet held on
-                    the LAST recorded day, so renaming an appliance rewrites the
-                    whole month retroactively. These rows credit each day's
-                    energy to the name the outlet carried on THAT day, which is
-                    the rule the emailed statement uses and the only one a rename
-                    cannot rewrite.
-
-                    Both were already true; only the statement was showing this
-                    one. August 2026 read as six appliances on the PDF and two
-                    here off the same 7.24 kWh, and nothing said why. */}
-                {applianceRows.length > 0 ? (
-                  <div className={comparisonStyles.appliances}>
-                    <p className={comparisonStyles.appliancesTitle}>Where it went</p>
-
-                    {applianceRows.map((row) => {
-                      const share = totals.kWh > 0 ? (row.energyKwh / totals.kWh) * 100 : 0;
-
-                      return (
-                        <div key={row.applianceName} className={comparisonStyles.accuracyRow}>
-                          <span>
-                            {row.applianceName}{' '}
-                            <span className={styles.muted}>
-                              <span className="ww-num">{share.toFixed(0)}%</span>
-                            </span>
-                          </span>
-                          <strong className="ww-num">{row.energyKwh.toFixed(2)} kWh</strong>
-                        </div>
-                      );
-                    })}
-
-                    {/* The total bar, for the same reason the statement carries
-                        one: a block that itemises a total has to add up to it,
-                        and a shortfall has to be visible rather than silent. */}
-                    <div
-                      className={`${comparisonStyles.accuracyRow} ${comparisonStyles.accuracyTotal}`}
-                    >
-                      <span>Total measured</span>
-                      <strong className="ww-num">{applianceKwh.toFixed(2)} kWh</strong>
-                    </div>
-
-                    <p className={comparisonStyles.accuracyNote}>
-                      Energy is credited to the name the outlet carried on the day it was
-                      measured, so an appliance renamed mid-month appears under both names.
-                      This is the same split as the emailed statement.
-                    </p>
-                  </div>
-                ) : null}
               </>
             ) : showOfflineState ? (
               // "Nothing recorded" asserts something about the account. With no
               // read behind it, a full month looks identical to one that
               // genuinely has no days - which is how August reported as empty.
-              <OfflineState title={`Can't load ${monthLabel}`}>
-                This month&apos;s readings live on your account, and the page needs a connection to
-                read them. Nothing has been lost.
-              </OfflineState>
+              <OfflineState title={`Can't load ${monthLabel}`} />
             ) : (
-              <EmptyState icon="git-compare-outline" title={`Nothing recorded for ${monthLabel}`}>
-                A month appears here once the nightly rollup has written at least one day for it.
-                You can still file that month&apos;s PELCO III bill below.
-              </EmptyState>
+              <EmptyState icon="git-compare-outline" title={`Nothing recorded for ${monthLabel}`} />
             )}
           </Card>
 
           <Card>
             <CardHeader
-              title={`Actual PELCO III bill — ${monthLabel}`}
-              subtitle="The only check that grades Dagitab's estimate against the real thing."
+              title="Your PELCO III bill"
               action={
                 <div className={styles.row}>
                   <Button size="sm" variant="secondary" onClick={openForm}>
@@ -382,11 +284,7 @@ export const ComparisonPage = () => {
                   <span>Dagitab measured</span>
                   <strong>Nothing yet</strong>
                 </div>
-                <p className={comparisonStyles.accuracyNote}>
-                  Your {monthLabel} bill is saved. Dagitab has no recorded usage for that month, so
-                  there is nothing to grade it against yet — the check appears once the outlets have
-                  reported for a full day of that month.
-                </p>
+
               </div>
             ) : accuracy ? (
               <div className={comparisonStyles.accuracy}>
@@ -473,24 +371,17 @@ export const ComparisonPage = () => {
                   question anyone asks about this screen, and two clients
                   answering it differently would be worse than either answer.
                 */}
-                <p className={comparisonStyles.accuracyNote}>
-                  {explainAccuracy(accuracy, monthLabel)}
-                </p>
+
               </div>
             ) : showOfflineState ? (
               // The bill is a single document, and getMonthData reports a
               // missing one and an unreachable one the same way - both arrive
               // as success:false. So this card cannot tell them apart on its
               // own, and takes the answer from the month read above it.
-              <OfflineState title="Can't check for a saved bill">
-                Any bill you filed for {monthLabel} is on your account and needs a connection to
-                read. It has not been deleted.
-              </OfflineState>
+              <OfflineState title="Can't check for a saved bill" />
             ) : (
               <EmptyState icon="receipt-outline" title={`No bill on file for ${monthLabel}`}>
-                Type in the total kWh and amount from the bill covering {monthLabel}&apos;s
-                electricity. Bills from before you owned the hub work too — that is how this screen
-                has something to check against on day one.
+                Enter the kWh and amount from your bill.
               </EmptyState>
             )}
           </Card>
@@ -514,11 +405,7 @@ export const ComparisonPage = () => {
       >
         <div className={styles.stack}>
           {removeError ? <Banner tone="alert">{removeError}</Banner> : null}
-          <p>
-            This deletes the PELCO III figures you saved for {monthLabel}, and the accuracy check
-            with them. Your measured usage is not affected — that comes from the hardware, not from
-            this form.
-          </p>
+          <p>Your measured usage is not affected.</p>
         </div>
       </Modal>
 
@@ -546,10 +433,10 @@ export const ComparisonPage = () => {
               the electricity was used, so filing the paper in your hand under
               the current month lines PELCO's previous month up against
               Dagitab's current one, and the gap gets reported as error. */}
+          {/* The one mistake that silently corrupts the comparison: a bill
+              arrives the month after the electricity was used. */}
           <Banner tone="warn">
-            File this under the month the electricity was <strong>used</strong>, not the month the
-            bill arrived. Check the billing period printed on it — a bill received now usually
-            covers last month.
+            Use the month the electricity was <strong>used</strong> - check the billing period.
           </Banner>
 
           <div className={styles.formGrid}>
@@ -570,12 +457,9 @@ export const ComparisonPage = () => {
               onChange={(event) => setForm({ ...form, cost: event.target.value })}
             />
           </div>
-          <p className={styles.muted}>
-            Optional — if you track them separately, the per-outlet split from your own records.
-          </p>
           <div className={styles.formGrid}>
             <TextField
-              label="Outlet 1"
+              label="Outlet 1 (optional)"
               type="number"
               step="0.01"
               suffix="kWh"
@@ -583,7 +467,7 @@ export const ComparisonPage = () => {
               onChange={(event) => setForm({ ...form, outlet1: event.target.value })}
             />
             <TextField
-              label="Outlet 2"
+              label="Outlet 2 (optional)"
               type="number"
               step="0.01"
               suffix="kWh"

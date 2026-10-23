@@ -4,7 +4,6 @@ import {
   UNSUPPORTED_APPLIANCES,
   OUTLET_LIMIT_W,
   COMBINED_LIMIT_W,
-  COMBINED_WARNING_W,
 } from './applianceCatalogue';
 import styles from './SupportedAppliances.module.css';
 
@@ -18,18 +17,10 @@ import styles from './SupportedAppliances.module.css';
  * wonder about — the app can never answer at run time. This card is the only
  * place those can be named.
  */
+// Compact (Oct 2026), as on the phone: the list and the limits, no paragraphs.
 export const SupportedAppliances = () => (
   <Card>
-    <CardHeader
-      title="What Dagitab can monitor"
-      subtitle="Low-voltage appliances, and the limits enforced on the device."
-    />
-
-    <p className={styles.lede}>
-      Dagitab recognises these on its own. It does not need to be told what is
-      plugged in — it measures how the appliance draws power and matches that
-      against the list.
-    </p>
+    <CardHeader title="What Dagitab can monitor" />
 
     <ul className={styles.grid}>
       {DETECTABLE_APPLIANCES.map((appliance) => (
@@ -40,27 +31,6 @@ export const SupportedAppliances = () => (
       ))}
     </ul>
 
-    <div className={styles.guidance}>
-      <p className={styles.guidanceTitle}>Not seeing your appliance?</p>
-      <p className={styles.guidanceBody}>
-        These eight are the only names Dagitab can guess from wattage alone.
-        <strong> Pick whichever is closest, then rename it.</strong> The
-        signature it saves is measured from <em>your</em> appliance, so the name
-        it started from stops mattering — a low-power ceiling fan may overlap
-        with an LED Lamp, so pick the fan when it is offered and once renamed
-        it is a ceiling fan every time it comes back.
-      </p>
-    </div>
-
-    <p className={styles.note}>
-      The wattages are what the detector expects on average over a run, not a
-      nameplate rating. Anything in range gets measured and billed correctly
-      whatever it ends up called. A load outside every range is told so rather
-      than guessed at — but <em>inside</em> the ranges, two appliances at the
-      same wattage can be the same measurement, which is why the name is yours
-      to correct and the reading never needs correcting.
-    </p>
-
     <div className={styles.limits}>
       <div className={styles.limit}>
         <span className={styles.limitValue}>{OUTLET_LIMIT_W} W</span>
@@ -70,18 +40,6 @@ export const SupportedAppliances = () => (
         <span className={styles.limitValue}>{COMBINED_LIMIT_W} W</span>
         <span className={styles.limitLabel}>both outlets together</span>
       </div>
-      <p className={styles.limitNote}>
-        Enforced by the ESP32 itself, three seconds after the limit is passed. It
-        does not wait on wi-fi or on this page, so an outlet can switch off with
-        nothing here having asked for it.
-      </p>
-      <p className={styles.limitWarning}>
-        There is one more threshold between those two. A combined draw over{' '}
-        <strong>{COMBINED_WARNING_W} W</strong> raises a Power Safety warning even
-        though neither outlet is over its own limit — 400 W on one and 400 W on
-        the other is enough. Nothing switches off at that point; it is where the
-        pair becomes worth watching.
-      </p>
     </div>
 
     <div className={styles.deny}>
@@ -93,19 +51,7 @@ export const SupportedAppliances = () => (
           </li>
         ))}
       </ul>
-      <p className={styles.denyNote}>
-        All of these draw well over {OUTLET_LIMIT_W} W, or pull a large surge as
-        they start. They will be cut off, and repeatedly tripping the relay under
-        load wears its contacts.
-      </p>
     </div>
-
-    <p className={styles.note}>
-      Everything you have named this way collects under{' '}
-      <strong>Saved appliances</strong> above, and one appliance can hold
-      several signatures — a phone charger draws quite differently at 20% than
-      at 90%, and both belong to the same name.
-    </p>
   </Card>
 );
 

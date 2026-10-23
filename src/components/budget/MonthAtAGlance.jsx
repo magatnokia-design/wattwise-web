@@ -91,15 +91,9 @@ export const MonthAtAGlance = ({ monthlyBudget, currentSpending, currentDay, day
               </div>
             );
           })}
-          {anyBudget ? <p className={styles.legend}>The thin line on a bar is that month&apos;s budget.</p> : null}
         </div>
       ) : null}
 
-      <p className={styles.alerts}>
-        {monthlyBudget > 0
-          ? 'You will get an alert at 50%, 75%, 90% and 100% of your budget.'
-          : 'Set a budget in the app to get alerts at 50%, 75%, 90% and 100% of it.'}
-      </p>
     </Card>
   );
 };
