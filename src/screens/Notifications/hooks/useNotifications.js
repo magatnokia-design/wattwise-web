@@ -9,6 +9,9 @@ import {
   UNCONFIRMED_GRACE_MS,
 } from '../../../utils/connectivity';
 
+// How many of the newest the website listens to; the page shows 10 at a time.
+export const NOTIFICATIONS_LOADED = 100;
+
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -70,7 +73,10 @@ export const useNotifications = () => {
           clearUnconfirmed();
           load.failed(err);
           console.error('Notifications subscription error:', err);
-        }
+        },
+        // The newest 100, paged 10 at a time on the page (Oct 2026). The
+        // phone keeps the service default of 20.
+        NOTIFICATIONS_LOADED
       );
     });
 

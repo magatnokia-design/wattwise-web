@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNotifications } from '../screens/Notifications/hooks/useNotifications';
 import {
   describeNotificationDetails,
@@ -11,6 +12,11 @@ import { Badge, Banner, EmptyState, OfflineState, Spinner } from '../components/
 import styles from './page.module.css';
 import notificationStyles from './NotificationsPage.module.css';
 import { Icon } from '../components/ui/Icon';
+import { resolvePage, describeRange } from '../components/ui/pagination';
+import tableStyles from '../components/ui/DataTable.module.css';
+
+// Ten to a page, with the same controls the site's tables use (Oct 2026).
+const PAGE_SIZE = 10;
 import { notificationIcon, cleanTitle } from '../components/notifications/notificationDisplay';
 
 export const NotificationsPage = () => {
@@ -24,6 +30,11 @@ export const NotificationsPage = () => {
     markAllAsRead,
     clearAll,
   } = useNotifications();
+
+  // A page past the end (after "Clear all", or a deletion elsewhere) is
+  // clamped back by resolvePage rather than left showing nothing.
+  const [page, setPage] = useState(1);
+  const paged = resolvePage({ page, totalRows: notifications.length, pageSize: PAGE_SIZE });
 
   return (
     <div className={styles.page}>
@@ -65,8 +76,9 @@ export const NotificationsPage = () => {
         ) : notifications.length === 0 ? (
           <EmptyState icon="notifications-outline" title="You're all caught up" />
         ) : (
+          <>
           <ul className={notificationStyles.list}>
-            {notifications.map((notification) => (
+            {notifications.slice(paged.start, paged.end).map((notification) => (
               <li
                 key={notification.id}
                 className={`${notificationStyles.item} ${
@@ -134,6 +146,36 @@ export const NotificationsPage = () => {
               </li>
             ))}
           </ul>
+
+          {paged.totalPages > 1 ? (
+            <nav className={tableStyles.pagination} aria-label="Notification pages">
+              <p className={tableStyles.pageInfo}>
+                {describeRange({ start: paged.start, end: paged.end, totalRows: notifications.length })}
+              </p>
+              <div className={tableStyles.pageControls}>
+                <button
+                  type="button"
+                  className={tableStyles.pageButton}
+                  onClick={() => setPage(paged.page - 1)}
+                  disabled={!paged.hasPrevious}
+                >
+                  ← Previous
+                </button>
+                <span className={tableStyles.pageCount}>
+                  Page {paged.page} of {paged.totalPages}
+                </span>
+                <button
+                  type="button"
+                  className={tableStyles.pageButton}
+                  onClick={() => setPage(paged.page + 1)}
+                  disabled={!paged.hasNext}
+                >
+                  Next →
+                </button>
+              </div>
+            </nav>
+          ) : null}
+          </>
         )}
       </Card>
     </div>
