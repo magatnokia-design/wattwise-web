@@ -13,7 +13,7 @@ import styles from './page.module.css';
 import notificationStyles from './NotificationsPage.module.css';
 import { Icon } from '../components/ui/Icon';
 import { resolvePage, describeRange } from '../components/ui/pagination';
-import tableStyles from '../components/ui/DataTable.module.css';
+import { Pager } from '../components/ui/Pager';
 
 // Ten to a page, with the same controls the site's tables use (Oct 2026).
 const PAGE_SIZE = 10;
@@ -147,34 +147,14 @@ export const NotificationsPage = () => {
             ))}
           </ul>
 
-          {paged.totalPages > 1 ? (
-            <nav className={tableStyles.pagination} aria-label="Notification pages">
-              <p className={tableStyles.pageInfo}>
-                {describeRange({ start: paged.start, end: paged.end, totalRows: notifications.length })}
-              </p>
-              <div className={tableStyles.pageControls}>
-                <button
-                  type="button"
-                  className={tableStyles.pageButton}
-                  onClick={() => setPage(paged.page - 1)}
-                  disabled={!paged.hasPrevious}
-                >
-                  ← Previous
-                </button>
-                <span className={tableStyles.pageCount}>
-                  Page {paged.page} of {paged.totalPages}
-                </span>
-                <button
-                  type="button"
-                  className={tableStyles.pageButton}
-                  onClick={() => setPage(paged.page + 1)}
-                  disabled={!paged.hasNext}
-                >
-                  Next →
-                </button>
-              </div>
-            </nav>
-          ) : null}
+          <Pager
+            label="Notification pages"
+            page={paged.page}
+            totalPages={paged.totalPages}
+            info={describeRange({ start: paged.start, end: paged.end, totalRows: notifications.length })}
+            onPrevious={() => setPage(paged.page - 1)}
+            onNext={() => setPage(paged.page + 1)}
+          />
           </>
         )}
       </Card>
