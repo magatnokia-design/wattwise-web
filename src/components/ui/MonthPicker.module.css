@@ -1,0 +1,106 @@
+/* The month picker - the phone's MonthComparePicker, in the site's tokens. */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ww-border);
+  border-radius: 50%;
+  background: var(--ww-white);
+  color: var(--ww-primary);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.step:disabled {
+  background: var(--ww-grid);
+  color: var(--ww-border);
+  cursor: default;
+}
+
+.current {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid #b4e5c2;
+  border-radius: 999px;
+  background: var(--ww-tint-success);
+  color: var(--ww-text-dark);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.current svg {
+  color: var(--ww-primary);
+}
+
+.yearRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.year {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ww-text-dark);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.cell {
+  position: relative;
+  height: 44px;
+  border: 1px solid var(--ww-border);
+  border-radius: 10px;
+  background: var(--ww-white);
+  color: var(--ww-text-dark);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cell:hover:not(:disabled):not(.cellSelected) {
+  background: var(--ww-tint-success);
+}
+
+.cell:disabled {
+  background: var(--ww-grid);
+  color: var(--ww-border);
+  cursor: default;
+}
+
+.cellSelected {
+  background: var(--ww-primary);
+  border-color: var(--ww-primary);
+  color: var(--ww-white);
+}
+
+.nowDot {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ww-primary);
+}

@@ -2,6 +2,7 @@ import { Card, CardHeader } from '../ui/Card';
 import { summarizeMonth } from '../../screens/BudgetTracking/utils/budgetHelpers';
 import { getManilaDateKey } from '../../utils/liveUsage';
 import styles from './MonthAtAGlance.module.css';
+import { CALENDAR_FIRST_DAY } from '../../utils/calendarGrid';
 
 /**
  * "This month at a glance" - where the month is heading, what is safe to spend
@@ -31,7 +32,9 @@ export const MonthAtAGlance = ({ monthlyBudget, currentSpending, currentDay, day
     none: `At this pace the month will cost about ${peso(month.projected)}. Set a budget in the app to track it.`,
   }[month.status];
 
-  const months = [...budgetHistory].reverse();
+  // Nothing before April 2026, as everywhere else (calendarGrid.js).
+  const months = [...budgetHistory].reverse()
+    .filter((m) => !m.monthKey || m.monthKey >= CALENDAR_FIRST_DAY.slice(0, 7));
   const tallest = Math.max(1, ...months.map((m) => Math.max(m.spent, m.budget || 0)));
   // Manila, not UTC: from midnight to 8 AM on the 1st, UTC is still last month.
   const currentKey = getManilaDateKey().slice(0, 7);

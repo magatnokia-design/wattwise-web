@@ -232,3 +232,180 @@
   color: #92400e;
   font-size: 13px;
 }
+
+/* The wide-screen card (Oct 2026). */
+.monthPick {
+  min-width: 300px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.tile {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--ww-border);
+  border-radius: var(--ww-radius-sm);
+  background: var(--ww-white);
+}
+
+.tileLabel {
+  font-size: 12px;
+  color: var(--ww-text-light);
+}
+
+.tileValue {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ww-text-dark);
+  font-variant-numeric: tabular-nums;
+}
+
+.tileCost {
+  color: var(--ww-primary);
+}
+
+.tileSub {
+  font-size: 12px;
+  color: var(--ww-text-light);
+}
+
+.up {
+  color: var(--ww-error);
+}
+
+.down {
+  color: var(--ww-primary);
+}
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 120px;
+  margin-top: 18px;
+  padding: 8px 4px 0;
+  border-bottom: 1px solid var(--ww-border);
+}
+
+.barSlot {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  min-width: 3px;
+}
+
+.barFill {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, var(--ww-primary-light), var(--ww-primary));
+}
+
+.barSlot:hover .barFill {
+  background: var(--ww-primary-dark);
+}
+
+.chartAxis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--ww-text-light);
+}
+
+.panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.panel {
+  padding: 12px 14px;
+  border: 1px solid var(--ww-border);
+  border-radius: var(--ww-radius-sm);
+}
+
+.panel h3 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ww-text-light);
+}
+
+.split + .split {
+  margin-top: 10px;
+}
+
+.splitHead {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--ww-text-dark);
+}
+
+.splitTrack {
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: var(--ww-grid);
+  overflow: hidden;
+}
+
+.splitFill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ww-primary);
+}
+
+.highlights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.highlights li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.highlights li svg {
+  color: var(--ww-primary);
+  flex-shrink: 0;
+}
+
+.hlLabel {
+  flex: 1;
+  color: var(--ww-text);
+  min-width: 0;
+}
+
+.hlValue {
+  font-weight: 700;
+  color: var(--ww-text-dark);
+  white-space: nowrap;
+}
+
+.tipList {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}

@@ -382,6 +382,8 @@ export const SafetyPage = () => {
                 label={`Show more (${hiddenAlerts})`}
                 onClick={() => setAlertsShown((count) => count + ALERTS_MORE)}
               />
+            ) : alertsShown > ALERTS_FIRST && alertHistory.length > ALERTS_FIRST ? (
+              <Row icon="caret-up" label="Show fewer" onClick={() => setAlertsShown(ALERTS_FIRST)} />
             ) : null}
           </>
         )}

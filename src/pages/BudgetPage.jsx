@@ -115,6 +115,7 @@ export const BudgetPage = () => {
         onCalendarMonth={rangeUsage.loadCalendarMonth}
         summary={rangeUsage.summary}
         insights={rangeUsage.insights}
+        days={rangeUsage.days}
         status={rangeUsage.status}
         message={rangeUsage.message}
         onRetry={rangeUsage.reload}
