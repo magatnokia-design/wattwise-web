@@ -10,15 +10,16 @@ import {
   SAFETY_LIMITS,
   findLimitOutOfRange,
 } from '../screens/PowerSafetyManagement/utils/safetyHelpers';
-import { Card, CardHeader } from '../components/ui/Card';
+import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Switch } from '../components/ui/Switch';
 import { Modal } from '../components/ui/Modal';
 import { TextField } from '../components/ui/Field';
-import { Badge, Banner, EmptyState, Spinner } from '../components/ui/Feedback';
+import { Badge, Banner, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
 import safetyStyles from './SafetyPage.module.css';
-import { Icon, hasIcon } from '../components/ui/Icon';
+import { hasIcon } from '../components/ui/Icon';
+import { Section, Row } from '../components/ui/ListSection';
 
 // safetyService clamps whatever is saved to this, matching the firmware's
 // per-outlet limit. Offering a higher number in the form would be a lie.
@@ -256,9 +257,10 @@ export const SafetyPage = () => {
   const hiddenAlerts = alertHistory.length - visibleAlerts.length;
 
   return (
-    <div className={styles.page}>
-      {/* Compact (Oct 2026), as on the phone: the stage in its own colour with a
-          pulse while it is anything but Normal, and the switch beside it. */}
+    <div className={`${styles.page} ${safetyStyles.column}`}>
+      {/* Organised like the phone's Power Safety (Oct 2026): the status, the
+          two outlets, the protection settings, then the alert history - each a
+          titled section of compact rows. */}
       <div
         className={safetyStyles.stage}
         style={{ background: stage.bgColor, borderColor: stage.color }}
@@ -277,149 +279,113 @@ export const SafetyPage = () => {
             {stage.label}
           </p>
         </div>
-        <div className={safetyStyles.stageControl}>
-          <span className={styles.muted}>Auto cut-off</span>
-          <Switch
-            checked={protectionEnabled}
-            onChange={handleToggleProtection}
-            label="Automatic protection"
-          />
-        </div>
+        <Badge tone={protectionEnabled ? 'good' : 'warn'}>
+          {protectionEnabled ? 'Auto cut-off on' : 'Auto cut-off off'}
+        </Badge>
       </div>
 
-      {!protectionEnabled ? (
-        <Banner tone="alert" title="Auto cut-off is off.">
-          Dagitab only warns - it will not switch an outlet off.
-        </Banner>
-      ) : null}
+      <Section title="Outlets" plain>
+        <div className={styles.pair}>
+          {[
+            { label: 'Outlet 1', readings: outlet1Status },
+            { label: 'Outlet 2', readings: outlet2Status },
+          ].map((outlet) => {
+            const rows = readingRow(outlet.label, outlet.readings, thresholds, telemetryFresh);
+            const worst = telemetryFresh
+              ? getWorstStatus(...rows.map((row) => row.status))
+              : NO_READING;
+            return (
+              <Card key={outlet.label}>
+                <div className={safetyStyles.outletHead}>
+                  <h3 className={safetyStyles.outletName}>{outlet.label}</h3>
+                  <span
+                    className={safetyStyles.readingChip}
+                    style={{ background: worst.bg, color: worst.color }}
+                  >
+                    {worst.label}
+                  </span>
+                </div>
+                <div className={safetyStyles.metrics}>
+                  {rows.map((reading) => (
+                    <div key={reading.key} className={safetyStyles.metric}>
+                      <span className={safetyStyles.readingLabel}>{reading.label}</span>
+                      {/* No number while telemetry is stale: a minutes-old
+                          value in the largest type reads as the value now. */}
+                      <p
+                        className={safetyStyles.readingValue}
+                        style={reading.fresh && reading.status.label !== 'Normal'
+                          ? { color: reading.status.color }
+                          : undefined}
+                      >
+                        {reading.fresh ? (
+                          <>
+                            <span className="ww-num">{reading.value.toFixed(reading.digits)}</span>
+                            <span className={safetyStyles.readingUnit}>{reading.unit}</span>
+                          </>
+                        ) : (
+                          <span className={safetyStyles.readingIdle}>—</span>
+                        )}
+                      </p>
+                      <span className={safetyStyles.metricLimit}>{limitText(reading.key, thresholds)}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      </Section>
 
-      <div className={styles.split}>
-        <div className={styles.stack}>
-          <div className={styles.pair}>
-            {[
-              { label: 'Outlet 1', readings: outlet1Status },
-              { label: 'Outlet 2', readings: outlet2Status },
-            ].map((outlet) => {
-              const rows = readingRow(outlet.label, outlet.readings, thresholds, telemetryFresh);
-              const worst = telemetryFresh
-                ? getWorstStatus(...rows.map((row) => row.status))
-                : NO_READING;
+      <Section title="Protection">
+        <Row
+          icon="shield-checkmark-outline"
+          label="Auto cut-off"
+          subtitle={protectionEnabled ? 'Switches an outlet off at its limit' : 'Off - Dagitab only warns'}
+          action={(
+            <Switch
+              checked={protectionEnabled}
+              onChange={handleToggleProtection}
+              label="Automatic protection"
+            />
+          )}
+        />
+        <Row
+          icon="speedometer-outline"
+          label="Voltage"
+          value={`${thresholds.voltage.min}–${thresholds.voltage.max} V`}
+        />
+        <Row icon="pulse-outline" label="Current" value={`up to ${thresholds.current.max} A`} />
+        <Row icon="flash-outline" label="Power" value={`up to ${thresholds.power.max} W`} />
+        <Row icon="create-outline" label="Edit limits" onClick={openEditor} />
+      </Section>
+
+      <Section title="Alert history" count={alertHistory.length || null}>
+        {alertHistory.length === 0 ? (
+          <Row icon="shield-checkmark-outline" label="No safety alerts" />
+        ) : (
+          <>
+            {visibleAlerts.map((alert) => {
+              const icon = getAlertIcon(alert.type);
               return (
-                <Card key={outlet.label}>
-                  <div className={safetyStyles.outletHead}>
-                    <h2 className={safetyStyles.outletName}>{outlet.label}</h2>
-                    <span
-                      className={safetyStyles.readingChip}
-                      style={{ background: worst.bg, color: worst.color }}
-                    >
-                      {worst.label}
-                    </span>
-                  </div>
-                  <div className={safetyStyles.metrics}>
-                    {rows.map((reading) => (
-                      <div key={reading.key} className={safetyStyles.metric}>
-                        <span className={safetyStyles.readingLabel}>{reading.label}</span>
-                        {/* No number while telemetry is stale: a minutes-old
-                            value in the largest type reads as the value now. */}
-                        <p
-                          className={safetyStyles.readingValue}
-                          style={reading.fresh && reading.status.label !== 'Normal'
-                            ? { color: reading.status.color }
-                            : undefined}
-                        >
-                          {reading.fresh ? (
-                            <>
-                              <span className="ww-num">{reading.value.toFixed(reading.digits)}</span>
-                              <span className={safetyStyles.readingUnit}>{reading.unit}</span>
-                            </>
-                          ) : (
-                            <span className={safetyStyles.readingIdle}>—</span>
-                          )}
-                        </p>
-                        <span className={safetyStyles.metricLimit}>{limitText(reading.key, thresholds)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
+                <Row
+                  key={alert.id}
+                  icon={alertIconName(icon.name)}
+                  iconStyle={{ background: icon.bg, color: icon.color }}
+                  label={cleanTitle(alert.title)}
+                  subtitle={`${alert.outlet ? `Outlet ${alert.outlet} · ` : ''}${formatAlertTime(alert.timestamp)}`}
+                />
               );
             })}
-          </div>
-
-          <Card>
-            <CardHeader title="Alert history" />
-            {alertHistory.length === 0 ? (
-              <EmptyState icon="shield-checkmark-outline" title="No safety alerts">
-                Nothing has crossed a limit.
-              </EmptyState>
-            ) : (
-              <>
-                <ul className={safetyStyles.alerts}>
-                  {visibleAlerts.map((alert) => {
-                    const icon = getAlertIcon(alert.type);
-                    return (
-                      <li key={alert.id} className={safetyStyles.alert}>
-                        <span
-                          className={safetyStyles.alertIcon}
-                          style={{ background: icon.bg, color: icon.color }}
-                          aria-hidden="true"
-                        >
-                          <Icon name={alertIconName(icon.name)} />
-                        </span>
-                        <div className={safetyStyles.alertBody}>
-                          <p className={safetyStyles.alertTitle}>{cleanTitle(alert.title)}</p>
-                          <p className={safetyStyles.alertMessage}>{alert.message}</p>
-                        </div>
-                        <div className={safetyStyles.alertMeta}>
-                          {alert.outlet ? <Badge tone="neutral">Outlet {alert.outlet}</Badge> : null}
-                          <span className={styles.muted}>{formatAlertTime(alert.timestamp)}</span>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-                {hiddenAlerts > 0 ? (
-                  <div className={safetyStyles.more}>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => setAlertsShown((count) => count + ALERTS_MORE)}
-                    >
-                      Show more ({hiddenAlerts})
-                    </Button>
-                  </div>
-                ) : null}
-              </>
-            )}
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader
-            title="Limits"
-            action={
-              <Button size="sm" variant="secondary" onClick={openEditor}>
-                Edit
-              </Button>
-            }
-          />
-          <dl className={safetyStyles.thresholds}>
-            <div className={safetyStyles.thresholdRow}>
-              <dt>Voltage</dt>
-              <dd className="ww-num">
-                {thresholds.voltage.min} – {thresholds.voltage.max} V
-              </dd>
-            </div>
-            <div className={safetyStyles.thresholdRow}>
-              <dt>Current</dt>
-              <dd className="ww-num">up to {thresholds.current.max} A</dd>
-            </div>
-            <div className={safetyStyles.thresholdRow}>
-              <dt>Power</dt>
-              <dd className="ww-num">up to {thresholds.power.max} W</dd>
-            </div>
-          </dl>
-        </Card>
-      </div>
+            {hiddenAlerts > 0 ? (
+              <Row
+                icon="time-outline"
+                label={`Show more (${hiddenAlerts})`}
+                onClick={() => setAlertsShown((count) => count + ALERTS_MORE)}
+              />
+            ) : null}
+          </>
+        )}
+      </Section>
 
       <Modal
         open={open}

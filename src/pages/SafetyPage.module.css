@@ -234,3 +234,10 @@
   justify-content: center;
   margin-top: 10px;
 }
+
+/* One centred column of titled sections, as Settings (Oct 2026). */
+.column {
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+}

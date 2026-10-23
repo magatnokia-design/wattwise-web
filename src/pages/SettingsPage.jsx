@@ -22,8 +22,7 @@ import { Badge, Banner, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
 import settingsStyles from './SettingsPage.module.css';
 import { formatLastSeen } from '../components/settings/lastSeen';
-import { Icon } from '../components/ui/Icon';
-import { Link } from 'react-router-dom';
+import { Section, Row, RowButton } from '../components/ui/ListSection';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 // '2026-09' -> 'Sep 2026'
@@ -31,58 +30,6 @@ const formatRatesMonth = (key) => {
   const [y, m] = String(key || '').split('-').map(Number);
   return y && m ? `${MONTHS[m - 1]} ${y}` : '';
 };
-
-// A titled group of rows, as the phone's SectionHeader + SectionCard.
-const Section = ({ title, count = null, children }) => (
-  <section className={settingsStyles.section}>
-    <h2 className={settingsStyles.sectionTitle}>
-      {title}
-      {count ? <span className={settingsStyles.sectionCount}>{count}</span> : null}
-    </h2>
-    <div className={settingsStyles.sectionCard}>{children}</div>
-  </section>
-);
-
-// One line: icon, label (+ subtitle), an optional value, and either an action
-// or a chevron when the whole row opens something.
-const Row = ({ icon, label, subtitle, value, action, onClick, to, href }) => {
-  const body = (
-    <>
-      <span className={settingsStyles.rowIcon} aria-hidden="true"><Icon name={icon} /></span>
-      <span className={settingsStyles.rowText}>
-        <span className={settingsStyles.rowLabel}>{label}</span>
-        {subtitle ? <span className={settingsStyles.rowSub}>{subtitle}</span> : null}
-      </span>
-      {value ? <span className={settingsStyles.rowValue}>{value}</span> : null}
-      {action ? <span className={settingsStyles.rowAction}>{action}</span> : null}
-      {!action && (onClick || to || href) ? (
-        <span className={settingsStyles.rowChevron} aria-hidden="true"><Icon name="chevron-forward" /></span>
-      ) : null}
-    </>
-  );
-  if (to) return <Link to={to} className={`${settingsStyles.listRow} ${settingsStyles.listRowLink}`}>{body}</Link>;
-  if (href) return <a href={href} className={`${settingsStyles.listRow} ${settingsStyles.listRowLink}`}>{body}</a>;
-  if (onClick) {
-    return (
-      <button type="button" onClick={onClick} className={`${settingsStyles.listRow} ${settingsStyles.listRowLink}`}>
-        {body}
-      </button>
-    );
-  }
-  return <div className={settingsStyles.listRow}>{body}</div>;
-};
-
-const RowButton = ({ icon, label, onClick, danger = false }) => (
-  <button
-    type="button"
-    className={`${settingsStyles.rowButton} ${danger ? settingsStyles.rowButtonDanger : ''}`}
-    onClick={onClick}
-    aria-label={label}
-    title={label}
-  >
-    <Icon name={icon} />
-  </button>
-);
 
 // An icon for a saved appliance, from words in its name - the same idea as the
 // phone's applianceIcon.js, in the icons this site carries.
