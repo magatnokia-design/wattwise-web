@@ -4,7 +4,7 @@ import { EmptyState } from '../components/ui/Feedback';
 
 export const NotFoundPage = () => (
   <Card>
-    <EmptyState icon="🧭" title="That page does not exist">
+    <EmptyState icon="compass-outline" title="That page does not exist">
       Check the address, or head back to the <Link to="/">dashboard</Link>.
     </EmptyState>
   </Card>

@@ -363,7 +363,7 @@ export const SettingsPage = () => {
               subtitle="Named once, recognised by themselves on either outlet."
             />
             {savedAppliances.length === 0 ? (
-              <EmptyState icon="🧠" title="Nothing learned yet">
+              <EmptyState icon="pricetags-outline" title="Nothing learned yet">
                 Name an appliance while it is running - pick the suggestion or type it - and it is
                 saved here.
               </EmptyState>

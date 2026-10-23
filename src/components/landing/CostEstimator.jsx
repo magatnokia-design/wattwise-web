@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { calculatePelcoIIIBill, RATE_EFFECTIVE_DATE } from '../../utils/billing';
 import styles from './CostEstimator.module.css';
+import { Icon } from '../ui/Icon';
 
 /**
  * The estimator on the landing page.
@@ -25,14 +26,14 @@ import styles from './CostEstimator.module.css';
 // Mirrors APPLIANCE_PROFILES in functions/src/lib/applianceDetector.js — the
 // eight Dagitab can name, with the mean-power window each is matched against.
 const PRESETS = [
-  { icon: '🔌', label: 'Phone charger', range: [2, 18], watts: 12 },
-  { icon: '💡', label: 'LED lamp', range: [3, 22], watts: 9 },
-  { icon: '🌀', label: 'Electric fan', range: [8, 95], watts: 55 },
-  { icon: '💻', label: 'Laptop charger', range: [18, 80], watts: 45 },
-  { icon: '🖥️', label: 'Monitor', range: [14, 50], watts: 28 },
-  { icon: '🔊', label: 'Speaker', range: [5, 45], watts: 15 },
-  { icon: '📺', label: 'Television', range: [45, 190], watts: 90 },
-  { icon: '🎮', label: 'Game console', range: [60, 230], watts: 140 },
+  { icon: 'phone-portrait-outline', label: 'Phone charger', range: [2, 18], watts: 12 },
+  { icon: 'bulb-outline', label: 'LED lamp', range: [3, 22], watts: 9 },
+  { icon: 'fan', label: 'Electric fan', range: [8, 95], watts: 55 },
+  { icon: 'laptop-outline', label: 'Laptop charger', range: [18, 80], watts: 45 },
+  { icon: 'desktop-outline', label: 'Monitor', range: [14, 50], watts: 28 },
+  { icon: 'volume-high-outline', label: 'Speaker', range: [5, 45], watts: 15 },
+  { icon: 'tv-outline', label: 'Television', range: [45, 190], watts: 90 },
+  { icon: 'game-controller-outline', label: 'Game console', range: [60, 230], watts: 140 },
 ];
 
 // The firmware's per-outlet ceiling. The slider stops here because the hardware
@@ -84,7 +85,7 @@ export const CostEstimator = () => {
                 className={`${styles.preset} ${preset === entry.label ? styles.presetOn : ''}`}
                 onClick={() => applyPreset(entry)}
               >
-                <span aria-hidden="true">{entry.icon}</span>
+                <Icon name={entry.icon} />
                 {entry.label}
                 <em className={styles.presetRange}>
                   {entry.range[0]}–{entry.range[1]} W

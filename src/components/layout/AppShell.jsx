@@ -9,6 +9,7 @@ import { Banner } from '../ui/Feedback';
 import { Wordmark } from '../ui/Wordmark';
 import { ErrorBoundary } from './ErrorBoundary';
 import styles from './AppShell.module.css';
+import { Icon } from '../ui/Icon';
 
 // Persistent left nav rather than the phone app's bottom tab bar. Grouped
 // because a desktop sidebar can hold every destination at once — on the phone
@@ -17,34 +18,34 @@ const NAV_GROUPS = [
   {
     label: 'Monitor',
     items: [
-      { to: '/', label: 'Dashboard', icon: '🏠', end: true },
-      { to: '/analytics', label: 'Analytics', icon: '📊' },
-      { to: '/history', label: 'History', icon: '📋' },
+      { to: '/', label: 'Dashboard', icon: 'grid-outline', end: true },
+      { to: '/analytics', label: 'Analytics', icon: 'bar-chart-outline' },
+      { to: '/history', label: 'History', icon: 'time-outline' },
     ],
   },
   {
     label: 'Control',
     items: [
-      { to: '/schedule', label: 'Schedule', icon: '⏱️' },
-      { to: '/safety', label: 'Power Safety', icon: '🛡️' },
+      { to: '/schedule', label: 'Schedule', icon: 'timer-outline' },
+      { to: '/safety', label: 'Power Safety', icon: 'shield-checkmark-outline' },
     ],
   },
   {
     label: 'Cost',
     items: [
-      { to: '/budget', label: 'Budget', icon: '💰' },
-      { to: '/comparison', label: 'Compare Months', icon: '⚖️' },
+      { to: '/budget', label: 'Budget', icon: 'wallet-outline' },
+      { to: '/comparison', label: 'Compare Months', icon: 'git-compare-outline' },
     ],
   },
   {
     label: 'Account',
     items: [
-      { to: '/notifications', label: 'Notifications', icon: '🔔', badge: 'unread' },
-      { to: '/settings', label: 'Settings', icon: '⚙️' },
+      { to: '/notifications', label: 'Notifications', icon: 'notifications-outline', badge: 'unread' },
+      { to: '/settings', label: 'Settings', icon: 'settings-outline' },
       // About, Privacy and Terms are reachable from Help rather than listed
       // here. Four nav entries for documents nobody opens twice would crowd out
       // the pages people use every day.
-      { to: '/help', label: 'Help', icon: '❓' },
+      { to: '/help', label: 'Help', icon: 'help-circle-outline' },
     ],
   },
 ];
@@ -136,7 +137,7 @@ export const AppShell = () => {
                   }
                 >
                   <span className={styles.navIcon} aria-hidden="true">
-                    {item.icon}
+                    <Icon name={item.icon} />
                   </span>
                   <span className={styles.navLabel}>{item.label}</span>
                   {item.badge === 'unread' && unreadCount > 0 ? (

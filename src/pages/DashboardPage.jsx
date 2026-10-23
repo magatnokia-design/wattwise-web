@@ -225,20 +225,20 @@ export const DashboardPage = () => {
           value={totalPowerW.toFixed(1)}
           unit="W"
           tone="primary"
-          icon="⚡"
+          icon="flash-outline"
           caption="Both outlets combined"
         />
         <StatTile
           label="Energy today"
           value={totalEnergyKwh.toFixed(3)}
           unit="kWh"
-          icon="🔋"
+          icon="battery-charging"
           caption="Since midnight, Manila time"
         />
         <StatTile
           label="Cost today"
           value={formatCurrency(estimatedCost)}
-          icon="💰"
+          icon="wallet-outline"
           /* The marginal rate now, not total/kWh — useOutletControl returns it
              under the same name. Calling it "effective" here was the caption
              that read P5610.00/kWh beside a 16 W lamp. */
@@ -248,7 +248,7 @@ export const DashboardPage = () => {
           label="Running cost"
           value={formatCurrency(estimatedCostPerHour)}
           unit="/hr"
-          icon="⏱️"
+          icon="time-outline"
           caption="At the current draw"
         />
       </StatGrid>

@@ -68,7 +68,7 @@ export const SecurityActivityCard = ({ userId }) => {
       ) : error ? (
         <p className={styles.error}>{error}</p>
       ) : groups.length === 0 ? (
-        <EmptyState icon="🛡️" title="Nothing to report">
+        <EmptyState icon="shield-checkmark-outline" title="Nothing to report">
           Nothing unusual has happened on your account. Device changes and refused
           sign-ins would appear here.
         </EmptyState>

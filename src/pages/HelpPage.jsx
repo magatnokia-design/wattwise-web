@@ -4,6 +4,16 @@ import { HELP_SECTIONS } from '../screens/Help/helpContent';
 import { Card, CardHeader } from '../components/ui/Card';
 import styles from './page.module.css';
 import helpStyles from './HelpPage.module.css';
+import { Icon } from '../components/ui/Icon';
+
+// One icon per section, as the phone's HelpCenterScreen draws them. The shared
+// helpContent.js keeps its emoji field; it is not read here any more.
+const SECTION_ICONS = {
+  bill: 'receipt-outline',
+  appliances: 'pricetags-outline',
+  measuring: 'speedometer-outline',
+  scope: 'list-outline',
+};
 
 /**
  * Help Center.
@@ -33,7 +43,14 @@ export const HelpPage = () => {
 
       {HELP_SECTIONS.map((section) => (
         <Card key={section.id}>
-          <CardHeader title={`${section.icon}  ${section.title}`} />
+          <CardHeader
+            title={(
+              <span className={helpStyles.sectionTitle}>
+                <Icon name={SECTION_ICONS[section.id] || 'help-circle-outline'} />
+                {section.title}
+              </span>
+            )}
+          />
 
           <ul className={helpStyles.topics}>
             {section.topics.map((topic) => {

@@ -226,7 +226,7 @@ export const AnalyticsPage = () => {
                     figures above come from the same reads, so they are not complete either.
                   </OfflineState>
                 ) : (
-                  <EmptyState icon="🔌" title="No appliance breakdown yet">
+                  <EmptyState icon="power-outline" title="No appliance breakdown yet">
                     Name the appliance on each outlet and Dagitab attributes usage to it from the
                     next rollup.
                   </EmptyState>
@@ -274,7 +274,7 @@ export const AnalyticsPage = () => {
           <Card>
             <CardHeader title="Right now" subtitle="What is drawing power at this moment." />
             {!telemetryFresh ? (
-              <EmptyState icon="📡" title="No readings in the last 12 seconds">
+              <EmptyState icon="cloud-offline-outline" title="No readings in the last 12 seconds">
                 The ESP32 may still be connected — Settings tracks that separately, because
                 checking for commands is silent. This panel only fills in while readings are
                 actually arriving. Toggling an outlet usually starts them again.

@@ -1,5 +1,6 @@
 import { ANDROID_APK_URL } from '../../constants/appRelease';
 import styles from './DownloadApp.module.css';
+import { Icon } from '../ui/Icon';
 
 /*
  * Was a hard-coded Expo build URL that had gone stale — it pointed at a build
@@ -21,7 +22,7 @@ export const DownloadApp = () => (
   <div className={styles.card}>
     <p className={styles.lead}>
       <span className={styles.icon} aria-hidden="true">
-        📱
+        <Icon name="phone-portrait-outline" />
       </span>
       No account yet? Create one in the app.
     </p>
@@ -33,7 +34,7 @@ export const DownloadApp = () => (
       rel="noreferrer noopener"
     >
       <span className={styles.buttonIcon} aria-hidden="true">
-        ⬇
+        <Icon name="download-outline" />
       </span>
       Download for Android
     </a>

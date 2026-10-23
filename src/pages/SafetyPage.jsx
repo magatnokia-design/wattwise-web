@@ -18,6 +18,7 @@ import { Badge, Banner, EmptyState, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
 import { EMERGENCY_CONTACTS, EMERGENCY_GUIDANCE } from '../constants/emergency';
 import safetyStyles from './SafetyPage.module.css';
+import { Icon, hasIcon } from '../components/ui/Icon';
 
 // safetyService clamps whatever is saved to this, matching the firmware's
 // per-outlet limit. Offering a higher number in the form would be a lie.
@@ -58,15 +59,10 @@ const NO_READING = { label: 'No reading', bg: 'var(--ww-grid)', color: 'var(--ww
  * overlap, so one alert looks the same on both pages — and they match the emoji
  * the trigger already puts in the alert title, which sits right beside them.
  */
-const ALERT_GLYPH = {
-  'checkmark-circle': '✅', // device
-  warning: '⚠️', // warning, and legacy power
-  'alert-circle': '⚡', // high_usage
-  'flash-off': '🔴', // cutoff
-  flash: '⚡', // legacy voltage
-  speedometer: '📈', // legacy current
-  notifications: '🔔', // unrecognised type
-};
+// Since Oct 2026 the name getAlertIcon returns is drawn as that icon (the
+// same Ionicons name the phone uses), not translated to an emoji. Anything it
+// does not recognise falls back to the bell.
+const alertIconName = (name) => (hasIcon(name) ? name : 'notifications');
 
 const readingRow = (outletLabel, readings, thresholds, fresh) => [
   {
@@ -325,7 +321,7 @@ export const SafetyPage = () => {
               subtitle="Recorded when a threshold was crossed or the cut-off fired."
             />
             {alertHistory.length === 0 ? (
-              <EmptyState icon="🛡️" title="No safety alerts">
+              <EmptyState icon="shield-checkmark-outline" title="No safety alerts">
                 Nothing has crossed a threshold. This is the state you want.
               </EmptyState>
             ) : (
@@ -339,7 +335,7 @@ export const SafetyPage = () => {
                         style={{ background: icon.bg, color: icon.color }}
                         aria-hidden="true"
                       >
-                        {ALERT_GLYPH[icon.name] || ALERT_GLYPH.notifications}
+                        <Icon name={alertIconName(icon.name)} />
                       </span>
                       <div className={safetyStyles.alertBody}>
                         <p className={safetyStyles.alertTitle}>{alert.title}</p>

@@ -153,7 +153,7 @@ export const SchedulePage = () => {
         {loading && !schedules.length ? (
           <Spinner label="Loading timers" />
         ) : schedules.length === 0 ? (
-          <EmptyState icon="⏱️" title="No timers yet">
+          <EmptyState icon="timer-outline" title="No timers yet">
             Add a countdown to switch an outlet off after a set time, or a weekly schedule to run it
             at the same hour each day.
           </EmptyState>

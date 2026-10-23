@@ -3,22 +3,23 @@ import AppShowcase from '../components/auth/AppShowcase';
 import PowerPreview from '../components/auth/PowerPreview';
 import { Wordmark } from '../components/ui/Wordmark';
 import styles from './AuthLayout.module.css';
+import { Icon } from '../components/ui/Icon';
 
 // Bodies are kept to one line at this column width on purpose — three
 // two-line rows was most of what pushed the panel past a single viewport.
 const FEATURES = [
   {
-    icon: '🔌',
+    icon: 'power-outline',
     title: 'Both outlets, side by side',
     body: 'Live wattage for each, above the fold.',
   },
   {
-    icon: '⚡',
+    icon: 'flash-outline',
     title: 'Switch a real relay',
     body: 'Toggle here; the hardware follows.',
   },
   {
-    icon: '🧾',
+    icon: 'receipt-outline',
     title: 'PELCO III, itemised',
     body: 'Every block of the tariff, explained.',
   },
@@ -83,7 +84,7 @@ export const AuthLayout = ({
           {FEATURES.map((feature) => (
             <li key={feature.title} className={styles.feature}>
               <span className={styles.featureIcon} aria-hidden="true">
-                {feature.icon}
+                <Icon name={feature.icon} />
               </span>
               <div>
                 <p className={styles.featureTitle}>{feature.title}</p>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { describeUsageRows } from '../../screens/History/utils/historyHelpers';
 import { Button } from '../ui/Button';
 import styles from './ExportUsageButton.module.css';
+import { Icon } from '../ui/Icon';
 
 /**
  * Downloads the loaded daily usage as a styled Excel workbook.
@@ -60,7 +61,7 @@ export const ExportUsageButton = ({ usage = [] }) => {
   return (
     <div className={styles.wrap}>
       <Button size="sm" onClick={handleExport} disabled={!hasRows || busy}>
-        <span className={styles.icon} aria-hidden="true">📄</span>
+        <span className={styles.icon} aria-hidden="true"><Icon name="document-text-outline" /></span>
         Export Excel
       </Button>
       <span className={styles.caption}>{describeUsageRows(rows)}</span>

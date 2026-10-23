@@ -57,3 +57,14 @@
   line-height: 1.6;
   max-width: 68ch;
 }
+
+/* Section heading with its icon (Oct 2026). */
+.sectionTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionTitle svg {
+  color: var(--ww-primary);
+}

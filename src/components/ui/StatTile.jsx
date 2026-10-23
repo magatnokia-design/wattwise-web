@@ -1,4 +1,5 @@
 import styles from './StatTile.module.css';
+import { Icon } from './Icon';
 
 /**
  * One figure with its unit and label. Value and unit are separate so the number
@@ -9,7 +10,7 @@ export const StatTile = ({ label, value, unit, caption, tone = 'default', icon }
     <div className={styles.labelRow}>
       {icon ? (
         <span className={styles.icon} aria-hidden="true">
-          {icon}
+          <Icon name={icon} />
         </span>
       ) : null}
       <span className={styles.label}>{label}</span>

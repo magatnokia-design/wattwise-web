@@ -137,7 +137,7 @@ export const BudgetPage = () => {
             </div>
           </>
         ) : (
-          <EmptyState icon="💰" title="No budget set">
+          <EmptyState icon="wallet-outline" title="No budget set">
             Dagitab still records what you spend — a budget just adds the alerts and the
             projection.
           </EmptyState>

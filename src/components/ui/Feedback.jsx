@@ -1,4 +1,5 @@
 import styles from './Feedback.module.css';
+import { Icon } from './Icon';
 
 /** tone: 'neutral' | 'good' | 'warn' | 'alert' | 'danger' | 'info' */
 export const Badge = ({ children, tone = 'neutral', className = '' }) => (
@@ -20,10 +21,10 @@ export const Banner = ({ tone = 'warn', title, children, action }) => (
  * recorded" rather than filling the space with sample numbers — an empty
  * dashboard is the correct state until the ESP32 posts.
  */
-export const EmptyState = ({ icon = '⚡', title, children }) => (
+export const EmptyState = ({ icon = 'flash-outline', title, children }) => (
   <div className={styles.empty}>
     <span className={styles.emptyIcon} aria-hidden="true">
-      {icon}
+      <Icon name={icon} />
     </span>
     <p className={styles.emptyTitle}>{title}</p>
     {children ? <p className={styles.emptyBody}>{children}</p> : null}
@@ -52,7 +53,7 @@ export const OfflineState = ({
 }) => (
   <div className={styles.empty} role="status">
     <span className={styles.emptyIcon} aria-hidden="true">
-      📡
+      <Icon name="cloud-offline-outline" />
     </span>
     <p className={styles.emptyTitle}>{title}</p>
     <p className={styles.emptyBody}>{children}</p>

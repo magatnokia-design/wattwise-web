@@ -14,6 +14,7 @@ import {
 } from '../constants/appRelease';
 import { scrollToTop } from '../utils/scrollToTop';
 import styles from './LandingPage.module.css';
+import { Icon } from '../components/ui/Icon';
 
 /**
  * What a signed-out visitor sees at the root.
@@ -32,49 +33,49 @@ import styles from './LandingPage.module.css';
 
 const FEATURES = [
   {
-    icon: '📊',
+    icon: 'bar-chart-outline',
     title: 'Both outlets, measured separately',
     body:
       'Each outlet has its own energy meter, so voltage, current, power and accumulated kWh are per-outlet — not a house total divided in half.',
   },
   {
-    icon: '🧾',
+    icon: 'receipt-outline',
     title: 'Priced on your actual tariff',
     body:
       'PELCO III residential rates, itemised across all three charge blocks. The model was reconciled against four real bills.',
   },
   {
-    icon: '🔎',
+    icon: 'search-outline',
     title: 'It suggests what is plugged in',
     body:
       'Eight appliance profiles matched from the load pattern. It only ever suggests — Dagitab never renames an outlet on its own.',
   },
   {
-    icon: '🛡️',
+    icon: 'shield-checkmark-outline',
     title: 'Limits enforced in the hardware',
     body:
       '500 W per outlet, 1000 W in total, held by the ESP32 itself. A phone that is off or out of signal cannot raise them.',
   },
   {
-    icon: '🚨',
+    icon: 'alert-circle-outline',
     title: 'It notices a relay that will not open',
     body:
       'If an outlet is switched off but current keeps flowing, Dagitab says so instead of showing it as off. This found a real welded contact.',
   },
   {
-    icon: '⏱️',
+    icon: 'timer-outline',
     title: 'Schedules and budgets',
     body:
       'Switch an outlet on a timetable, set a monthly peso budget, and get told when you are heading past it.',
   },
   {
-    icon: '📈',
+    icon: 'trending-up-outline',
     title: 'History you can take away',
     body:
       'Daily rollups, month-against-month comparison, and an Excel export of the underlying usage.',
   },
   {
-    icon: '✉️',
+    icon: 'mail-outline',
     title: 'Alerts that leave the app',
     body:
       'Safety cutoffs, budget thresholds and monthly statements arrive by notification and email, not only on screen.',
@@ -179,7 +180,7 @@ export const LandingPage = () => (
 
           <div className={styles.ctaRow}>
             <a className={styles.ctaPrimary} href={ANDROID_APK_URL}>
-              <span aria-hidden="true">⬇</span>
+              <Icon name="download-outline" />
               Download for Android
             </a>
             <Link to="/login" className={styles.ctaSecondary}>
@@ -224,7 +225,7 @@ export const LandingPage = () => (
           {FEATURES.map((feature) => (
             <li key={feature.title} className={styles.feature}>
               <span className={styles.featureIcon} aria-hidden="true">
-                {feature.icon}
+                <Icon name={feature.icon} />
               </span>
               <h3 className={styles.featureTitle}>{feature.title}</h3>
               <p className={styles.featureBody}>{feature.body}</p>
@@ -319,7 +320,7 @@ export const LandingPage = () => (
 
           <div className={styles.ctaRow}>
             <a className={styles.ctaPrimary} href={ANDROID_APK_URL}>
-              <span aria-hidden="true">⬇</span>
+              <Icon name="download-outline" />
               Download v{ANDROID_VERSION} for Android
             </a>
             <a

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { resolvePage, describeRange } from './pagination';
 import styles from './DataTable.module.css';
+import { Icon } from './Icon';
 
 /**
  * Sortable table. Desktop is the target here — the phone app cannot show more
@@ -100,7 +101,7 @@ export const DataTable = ({
                     >
                       {column.header}
                       <span className={styles.sortIcon} aria-hidden="true">
-                        {isSorted ? (sort.direction === 'asc' ? '▲' : '▼') : '↕'}
+                        <Icon name={isSorted ? (sort.direction === 'asc' ? 'caret-up' : 'caret-down') : 'swap-vertical'} />
                       </span>
                     </button>
                   ) : (

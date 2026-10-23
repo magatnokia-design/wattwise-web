@@ -3,14 +3,15 @@ import {
   describeNotificationDetails,
   formatNotificationDate,
   formatNotificationTime,
-  getNotificationColor,
-  getNotificationIcon,
+  getNotificationColor,
 } from '../screens/Notifications/utils/notificationHelpers';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge, Banner, EmptyState, OfflineState, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
 import notificationStyles from './NotificationsPage.module.css';
+import { Icon } from '../components/ui/Icon';
+import { notificationIcon, cleanTitle } from '../components/notifications/notificationDisplay';
 
 export const NotificationsPage = () => {
   const {
@@ -66,7 +67,7 @@ export const NotificationsPage = () => {
             are still there.
           </OfflineState>
         ) : notifications.length === 0 ? (
-          <EmptyState icon="🔔" title="Nothing yet">
+          <EmptyState icon="notifications-outline" title="Nothing yet">
             Alerts appear when a budget threshold is crossed, a timer fires, or the safety cut-off
             trips.
           </EmptyState>
@@ -81,15 +82,18 @@ export const NotificationsPage = () => {
               >
                 <span
                   className={notificationStyles.icon}
-                  style={{ background: `${getNotificationColor(notification.type)}1a` }}
+                  style={{
+                    background: `${getNotificationColor(notification.type)}1a`,
+                    color: getNotificationColor(notification.type),
+                  }}
                   aria-hidden="true"
                 >
-                  {getNotificationIcon(notification.type)}
+                  <Icon name={notificationIcon(notification.type)} />
                 </span>
 
                 <div className={notificationStyles.body}>
                   <div className={notificationStyles.head}>
-                    <p className={notificationStyles.title}>{notification.title}</p>
+                    <p className={notificationStyles.title}>{cleanTitle(notification.title)}</p>
                     {notification.outlet ? (
                       <Badge tone="neutral">Outlet {notification.outlet}</Badge>
                     ) : null}

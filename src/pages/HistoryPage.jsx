@@ -160,7 +160,7 @@ export const HistoryPage = () => {
                     has been lost.
                   </OfflineState>
                 ) : (
-                  <EmptyState icon="📋" title="No days recorded in this range">
+                  <EmptyState icon="bar-chart-outline" title="No days recorded in this range">
                     A day appears here after the midnight rollup, or immediately once the hardware
                     starts reporting today.
                   </EmptyState>
@@ -259,7 +259,7 @@ export const HistoryPage = () => {
                     been lost.
                   </OfflineState>
                 ) : (
-                  <EmptyState icon="🕓" title="No activity in this range">
+                  <EmptyState icon="time-outline" title="No activity in this range">
                     Toggling an outlet writes a log entry here.
                   </EmptyState>
                 )

@@ -332,7 +332,7 @@ export const ComparisonPage = () => {
                 read them. Nothing has been lost.
               </OfflineState>
             ) : (
-              <EmptyState icon="⚖️" title={`Nothing recorded for ${monthLabel}`}>
+              <EmptyState icon="git-compare-outline" title={`Nothing recorded for ${monthLabel}`}>
                 A month appears here once the nightly rollup has written at least one day for it.
                 You can still file that month&apos;s PELCO III bill below.
               </EmptyState>
@@ -487,7 +487,7 @@ export const ComparisonPage = () => {
                 read. It has not been deleted.
               </OfflineState>
             ) : (
-              <EmptyState icon="🧾" title={`No bill on file for ${monthLabel}`}>
+              <EmptyState icon="receipt-outline" title={`No bill on file for ${monthLabel}`}>
                 Type in the total kWh and amount from the bill covering {monthLabel}&apos;s
                 electricity. Bills from before you owned the hub work too — that is how this screen
                 has something to check against on day one.

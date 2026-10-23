@@ -79,7 +79,7 @@ export const UsageChart = ({ series = [], outlet1Name, outlet2Name, effectiveRat
 
   if (!hasData) {
     return (
-      <EmptyState icon="📊" title="No usage recorded for this period">
+      <EmptyState icon="bar-chart-outline" title="No usage recorded for this period">
         Charts fill in once the ESP32 reports energy. Nothing is estimated in the meantime.
       </EmptyState>
     );
