@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { Card, CardHeader } from '../ui/Card';
 import { Icon } from '../ui/Icon';
 import { DagitabCalendar } from '../ui/DagitabCalendar';
-import { MonthPicker, FIRST_MONTH } from '../ui/MonthPicker';
 import { Spinner } from '../ui/Feedback';
 import { getManilaDateKey } from '../../utils/liveUsage';
 import { RANGE_PRESETS, addDaysToKey, buildBudgetTips } from '../../utils/rangeUsage';
@@ -13,7 +12,7 @@ import styles from './RangeUsageCard.module.css';
  * the same rangeUsage.js as the phone - copy-rule, tested in both repos - so
  * both clients say the same thing about the same dates.
  *
- * Four ways to choose (This month, Pick a month, Pick dates, One day), and,
+ * Three ways to choose (This month, Pick dates, One day), and,
  * because the screen is wider than a phone's, more of what the figures can
  * already say: the day-by-day bars, how the energy split between the two
  * outlets, the busiest and quietest days, the top appliance, weekends against
@@ -50,24 +49,6 @@ const formatRange = ({ startDate, endDate }) => {
   return `${shortDate(startDate)} – ${shortDate(endDate)}`;
 };
 
-const lastDayOf = (month) => {
-  const [y, m] = month.split('-').map(Number);
-  return `${month}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0')}`;
-};
-
-// Every month from April 2026 to this one, for "Pick a month".
-const monthsUpTo = (today) => {
-  const out = [];
-  let [y, m] = FIRST_MONTH.split('-').map(Number);
-  const [ty, tm] = today.slice(0, 7).split('-').map(Number);
-  while (y < ty || (y === ty && m <= tm)) {
-    out.push(`${y}-${String(m).padStart(2, '0')}`);
-    m += 1;
-    if (m > 12) { m = 1; y += 1; }
-  }
-  return out;
-};
-
 export const RangeUsageCard = ({
   range,
   setRange,
@@ -90,18 +71,9 @@ export const RangeUsageCard = ({
   const monthPreset = RANGE_PRESETS.find((preset) => preset.id === 'month');
   const thisMonth = monthPreset ? monthPreset.resolve(today) : null;
   const isSingleDay = range.startDate === range.endDate;
-  const rangeMonth = String(range.startDate).slice(0, 7);
-  const isWholeMonth = String(range.startDate).endsWith('-01')
-    && rangeMonth === String(range.endDate).slice(0, 7)
-    && (range.endDate === lastDayOf(rangeMonth) || range.endDate === today);
   const mode = thisMonth && range.startDate === thisMonth.startDate && range.endDate === thisMonth.endDate
     ? 'month'
-    : isSingleDay ? 'day' : isWholeMonth ? 'pickmonth' : 'range';
-
-  const pickMonth = (month) => {
-    const end = lastDayOf(month);
-    setRange({ startDate: `${month}-01`, endDate: end > today ? today : end });
-  };
+    : isSingleDay ? 'day' : 'range';
 
   const hasBudget = monthlyBudget > 0;
   const paceOver = hasBudget && summary.monthPaceCost > monthlyBudget;
@@ -152,7 +124,6 @@ export const RangeUsageCard = ({
 
   const MODES = [
     { id: 'month', label: 'This month', onClick: () => thisMonth && setRange(thisMonth) },
-    { id: 'pickmonth', label: 'Pick a month', onClick: () => pickMonth(mode === 'pickmonth' ? rangeMonth : today.slice(0, 7)) },
     { id: 'range', label: 'Pick dates', onClick: () => setCalendarMode('range') },
     { id: 'day', label: 'One day', onClick: () => setCalendarMode('single') },
   ];
@@ -176,21 +147,6 @@ export const RangeUsageCard = ({
           ))}
         </div>
 
-        {mode === 'pickmonth' ? (
-          <div className={styles.monthPick}>
-            <MonthPicker months={monthsUpTo(today)} month={rangeMonth} onSelect={pickMonth} />
-          </div>
-        ) : (
-          <button
-            type="button"
-            className={styles.datePill}
-            onClick={() => setCalendarMode(isSingleDay ? 'single' : 'range')}
-            aria-label={`Dates: ${formatRange(range)}. Change`}
-          >
-            <Icon name="calendar-outline" />
-            {formatRange(range)}
-          </button>
-        )}
       </div>
 
       <DagitabCalendar
@@ -223,7 +179,7 @@ export const RangeUsageCard = ({
           <div className={styles.tiles}>
             <div className={styles.tile}>
               <span className={styles.tileLabel}>kWh used</span>
-              <strong className={styles.tileValue}>{num(summary.totalKwh).toFixed(2)}</strong>
+              <strong className={styles.tileValue}>{num(summary.totalKwh).toFixed(num(summary.totalKwh) < 1 ? 3 : 2)}</strong>
             </div>
             <div className={styles.tile}>
               <span className={styles.tileLabel}>Cost</span>
@@ -233,7 +189,7 @@ export const RangeUsageCard = ({
               <div className={styles.tile}>
                 <span className={styles.tileLabel}>Per day</span>
                 <strong className={styles.tileValue}>{peso(summary.dailyCost)}</strong>
-                <span className={styles.tileSub}>{num(summary.dailyKwh).toFixed(2)} kWh</span>
+                <span className={styles.tileSub}>{num(summary.dailyKwh).toFixed(num(summary.dailyKwh) < 1 ? 3 : 2)} kWh</span>
               </div>
             ) : null}
             <div className={styles.tile}>
