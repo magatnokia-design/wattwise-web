@@ -20,6 +20,7 @@ import styles from './page.module.css';
 import safetyStyles from './SafetyPage.module.css';
 import { hasIcon } from '../components/ui/Icon';
 import { Section, Row } from '../components/ui/ListSection';
+import { PageHero } from '../components/ui/PageHero';
 
 // safetyService clamps whatever is saved to this, matching the firmware's
 // per-outlet limit. Offering a higher number in the form would be a lie.
@@ -261,28 +262,17 @@ export const SafetyPage = () => {
       {/* Organised like the phone's Power Safety (Oct 2026): the status, the
           two outlets, the protection settings, then the alert history - each a
           titled section of compact rows. */}
-      <div
-        className={safetyStyles.stage}
-        style={{ background: stage.bgColor, borderColor: stage.color }}
-      >
-        <div className={safetyStyles.stageHead}>
-          <span
-            className={`${safetyStyles.stageDot} ${stage.pulseMs ? safetyStyles.stageDotPulse : ''}`}
-            style={{
-              background: stage.color,
-              color: stage.color,
-              animationDuration: stage.pulseMs ? `${stage.pulseMs}ms` : undefined,
-            }}
-            aria-hidden="true"
-          />
-          <p className={safetyStyles.stageLabel} style={{ color: stage.textColor || stage.color }}>
-            {stage.label}
-          </p>
-        </div>
-        <Badge tone={protectionEnabled ? 'good' : 'warn'}>
-          {protectionEnabled ? 'Auto cut-off on' : 'Auto cut-off off'}
-        </Badge>
-      </div>
+      <PageHero
+        tone={safetyStage === 'cutoff' || safetyStage === 'limit' ? 'danger' : safetyStage === 'warning' ? 'warn' : telemetryFresh ? 'live' : 'neutral'}
+        pulse={!!stage.pulseMs}
+        label="Power safety"
+        value={stage.label}
+        stats={[
+          { label: 'Auto cut-off', value: protectionEnabled ? 'On' : 'Off' },
+          { label: 'Alerts', value: String(alertHistory.length) },
+          { label: 'Limits', value: `${thresholds.voltage.max} V · ${thresholds.current.max} A · ${thresholds.power.max} W` },
+        ]}
+      />
 
       <Section title="Outlets" plain>
         <div className={styles.pair}>

@@ -13,6 +13,7 @@ import { resolvePage, describeRange } from '../components/ui/pagination';
 import { Badge, EmptyState, OfflineState, Spinner } from '../components/ui/Feedback';
 import ExportUsageButton from '../components/history/ExportUsageButton';
 import styles from './page.module.css';
+import { PageHero } from '../components/ui/PageHero';
 
 // Rows a page, on both tabs.
 const PAGE_SIZE = 15;
@@ -88,8 +89,23 @@ export const HistoryPage = () => {
   // list, so that page reads empty for a moment - a spinner, not "no activity".
   const activityPageLoading = loading && activity.rows.length === 0;
 
+  // Today, the newest usage row while it is live.
+  const todayRow = usageHistory.find((row) => row.isLive) || null;
+
   return (
     <div className={styles.page}>
+      <PageHero
+        tone={todayRow && Number(todayRow.totalKwh) > 0 ? 'live' : 'neutral'}
+        label="Today so far"
+        value={Number(todayRow?.totalKwh || 0).toFixed(Number(todayRow?.totalKwh || 0) < 1 ? 3 : 2)}
+        unit="kWh"
+        stats={[
+          { label: 'Cost today', value: formatCost(todayRow?.totalCost || 0) },
+          { label: 'Days recorded', value: String(usageHistory.length) },
+          { label: 'Switches recorded', value: activityTotal === null ? '—' : String(activityTotal) },
+        ]}
+      />
+
       <div className={styles.pageIntro}>
         <div className={styles.tabs} role="tablist" aria-label="History view">
           {TABS.map((option) => (

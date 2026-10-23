@@ -15,6 +15,7 @@ import { useMonthStrip } from '../hooks/useMonthStrip';
 import MonthRail from '../components/comparison/MonthRail';
 import styles from './page.module.css';
 import comparisonStyles from './ComparisonPage.module.css';
+import { PageHero } from '../components/ui/PageHero';
 
 const DELTAS = [
   { key: 'energy', label: 'Energy', unit: ' kWh', digits: 2 },
@@ -186,6 +187,18 @@ export const ComparisonPage = () => {
 
   return (
     <div className={styles.page}>
+      <PageHero
+        tone={hasUsage ? 'live' : 'neutral'}
+        label={monthLabel}
+        value={hasUsage ? totals.kWh.toFixed(totals.kWh < 1 ? 3 : 2) : '—'}
+        unit={hasUsage ? 'kWh' : undefined}
+        stats={[
+          { label: 'Cost', value: hasUsage ? formatCurrency(totals.cost) : '—' },
+          { label: `vs ${previousLabel}`, value: trend.available ? trend.headline.replace(/\.$/, '') : '—' },
+          { label: 'PELCO III bill', value: actualBill ? 'On file' : 'Not entered' },
+        ]}
+      />
+
       {error ? <Banner tone="alert">{error}</Banner> : null}
 
       <Card>

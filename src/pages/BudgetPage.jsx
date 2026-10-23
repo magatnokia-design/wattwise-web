@@ -11,6 +11,7 @@ import { Card, CardHeader } from '../components/ui/Card';
 import { Banner, EmptyState, OfflineState, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
 import budgetStyles from './BudgetPage.module.css';
+import { PageHero } from '../components/ui/PageHero';
 
 export const BudgetPage = () => {
   const {
@@ -63,50 +64,24 @@ export const BudgetPage = () => {
       {/* Same order as the phone: the budget, then any dates, then the month
           at a glance. The stat tiles, Previous months table and By outlet card
           were folded into these (Oct 2026 feedback: simple, one overall view). */}
-      <Card>
-        <CardHeader
-          title="This month"
-        />
-
+      {/* The stand-out top (Oct 2026): the month's spend against the budget. */}
+      <PageHero
+        tone={monthlyBudget > 0 && percentUsed >= 100 ? 'danger' : monthlyBudget > 0 && percentUsed >= 75 ? 'warn' : 'live'}
+        label="Spent this month"
+        value={formatCurrency(currentSpending)}
+        stats={monthlyBudget > 0 ? [
+          { label: 'Budget', value: formatCurrency(monthlyBudget) },
+          { label: remaining >= 0 ? 'Left' : 'Over', value: formatCurrency(Math.abs(remaining)) },
+          { label: 'Used', value: `${percentUsed.toFixed(0)}%` },
+        ] : [{ label: 'Budget', value: 'Not set' }]}
+      >
         {monthlyBudget > 0 ? (
-          <>
-            <div className={budgetStyles.progressHead}>
-              <span className="ww-num">{formatCurrency(currentSpending)}</span>
-              <span className={styles.muted}>of {formatCurrency(monthlyBudget)}</span>
-            </div>
+          <div className={budgetStyles.heroTrack} role="progressbar" aria-valuenow={Math.round(percentUsed)} aria-valuemin={0} aria-valuemax={100} aria-label="Budget used">
+            <div className={budgetStyles.heroFill} style={{ width: `${Math.min(100, percentUsed)}%`, background: statusColor }} />
+          </div>
+        ) : null}
+      </PageHero>
 
-            <div
-              className={budgetStyles.track}
-              role="progressbar"
-              aria-valuenow={Math.round(percentUsed)}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label="Budget used"
-            >
-              <div
-                className={budgetStyles.fill}
-                style={{
-                  width: `${Math.min(100, percentUsed)}%`,
-                  background: statusColor,
-                }}
-              />
-            </div>
-
-            <div className={budgetStyles.progressFoot}>
-              <span className="ww-num">{percentUsed.toFixed(0)}% used</span>
-              <span className="ww-num">
-                {remaining >= 0
-                  ? `${formatCurrency(remaining)} left`
-                  : `${formatCurrency(Math.abs(remaining))} over`}
-              </span>
-            </div>
-          </>
-        ) : (
-          <EmptyState icon="wallet-outline" title="No budget set">
-            Set one in the Dagitab app.
-          </EmptyState>
-        )}
-      </Card>
 
       <RangeUsageCard
         range={rangeUsage.range}

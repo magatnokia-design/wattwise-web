@@ -70,3 +70,16 @@
   letter-spacing: 0.02em;
   vertical-align: middle;
 }
+
+/* The budget bar inside the page hero (Oct 2026). */
+.heroTrack {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+
+.heroFill {
+  height: 100%;
+  border-radius: 999px;
+}

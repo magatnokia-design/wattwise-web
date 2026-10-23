@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useOutletControl } from '../screens/Dashboard/hooks/useOutletControl';
 import { useLiveOutlets } from '../hooks/useLiveOutlets';
 import { buildLiveAppliances } from '../utils/liveUsage';
@@ -8,17 +7,13 @@ import { formatCurrency } from '../screens/BudgetTracking/utils/budgetHelpers';
 import OutletCard from '../components/dashboard/OutletCard';
 import CutoffNotice from '../components/dashboard/CutoffNotice';
 import { Banner, Spinner, Badge } from '../components/ui/Feedback';
-import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { TextField } from '../components/ui/Field';
-import usePowerSafety from '../screens/PowerSafetyManagement/hooks/usePowerSafety';
-import { getSafetyStageConfig } from '../screens/PowerSafetyManagement/utils/safetyHelpers';
-import { useSchedule } from '../screens/Timer/hooks/useSchedule';
 import { outletService } from '../services/firebase';
 import { auth } from '../services/firebase/config';
 import styles from './page.module.css';
-import dashStyles from './DashboardPage.module.css';
+import { PageHero } from '../components/ui/PageHero';
 
 // Readings kept per outlet for the live graph - about a minute at the Hub's
 // 1.5 s active rate. Held in the page only, never stored.
@@ -163,11 +158,6 @@ export const DashboardPage = () => {
     return result;
   };
 
-  // Safety status and timers for the header row.
-  const { safetyStage } = usePowerSafety();
-  const stage = getSafetyStageConfig(safetyStage, !telemetryFresh);
-  const { schedules } = useSchedule();
-  const activeTimers = (schedules || []).filter((item) => item?.active).length;
 
   // One reading per telemetry post for each outlet's live graph.
   const [history, setHistory] = useState({ 1: [], 2: [] });
@@ -252,52 +242,20 @@ export const DashboardPage = () => {
 
       <CutoffNotice outlets={outlets} />
 
-      {/* The phone's Outlets header (Oct 2026): the safety status on the left,
-          timers on the right - both open their pages. */}
-      <div className={dashStyles.topBar}>
-        <Link to="/safety" className={dashStyles.safetyPill} style={{ background: stage.bgColor, color: stage.textColor || stage.color, borderColor: stage.color }}>
-          <span
-            className={`${dashStyles.pillDot} ${stage.pulseMs ? dashStyles.pillDotPulse : ''}`}
-            style={{ background: stage.color, color: stage.color, animationDuration: stage.pulseMs ? `${stage.pulseMs}ms` : undefined }}
-            aria-hidden="true"
-          />
-          <Icon name="shield-checkmark-outline" />
-          {stage.short || stage.label}
-        </Link>
-        <Link to="/schedule" className={dashStyles.timersPill}>
-          <Icon name="timer-outline" />
-          Timers
-          {activeTimers > 0 ? <span className={dashStyles.pillCount}>{activeTimers}</span> : null}
-        </Link>
-      </div>
-
-      {/* Right now, in one glance: the combined draw and today so far. */}
-      <div className={`${dashStyles.hero} ${totalPowerW > 0.5 && telemetryFresh ? dashStyles.heroLive : ''}`}>
-        <div className={dashStyles.heroMain}>
-          <span className={dashStyles.heroLabel}>
-            <span className={`${dashStyles.liveDot} ${telemetryFresh ? dashStyles.liveDotOn : ''}`} aria-hidden="true" />
-            {telemetryFresh ? 'Drawing now' : lastTelemetryMs > 0 ? `Hub offline · last heard ${relativeAge(lastTelemetryMs)}` : 'Waiting for the Hub'}
-          </span>
-          <p className={dashStyles.heroValue}>
-            <span className="ww-num">{totalPowerW.toFixed(1)}</span>
-            <span className={dashStyles.heroUnit}>W</span>
-          </p>
-        </div>
-        <div className={dashStyles.heroStats}>
-          <div>
-            <span>Today</span>
-            <strong className="ww-num">{totalEnergyKwh.toFixed(totalEnergyKwh < 1 ? 3 : 2)} kWh</strong>
-          </div>
-          <div>
-            <span>Cost today</span>
-            <strong className="ww-num">{formatCurrency(estimatedCost)}</strong>
-          </div>
-          <div>
-            <span>Outlets on</span>
-            <strong className="ww-num">{(outlet1Status ? 1 : 0) + (outlet2Status ? 1 : 0)} of 2</strong>
-          </div>
-        </div>
-      </div>
+      {/* Right now, in one glance (Oct 2026) - the shared stand-out top every
+          page opens with. */}
+      <PageHero
+        tone={totalPowerW > 0.5 && telemetryFresh ? 'live' : 'neutral'}
+        pulse={telemetryFresh}
+        label={telemetryFresh ? 'Drawing now' : lastTelemetryMs > 0 ? `Hub offline · last heard ${relativeAge(lastTelemetryMs)}` : 'Waiting for the Hub'}
+        value={totalPowerW.toFixed(1)}
+        unit="W"
+        stats={[
+          { label: 'Today', value: `${totalEnergyKwh.toFixed(totalEnergyKwh < 1 ? 3 : 2)} kWh` },
+          { label: 'Cost today', value: formatCurrency(estimatedCost) },
+          { label: 'Outlets on', value: `${(outlet1Status ? 1 : 0) + (outlet2Status ? 1 : 0)} of 2` },
+        ]}
+      />
 
       {/* Both outlets side by side, above the fold. */}
       <div className={styles.pair}>

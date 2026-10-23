@@ -12,6 +12,7 @@ import { usePreviousPeriod } from '../hooks/usePreviousPeriod';
 import { buildAnalyticsInsights, periodChange } from '../utils/analyticsInsights';
 import analyticsStyles from './AnalyticsPage.module.css';
 import styles from './page.module.css';
+import { PageHero } from '../components/ui/PageHero';
 
 const PERIOD_LABEL = {
   Daily: 'today',
@@ -132,51 +133,24 @@ export const AnalyticsPage = () => {
             </button>
           ))}
         </div>
-        {showLive ? <Badge tone="good">Live · includes today</Badge> : null}
       </div>
 
-      <Section title={`Overview · ${PERIOD_LABEL[tab]}`} plain>
-        <div className={analyticsStyles.tiles}>
-          <div className={analyticsStyles.tile}>
-            <span className={analyticsStyles.tileLabel}><Icon name="flash-outline" /> Energy</span>
-            <strong className={analyticsStyles.tileValue}>{summary.totalEnergy.toFixed(summary.totalEnergy < 1 ? 3 : 2)}<small> kWh</small></strong>
-          </div>
-          <div className={analyticsStyles.tile}>
-            <span className={analyticsStyles.tileLabel}><Icon name="wallet-outline" /> Cost</span>
-            <strong className={`${analyticsStyles.tileValue} ${analyticsStyles.cost}`}>{formatCurrency(summary.totalCost)}</strong>
-          </div>
-          {tab === 'Daily' ? (
-            <div className={analyticsStyles.tile}>
-              <span className={analyticsStyles.tileLabel}><Icon name="speedometer-outline" /> Peak draw</span>
-              <strong className={analyticsStyles.tileValue}>{summary.peakPowerW.toFixed(0)}<small> W</small></strong>
-            </div>
-          ) : (
-            <div className={analyticsStyles.tile}>
-              <span className={analyticsStyles.tileLabel}><Icon name="bar-chart-outline" /> Per day</span>
-              <strong className={analyticsStyles.tileValue}>{summary.averageUsage.toFixed(summary.averageUsage < 1 ? 3 : 2)}<small> kWh</small></strong>
-              <span className={analyticsStyles.tileSub}>{usedDays} of {series.length} days used power</span>
-            </div>
-          )}
-          <div className={analyticsStyles.tile}>
-            <span className={analyticsStyles.tileLabel}><Icon name="git-compare-outline" /> vs {previous.label}</span>
-            {tab === 'Daily' ? (
-              <strong className={analyticsStyles.tileValue}>
-                {previous.kwh === null ? '—' : previous.kwh.toFixed(2)}<small> kWh</small>
-              </strong>
-            ) : change ? (
-              <strong className={`${analyticsStyles.tileValue} ${change.percent > 0 ? analyticsStyles.up : analyticsStyles.down}`}>
-                <Icon name={change.percent > 0 ? 'caret-up' : 'caret-down'} />
-                {Math.abs(change.percent)}%
-              </strong>
-            ) : (
-              <strong className={analyticsStyles.tileValue}>—</strong>
-            )}
-            {tab !== 'Daily' && change ? (
-              <span className={analyticsStyles.tileSub}>{change.previousKwh.toFixed(2)} kWh before</span>
-            ) : null}
-          </div>
-        </div>
-      </Section>
+      <PageHero
+        tone={showLive ? 'live' : 'neutral'}
+        pulse={showLive}
+        label={`Energy ${PERIOD_LABEL[tab]}`}
+        value={summary.totalEnergy.toFixed(summary.totalEnergy < 1 ? 3 : 2)}
+        unit="kWh"
+        stats={[
+          { label: 'Cost', value: formatCurrency(summary.totalCost) },
+          tab === 'Daily'
+            ? { label: 'Peak draw', value: `${summary.peakPowerW.toFixed(0)} W` }
+            : { label: 'Per day', value: `${summary.averageUsage.toFixed(summary.averageUsage < 1 ? 3 : 2)} kWh` },
+          tab === 'Daily'
+            ? { label: 'Yesterday', value: previous.kwh === null ? '—' : `${previous.kwh.toFixed(2)} kWh` }
+            : { label: `vs ${previous.label}`, value: change ? `${change.percent > 0 ? '▲' : '▼'} ${Math.abs(change.percent)}%` : '—' },
+        ]}
+      />
 
       <Section title="Trend" plain>
         <Card>

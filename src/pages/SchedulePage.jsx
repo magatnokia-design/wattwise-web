@@ -17,6 +17,7 @@ import { TextField, SelectField } from '../components/ui/Field';
 import { Badge, Banner, EmptyState, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
 import scheduleStyles from './SchedulePage.module.css';
+import { PageHero } from '../components/ui/PageHero';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -135,8 +136,20 @@ export const SchedulePage = () => {
     return `in ${formatDuration(seconds)}`;
   };
 
+  const activeCount = schedules.filter((item) => item?.active).length;
+
   return (
     <div className={styles.page}>
+      <PageHero
+        tone={activeCount > 0 ? 'live' : 'neutral'}
+        label="Active timers"
+        value={String(activeCount)}
+        stats={[
+          { label: 'Timers', value: String(schedules.length) },
+          { label: 'Paused or done', value: String(schedules.length - activeCount) },
+        ]}
+      />
+
       <div className={styles.pageIntro}>
         <Button onClick={() => setOpen(true)}>Add timer</Button>
       </div>

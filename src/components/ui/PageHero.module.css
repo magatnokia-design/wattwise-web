@@ -1,0 +1,113 @@
+/* The stand-out top of each page (Oct 2026), from the Dashboard's hero. */
+.hero {
+  padding: 22px 26px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #0a2a1a 0%, #071b2c 100%);
+  color: var(--ww-white);
+  box-shadow: 0 14px 32px -18px rgba(7, 27, 44, 0.8);
+}
+
+.live {
+  background:
+    radial-gradient(90% 140% at 0% 0%, rgba(80, 213, 43, 0.35), transparent 60%),
+    linear-gradient(135deg, #00602e 0%, #071b2c 100%);
+}
+
+.warn {
+  background:
+    radial-gradient(90% 140% at 0% 0%, rgba(245, 158, 11, 0.4), transparent 60%),
+    linear-gradient(135deg, #5c3a00 0%, #071b2c 100%);
+}
+
+.danger {
+  background:
+    radial-gradient(90% 140% at 0% 0%, rgba(239, 68, 68, 0.42), transparent 60%),
+    linear-gradient(135deg, #5f1111 0%, #071b2c 100%);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ww-primary-light);
+  color: var(--ww-primary-light);
+  animation: heroPulse 1.6s ease-out infinite;
+}
+
+@keyframes heroPulse {
+  0% { box-shadow: 0 0 0 0 currentColor; }
+  70% { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 4px 0 0;
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.unit {
+  font-size: 19px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.stats {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.stats div {
+  display: grid;
+  gap: 2px;
+}
+
+.stats dt {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.stats dd {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.extra {
+  margin-top: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    animation: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .value {
+    font-size: 38px;
+  }
+}

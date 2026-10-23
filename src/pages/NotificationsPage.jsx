@@ -18,6 +18,7 @@ import { Pager } from '../components/ui/Pager';
 // Ten to a page, with the same controls the site's tables use (Oct 2026).
 const PAGE_SIZE = 10;
 import { notificationIcon, cleanTitle } from '../components/notifications/notificationDisplay';
+import { PageHero } from '../components/ui/PageHero';
 
 export const NotificationsPage = () => {
   const {
@@ -38,6 +39,13 @@ export const NotificationsPage = () => {
 
   return (
     <div className={styles.page}>
+      <PageHero
+        tone={unreadCount > 0 ? 'live' : 'neutral'}
+        label="Unread"
+        value={String(unreadCount)}
+        stats={[{ label: 'Total', value: String(notifications.length) }]}
+      />
+
       <div className={styles.pageIntro}>
         <div className={styles.row}>
           <Button size="sm" variant="secondary" onClick={markAllAsRead} disabled={unreadCount === 0}>

@@ -23,6 +23,7 @@ import styles from './page.module.css';
 import settingsStyles from './SettingsPage.module.css';
 import { formatLastSeen } from '../components/settings/lastSeen';
 import { Section, Row, RowButton } from '../components/ui/ListSection';
+import { PageHero } from '../components/ui/PageHero';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 // '2026-09' -> 'Sep 2026'
@@ -291,6 +292,17 @@ export const SettingsPage = () => {
       {/* Organised like the phone's Settings (Oct 2026): titled sections, each
           one card of compact rows, with anything longer opening in a dialog.
           "What Dagitab can monitor" was removed on request. */}
+      <PageHero
+        tone={settings.esp32Linked ? 'live' : 'neutral'}
+        label={settings.email || 'Your account'}
+        value={settings.profileName && settings.profileName !== 'User' ? settings.profileName : 'Your account'}
+        stats={[
+          { label: 'Rate', value: `₱${Number(settings.supplyRates?.generation || 0).toFixed(4)}` },
+          { label: 'Hub', value: settings.esp32Linked ? formatDeviceHealthValue(settings.esp32HealthStatus, settings.esp32LastSeenAtMs) : 'Not linked' },
+          { label: 'Saved appliances', value: String(savedAppliances.length) },
+        ]}
+      />
+
       <Section title="Account">
         <Row
           icon="person-outline"
