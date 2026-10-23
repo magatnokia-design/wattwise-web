@@ -1,0 +1,128 @@
+/* The Dagitab calendar - the phone's DagitabCalendar.js, in the site's tokens. */
+
+.summary {
+  margin: 0 0 var(--ww-space-3);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ww-primary);
+}
+
+.monthRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--ww-space-2);
+}
+
+.monthLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ww-text);
+}
+
+.nav {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--ww-tint-success);
+  color: var(--ww-primary);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.nav:disabled {
+  background: var(--ww-grid);
+  color: var(--ww-border);
+  cursor: default;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ww-text-light);
+  padding: 4px 0;
+}
+
+.cell {
+  min-height: 44px;
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ww-text);
+  cursor: pointer;
+  font: inherit;
+  padding: 2px 0;
+}
+
+.day:hover:not(:disabled):not(.edge) {
+  background: var(--ww-grid);
+}
+
+.day:disabled {
+  color: var(--ww-border);
+  cursor: default;
+}
+
+.dayNumber {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.kwh {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ww-primary);
+  line-height: 1.2;
+}
+
+.inside {
+  background: #e1f5e6;
+  border-radius: 0;
+}
+
+.inside .dayNumber {
+  color: var(--ww-primary-dark);
+  font-weight: 600;
+}
+
+.edge {
+  background: var(--ww-primary);
+  color: var(--ww-white);
+}
+
+.edge .dayNumber {
+  font-weight: 800;
+}
+
+.edge .kwh {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.today {
+  border-color: var(--ww-primary);
+}
+
+.legend {
+  margin: var(--ww-space-2) 0 0;
+  font-size: 11px;
+  text-align: center;
+  color: var(--ww-text-light);
+}

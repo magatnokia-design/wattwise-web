@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { Card, CardHeader } from '../ui/Card';
+import { Icon } from '../ui/Icon';
+import { DagitabCalendar } from '../ui/DagitabCalendar';
 import { Spinner } from '../ui/Feedback';
 import { getManilaDateKey } from '../../utils/liveUsage';
 import { RANGE_PRESETS, buildBudgetTips } from '../../utils/rangeUsage';
@@ -23,6 +26,16 @@ const formatHour = (hour) => {
   return `${h % 12 === 0 ? 12 : h % 12} ${h < 12 ? 'AM' : 'PM'}`;
 };
 const peso = (value) => `₱${Number(value || 0).toFixed(2)}`;
+
+// The range on the date button: "Oct 8, 2026", "Oct 1 – 22", "Sep 28 – Oct 5".
+const formatRange = ({ startDate, endDate }) => {
+  const [y] = String(startDate).split('-').map(Number);
+  if (startDate === endDate) return `${shortDate(startDate)}, ${y}`;
+  if (String(startDate).slice(0, 7) === String(endDate).slice(0, 7)) {
+    return `${shortDate(startDate)} – ${Number(String(endDate).slice(8))}`;
+  }
+  return `${shortDate(startDate)} – ${shortDate(endDate)}`;
+};
 const kwh = (value) => `${Number(value || 0).toFixed(2)} kWh`;
 
 export const RangeUsageCard = ({
@@ -33,10 +46,16 @@ export const RangeUsageCard = ({
   status,
   message,
   onRetry,
+  // Each day's kWh and the loader for the month the calendar shows - from
+  // useRangeUsage, byte-identical with the phone.
+  calendarKwh = null,
+  onCalendarMonth,
   monthlyBudget,
   daysInMonth,
 }) => {
   const today = getManilaDateKey();
+  // The Dagitab calendar (Oct 2026), as on the phone: 'range' or 'single'.
+  const [calendarMode, setCalendarMode] = useState(null);
   const isSingleDay = range.startDate === range.endDate;
   const activePreset = isSingleDay
     ? 'day'
@@ -49,16 +68,6 @@ export const RangeUsageCard = ({
   const paceOver = hasBudget && summary.monthPaceCost > monthlyBudget;
   const tips = status === 'ready' ? buildBudgetTips(summary, insights, { monthlyBudget, daysInMonth }) : [];
 
-  // An emptied date field reports '' - kept so validateRange can say "choose a
-  // start date" rather than the field snapping back.
-  const onDate = (field) => (event) => {
-    const value = event.target.value;
-    setRange((current) => ({ ...current, [field]: value }));
-  };
-  const onDay = (event) => {
-    const value = event.target.value;
-    setRange({ startDate: value, endDate: value });
-  };
 
   const periodWord = summary.days === 1 ? 'the day before' : `the ${summary.days} days before`;
   const facts = [];
@@ -110,32 +119,39 @@ export const RangeUsageCard = ({
             type="button"
             className={`${styles.chip} ${activePreset === 'day' ? styles.chipActive : ''}`}
             aria-pressed={activePreset === 'day'}
-            onClick={() => setRange({ startDate: range.endDate, endDate: range.endDate })}
+            onClick={() => setCalendarMode('single')}
           >
             One day
           </button>
         </div>
 
-        <div className={styles.dates}>
-          {isSingleDay ? (
-            <label className={styles.dateField}>
-              <span>Day</span>
-              <input type="date" value={range.startDate} max={today} onChange={onDay} />
-            </label>
-          ) : (
-            <>
-              <label className={styles.dateField}>
-                <span>From</span>
-                <input type="date" value={range.startDate} max={today} onChange={onDate('startDate')} />
-              </label>
-              <label className={styles.dateField}>
-                <span>To</span>
-                <input type="date" value={range.endDate} max={today} onChange={onDate('endDate')} />
-              </label>
-            </>
-          )}
-        </div>
+        <button
+          type="button"
+          className={styles.datePill}
+          onClick={() => setCalendarMode(isSingleDay ? 'single' : 'range')}
+          aria-label={`Dates: ${formatRange(range)}. Change`}
+        >
+          <Icon name="calendar-outline" />
+          {formatRange(range)}
+        </button>
+
       </div>
+
+      <DagitabCalendar
+        open={calendarMode !== null}
+        mode={calendarMode || 'range'}
+        title={calendarMode === 'single' ? 'Check one day' : 'Check your usage'}
+        startDate={calendarMode === 'single' ? range.endDate : range.startDate}
+        endDate={range.endDate}
+        maxDate={today}
+        dayValues={calendarKwh || {}}
+        onMonthChange={onCalendarMonth}
+        onClose={() => setCalendarMode(null)}
+        onConfirm={(picked) => {
+          setRange({ startDate: picked.startDate, endDate: picked.endDate });
+          setCalendarMode(null);
+        }}
+      />
 
       {status === 'invalid' ? (
         <p className={styles.problem}>{message}</p>

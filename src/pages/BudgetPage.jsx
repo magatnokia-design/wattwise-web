@@ -147,6 +147,8 @@ export const BudgetPage = () => {
       <RangeUsageCard
         range={rangeUsage.range}
         setRange={rangeUsage.setRange}
+        calendarKwh={rangeUsage.calendarKwh}
+        onCalendarMonth={rangeUsage.loadCalendarMonth}
         summary={rangeUsage.summary}
         insights={rangeUsage.insights}
         status={rangeUsage.status}

@@ -177,3 +177,23 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+/* The date button that opens the Dagitab calendar (Oct 2026). */
+.datePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid #b4e5c2;
+  border-radius: 999px;
+  background: var(--ww-tint-success);
+  color: var(--ww-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.datePill:hover {
+  background: #e1f5e6;
+}
