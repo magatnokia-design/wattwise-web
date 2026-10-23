@@ -119,11 +119,20 @@ export const resolveApplianceLine = ({
       };
     }
 
-    return { text: 'Not something Dagitab monitors', tone: 'unsupported' };
+    // Outside the catalogue but under the cut-off: nameable since Oct 2026,
+    // and once named it is the user's own appliance. Unnamed, the card asks.
+    // A name only stands when this run confirmed it - a saved appliance past
+    // the catalogue (the user's own hair dryer) is matched as itself.
+    const confirmed = !!name
+      && identity?.state === 'confirmed'
+      && String(identity.namedAs || '').trim().toLowerCase() === name.toLowerCase();
+    return confirmed
+      ? { text: name, tone: 'named' }
+      : { text: 'New appliance', tone: 'unsupported' };
   }
 
   if (!hasIdentity) {
-    return { text: 'Detecting…', tone: 'idle' };
+    return { text: 'Checking…', tone: 'idle' };
   }
 
   /*
@@ -136,7 +145,7 @@ export const resolveApplianceLine = ({
     String(identity.namedAs || '').trim().toLowerCase() === name.toLowerCase();
 
   if (!isAboutCurrentName) {
-    return { text: 'Detecting…', tone: 'idle' };
+    return { text: 'Checking…', tone: 'idle' };
   }
 
   if (identity.state === 'changed' && name) {
@@ -151,5 +160,5 @@ export const resolveApplianceLine = ({
     };
   }
 
-  return { text: 'Detecting…', tone: 'idle' };
+  return { text: 'Checking…', tone: 'idle' };
 };

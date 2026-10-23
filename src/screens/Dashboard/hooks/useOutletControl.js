@@ -18,6 +18,10 @@ const DEFAULT_OUTLET_METRICS = {
   energy: 0,
 };
 
+// The longest "Checking…" may show. A first verdict normally lands about six
+// seconds into a run (four readings 1.5 s apart, plus the round trip).
+const IDENTIFYING_MAX_MS = 30000;
+
 const EMPTY_OUTLET_SUGGESTION = {
   name: '',
   confidencePercent: null,
@@ -171,10 +175,24 @@ const buildOutletSuggestion = (outlet = {}, applianceName = '', runtimeState = {
     unsupportedReason: String(detection?.unsupportedReason || ''),
     measuredPowerW: toOptionalNumber(detection?.measuredPowerW),
   };
+  // The first seconds of a run, before its first verdict (Oct 2026). The
+  // backend deletes applianceIdentity at run start and writes the first one
+  // after MIN_SAMPLE_COUNT readings, so until then the outlet's stored name
+  // belongs to whatever ran LAST - showing it read as Dagitab "suggesting the
+  // old appliance" for a few seconds. Capped so a run that never gets a
+  // verdict cannot say "Checking" for ever.
+  const runStartedMs = toEpochMs(outlet.detectionState?.runStartedAtMs);
+  const identifying = !identity
+    && runStartedMs > 0
+    && Date.now() - runStartedMs < IDENTIFYING_MAX_MS;
   const withIdentity = (base) => ({
     ...base,
     ...scope,
     identityState,
+    identifying,
+    // Nothing to offer before the first verdict - the fallback label
+    // comparison below would otherwise judge the new load by the old name.
+    ...(identifying ? { showBadge: false, canAccept: false } : {}),
     recognised: identity?.recognised === true,
   });
 
@@ -190,6 +208,26 @@ const buildOutletSuggestion = (outlet = {}, applianceName = '', runtimeState = {
 
   const suggestedName = String(outlet.autoDetectedAppliance || '').trim();
   if (!suggestedName) {
+    // Measured, matched nothing in the catalogue, and the outlet has no name:
+    // ask for one (Oct 2026). A 312 W load used to get no card at all - no
+    // suggestion and nowhere to type - so it could never be learned. Typed
+    // once, it is saved as the user's own signature and names itself after.
+    // Not for over-power: the Hub opens the relay within three seconds.
+    if (
+      scope.unsupported
+      && scope.unsupportedReason === 'no_match'
+      && !String(applianceName || '').trim()
+    ) {
+      const measured = outlet.applianceDetection?.features || {};
+      return withIdentity({
+        ...EMPTY_OUTLET_SUGGESTION,
+        meanPowerW: toOptionalNumber(measured.meanPower),
+        runtimeSeconds: toOptionalNumber(measured.runtimeSec),
+        askName: true,
+        showBadge: true,
+        canAccept: true,
+      });
+    }
     return withIdentity(EMPTY_OUTLET_SUGGESTION);
   }
 

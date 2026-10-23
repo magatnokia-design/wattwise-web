@@ -261,6 +261,36 @@
   cursor: not-allowed;
 }
 
+.offerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ww-space-2);
+}
+
+.typeRow {
+  display: flex;
+  gap: var(--ww-space-2);
+  margin-top: var(--ww-space-3);
+}
+
+.typeInput {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #b4e5c2;
+  border-radius: var(--ww-radius-sm);
+  background: var(--ww-white);
+  color: var(--ww-text);
+  font-size: 13px;
+}
+
+.typeInput:focus {
+  outline: 2px solid var(--ww-primary);
+  outline-offset: -1px;
+}
+
 .footer {
   margin-top: var(--ww-space-4);
   padding-top: var(--ww-space-3);

@@ -102,7 +102,7 @@ export const SupportedAppliances = () => (
 
     <p className={styles.note}>
       Everything you have named this way collects under{' '}
-      <strong>Learned appliances</strong> above, and one appliance can hold
+      <strong>Saved appliances</strong> above, and one appliance can hold
       several signatures — a phone charger draws quite differently at 20% than
       at 90%, and both belong to the same name.
     </p>

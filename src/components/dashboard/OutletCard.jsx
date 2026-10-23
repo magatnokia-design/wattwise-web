@@ -15,6 +15,9 @@ const METRICS = [
   { key: 'energy', label: 'Today', unit: 'kWh', digits: 3 },
 ];
 
+// registerApplianceProfile trims names to this length.
+const MAX_NAME_LENGTH = 40;
+
 const format = (value, digits) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed.toFixed(digits) : (0).toFixed(digits);
@@ -53,6 +56,7 @@ export const OutletCard = ({
   onRename,
 }) => {
   const [busy, setBusy] = useState(false);
+  const [typedName, setTypedName] = useState('');
 
   const fallbackLabel = `Outlet ${outletNumber}`;
 
@@ -189,16 +193,15 @@ export const OutletCard = ({
   });
 
   /*
-   * Naming is suggestion-only, by the owner's decision.
+   * Naming, as on the phone since Oct 2026: ONE offer (the closest match) and a
+   * field to type the real name. The ranked list of alternatives went - a 60 W
+   * printer and a 60 W fan are indistinguishable by wattage, and the person
+   * standing next to it is the one who knows. A load outside the catalogue
+   * (askName) gets only the field: "Not in Dagitab's list - what is it?".
    *
-   * There is no free-text field on either client any more: a name arrives by
-   * accepting what the detector measured, or by picking one of its alternatives.
-   * Relabelling afterwards is Settings → saved appliances → Rename, which goes
-   * through renameApplianceProfile and carries the outlet with it.
-   *
-   * Both paths below still reach registerApplianceProfile, which is what learns
-   * the signature — so accepting a suggestion teaches Dagitab exactly as typing
-   * a name used to.
+   * Offered or typed, the name goes through registerApplianceProfile, which
+   * names the outlet AND saves this appliance's power pattern, so the next run
+   * of it names itself.
    */
   const submitName = async (name, options) => {
     setBusy(true);
@@ -206,18 +209,29 @@ export const OutletCard = ({
     setBusy(false);
   };
 
+  // The closest match. When the detector is unsure, the leader is still the
+  // best single guess - offered as "closest", not as a verdict.
+  const closest = suggestion?.askName
+    ? ''
+    : suggestion?.name || suggestion?.candidates?.[0]?.name || '';
+
   const acceptSuggestion = () =>
-    submitName(suggestion.name, {
-      source: 'auto_suggestion',
-      confidencePercent: suggestion.confidencePercent,
-      modelVersion: suggestion.modelVersion,
+    submitName(closest, {
+      source: closest === suggestion?.name ? 'auto_suggestion' : 'user_choice',
+      confidencePercent: closest === suggestion?.name ? suggestion?.confidencePercent : undefined,
+      modelVersion: suggestion?.modelVersion,
     });
 
-  const chooseCandidate = (candidate) =>
-    submitName(candidate.name, {
+  const typed = typedName.replace(/\s+/g, ' ').trim();
+  const saveTyped = async (event) => {
+    event.preventDefault();
+    if (!typed || busy) return;
+    await submitName(typed.slice(0, MAX_NAME_LENGTH), {
       source: 'user_choice',
-      modelVersion: suggestion.modelVersion,
+      modelVersion: suggestion?.modelVersion,
     });
+    setTypedName('');
+  };
 
   return (
     <Card className={styles.card}>
@@ -288,7 +302,6 @@ export const OutletCard = ({
           swapped outlet the detector has not managed to name. */}
       {showSwapHint ? (
         <div className={styles.swapHint}>
-          <span className={styles.swapHintIcon} aria-hidden="true">🔄</span>
           <p>
             Different appliance detected. Switch this outlet off and on to measure it on its
             own — otherwise this reading still includes the last one.
@@ -296,113 +309,56 @@ export const OutletCard = ({
         </div>
       ) : null}
 
-      {/* Suggestion-first: the detector proposes, the user confirms. Nothing
-          here renames anything on its own. */}
-      {/* `&& !unsupported` is belt-and-braces: the backend sets appliance to
-          null for an out-of-scope run, so suggestionPending should already be
-          false. Offering "This looks like X" directly under "Not something
-          Dagitab monitors" would contradict itself, so guard it here too. */}
-      {suggestion?.showBadge && !unsupported ? (
+      {/* The detector proposes, the user confirms - nothing here renames on its
+          own. `askName` is the out-of-catalogue case: no offer, just the field. */}
+      {suggestion?.showBadge && (!unsupported || suggestion.askName) ? (
         <div className={styles.suggestion}>
-          {trust.trusted ? (
-            <>
-              <div className={styles.suggestionHead}>
-                <span aria-hidden="true">💡</span>
+          {suggestion.askName ? (
+            <div className={styles.suggestionHead}>
+              <span>
+                Not in Dagitab&apos;s list · <strong>what is it?</strong>
+              </span>
+            </div>
+          ) : closest ? (
+            <div className={styles.offerRow}>
+              <span className={styles.suggestionHead}>
                 <span>
-                  This looks like <strong>{suggestion.name}</strong>
-                  {suggestion.confidencePercent != null
-                    ? ` (${suggestion.confidencePercent}% confident)`
-                    : ''}
+                  {trust.trusted ? 'Looks like ' : 'Not sure · closest: '}
+                  <strong>{closest}</strong>
                 </span>
-              </div>
+              </span>
+              <Button size="sm" onClick={acceptSuggestion} loading={busy}>
+                Use
+              </Button>
+            </div>
+          ) : null}
 
-              {suggestion.meanPowerW != null ? (
-                <p className={styles.suggestionMeta}>
-                  Measured about {suggestion.meanPowerW.toFixed(1)} W
-                  {suggestion.runtimeSeconds
-                    ? ` over ${Math.round(suggestion.runtimeSeconds / 60)} min`
-                    : ''}
-                  .
-                </p>
-              ) : null}
-
-              <div className={styles.suggestionActions}>
-                <Button size="sm" onClick={acceptSuggestion} loading={busy}>
-                  Use this name
-                </Button>
-              </div>
-            </>
-          ) : (
-            /*
-             * The detector answered, but not well enough for the answer to be
-             * presented as one. Naming a single leader here is what made an
-             * iPhone mid-charge read "Monitor · 50% confident" — a verdict the
-             * evidence did not support, over a load that was still being
-             * measured perfectly.
-             *
-             * No primary button in this branch. Offering "Use this name" under
-             * "Dagitab is not sure" contradicts itself, and the 50% leader has
-             * no more claim than the 45% behind it.
-             */
-            <>
-              <div className={styles.suggestionHead}>
-                <span aria-hidden="true">🤔</span>
-                <span>Dagitab is not sure what this is</span>
-              </div>
-
-              <p className={styles.suggestionMeta}>
-                {describeUncertainty({
+          {suggestion.meanPowerW != null ? (
+            <p className={styles.suggestionMeta}>
+              {trust.trusted || suggestion.askName
+                ? `Measured about ${suggestion.meanPowerW.toFixed(1)} W.`
+                : describeUncertainty({
                   varying: trust.varying,
                   swingW: trust.swingW,
                   meanPowerW: suggestion.meanPowerW,
                 })}
-              </p>
-            </>
-          )}
-
-          {suggestion.candidates?.length > 1 ? (
-            <div className={styles.candidates}>
-              <span className={styles.candidatesLabel}>
-                {trust.trusted ? 'Or:' : 'Closest matches:'}
-              </span>
-              {suggestion.candidates
-                /*
-                 * The leader is filtered out only when it has already been
-                 * offered above. Where nothing was offered it belongs in the
-                 * list like everything else — it is a candidate, not a verdict.
-                 */
-                .filter((candidate) => !trust.trusted || candidate.name !== suggestion.name)
-                .map((candidate) => (
-                  <button
-                    key={candidate.name}
-                    type="button"
-                    className={styles.candidate}
-                    onClick={() => chooseCandidate(candidate)}
-                    disabled={busy}
-                  >
-                    {candidate.name}
-                    {candidate.confidencePercent != null
-                      ? ` · ${candidate.confidencePercent}%`
-                      : ''}
-                  </button>
-                ))}
-            </div>
+            </p>
           ) : null}
 
-          {/*
-            The instruction that was missing at the moment it is needed.
-
-            The owner plugged in a ceiling fan, was offered LED Lamp, scanned the
-            list for "Ceiling Fan", did not find it, and asked whether picking
-            LED Lamp was allowed. It was — he did the right thing on instinct —
-            but nothing on screen said so, and hesitating there is the difference
-            between naming an appliance and abandoning the flow.
-          */}
-          <p className={styles.suggestionHint}>
-            Not one of these? Pick the closest anyway, then rename it under
-            Settings. Dagitab saves how <em>this</em> appliance draws power, not
-            the name it started from.
-          </p>
+          <form className={styles.typeRow} onSubmit={saveTyped}>
+            <input
+              className={styles.typeInput}
+              value={typedName}
+              onChange={(event) => setTypedName(event.target.value)}
+              placeholder={closest ? 'Or type the real name, e.g. Printer' : 'Type its name, e.g. Rice Cooker'}
+              maxLength={MAX_NAME_LENGTH}
+              disabled={busy}
+              aria-label="Appliance name"
+            />
+            <Button size="sm" variant="secondary" type="submit" disabled={!typed || busy}>
+              Save
+            </Button>
+          </form>
         </div>
       ) : (
         /* No suggestion to show. Nothing to offer either — naming happens by
@@ -429,12 +385,12 @@ export const OutletCard = ({
                  fact. applianceLine.js already guards this; this string was
                  written separately and did not. */
               : telemetryFresh === false && applianceName
-                ? `This outlet is named ${applianceName}. No readings are arriving, so nothing can be detected right now. Rename it under Settings → Learned appliances.`
+                ? `This outlet is named ${applianceName}. No readings are arriving, so nothing can be checked right now.`
               : !drawing && applianceName
-                ? `This outlet is named ${applianceName}. Nothing is drawing, so there is nothing to detect right now. Rename it under Settings → Learned appliances.`
+                ? `Last named ${applianceName}. Switch it on and Dagitab checks what is plugged in.`
                 : applianceName
-                  ? 'Rename it under Settings → Learned appliances.'
-                  : 'Run the appliance for a minute and Dagitab will suggest a name.'}
+                  ? 'Rename it under Settings → Saved appliances.'
+                  : 'Switch it on and Dagitab suggests a name, or asks what it is.'}
           </p>
         </div>
       )}

@@ -25,6 +25,7 @@ import { TextField } from '../components/ui/Field';
 import { Badge, Banner, EmptyState, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
 import settingsStyles from './SettingsPage.module.css';
+import { formatLastSeen } from '../components/settings/lastSeen';
 
 const HEALTH_TONE = {
   online: 'good',
@@ -358,12 +359,12 @@ export const SettingsPage = () => {
 
           <Card>
             <CardHeader
-              title="Learned appliances"
-              subtitle="Signatures Dagitab matches future runs against."
+              title="Saved appliances"
+              subtitle="Named once, recognised by themselves on either outlet."
             />
             {savedAppliances.length === 0 ? (
               <EmptyState icon="🧠" title="Nothing learned yet">
-                Confirm a detection suggestion while an appliance is running and its signature is
+                Name an appliance while it is running - pick the suggestion or type it - and it is
                 saved here.
               </EmptyState>
             ) : (
@@ -376,6 +377,7 @@ export const SettingsPage = () => {
                         <span className="ww-num">{appliance.meanPower.toFixed(1)} W</span> average ·
                         peak <span className="ww-num">{appliance.peakPower.toFixed(1)} W</span>
                       </p>
+                      <p className={styles.muted}>{formatLastSeen(appliance.lastSeen)}</p>
                     </div>
                     <div className={styles.row}>
                       <Button

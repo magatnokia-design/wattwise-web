@@ -75,7 +75,7 @@ test('the hair dryer: a fresh run does not inherit the last one\'s name', () => 
    */
   const result = line({ applianceName: "Nokia's Fan", identity: null });
 
-  assert.equal(result.text, 'Detecting…');
+  assert.equal(result.text, 'Checking…');
   assert.notEqual(result.text, "Nokia's Fan");
 });
 
@@ -117,7 +117,7 @@ test('unsupported outranks changed', () => {
     scope: { unsupported: true, unsupportedReason: 'no_match' },
   });
 
-  assert.equal(result.text, 'Not something Dagitab monitors');
+  assert.equal(result.text, 'New appliance');
   assert.equal(result.tone, 'unsupported');
 });
 
@@ -180,15 +180,15 @@ test('over-power survives an absent identity, which is its normal state', () => 
     scope: { unsupported: true, unsupportedReason: 'over_power', measuredPowerW: 900 },
   });
 
-  assert.notEqual(result.text, 'Detecting…');
+  assert.notEqual(result.text, 'Checking…');
   assert.equal(result.tone, 'unsupported');
 });
 
-test('no_match keeps the original wording, and a missing wattage does not print NaN', () => {
+test('no_match reads New appliance (nameable since Oct 2026), and a missing wattage does not print NaN', () => {
   const noMatch = line({
     scope: { unsupported: true, unsupportedReason: 'no_match' },
   });
-  assert.equal(noMatch.text, 'Not something Dagitab monitors');
+  assert.equal(noMatch.text, 'New appliance');
 
   // measuredPowerW is only written on the over-power case, so the other branch
   // must not assume it.
@@ -218,7 +218,7 @@ test('a verdict about a name the outlet no longer wears is not used', () => {
     identity: { state: 'changed', namedAs: 'LED LAMP' },
   });
 
-  assert.equal(result.text, 'Detecting…');
+  assert.equal(result.text, 'Checking…');
 });
 
 test('name comparison ignores case and surrounding space', () => {
@@ -232,7 +232,7 @@ test('name comparison ignores case and surrounding space', () => {
 
 test('an unnamed outlet mid-run is still detecting', () => {
   const result = line({ applianceName: '', identity: { state: 'unnamed', namedAs: '' } });
-  assert.equal(result.text, 'Detecting…');
+  assert.equal(result.text, 'Checking…');
 });
 
 test('unsupported wins even before the outlet has a name', () => {
@@ -244,5 +244,15 @@ test('unsupported wins even before the outlet has a name', () => {
     scope: { unsupported: true, unsupportedReason: 'no_match' },
   });
 
-  assert.equal(result.text, 'Not something Dagitab monitors');
+  assert.equal(result.text, 'New appliance');
+});
+
+test('a saved appliance past the catalogue keeps its confirmed name', () => {
+  // The user's own 302 W hair dryer, named once, recognised as itself.
+  const result = line({
+    applianceName: 'Hairdryer',
+    identity: { state: 'confirmed', namedAs: 'Hairdryer' },
+    scope: { unsupported: true, unsupportedReason: 'no_match' },
+  });
+  assert.equal(result.text, 'Hairdryer');
 });
