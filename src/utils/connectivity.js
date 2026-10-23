@@ -65,6 +65,27 @@ export const isConnectivityError = (failure) => {
 };
 
 /**
+ * Whether a service result represents a read that could not be performed.
+ *
+ * A document that is genuinely absent reports `notFound`, and that is an
+ * answer - a new account really does have no outlet documents yet. Anything
+ * else that failed is an absence of information, not information.
+ */
+export const isFailedRead = (result) =>
+  !!result && !result.success && !result.notFound;
+
+/**
+ * Whether a pair of document reads both failed to happen.
+ *
+ * `getAllOutlets` reads two documents and used to report `success: true`
+ * whatever came back, mapping failures to null. Offline that is a confident
+ * claim that the account has no outlets, which the Dashboard draws as "Link
+ * your Dagitab unit" and Settings as "Not linked".
+ */
+export const bothReadsFailed = (first, second) =>
+  isFailedRead(first) && isFailedRead(second);
+
+/**
  * Whether an empty result means "nothing there" or "I don't know".
  *
  * This is the whole fix, and the asymmetry behind it is a Firestore behaviour

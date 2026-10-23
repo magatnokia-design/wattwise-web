@@ -60,4 +60,64 @@ export const deriveOutletRuntimeState = (outlet = {}, nowMs = Date.now()) => {
   };
 };
 
+/**
+ * Whether the backend has confirmed this outlet's relay stopped opening.
+ *
+ * Written by relayFault.js on the telemetry path, which is the only place that
+ * can see it: the device reports the relay position from its own bookkeeping,
+ * so a welded contact reports `off` while the meter beside it reads 15 W. Read
+ * here rather than re-derived, because confirming it needs a 30-second history
+ * the client does not keep.
+ *
+ * @param {object} outlet Raw outlet document.
+ * @returns {boolean}
+ */
+export const isRelayStuck = (outlet = {}) =>
+  String(outlet?.relayFault?.state || '').trim() === 'stuck_closed';
+
+/**
+ * Which way a command in flight is moving, or null if nothing is in flight.
+ *
+ * Same two rules liveUsage.js applies, because the dashboard card and the
+ * live-appliance rows read the same documents and must not disagree about
+ * whether a relay is mid-move. Kept here rather than in liveUsage.js only
+ * because this hook derives `isOn` differently - it folds in the optimistic
+ * override, so the card can say "Switching off..." on the tap rather than one
+ * round trip later.
+ *
+ * @param {object} outlet Raw outlet document.
+ * @param {object} args
+ * @param {boolean} args.isOn      Effective commanded state, optimistic override included.
+ * @param {boolean} args.isDrawing Fresh reading above the load floor.
+ * @param {number} args.nowMs
+ * @returns {'on'|'off'|null}
+ */
+export const resolveSwitchingTo = (outlet = {}, { isOn, isDrawing, nowMs = Date.now() } = {}) => {
+  // A relay the backend has confirmed will not open is not mid-transition, and
+  // saying "Switching off..." about it is the failure this whole path exists to
+  // avoid - an indefinite transition reads as patience required rather than as
+  // an outlet nobody can switch. resolveOutletBadge answers this case itself.
+  if (isRelayStuck(outlet)) return null;
+
+  // Keyed on the contradiction itself, not on a pending marker: an auto-cutoff
+  // opens no pending window, so a card would otherwise read "Off" beside a fan
+  // that is still turning. Current flowing through an outlet the document calls
+  // off cannot be a resting state whatever caused it.
+  if (!isOn && isDrawing) return 'off';
+
+  // The `on` direction has no contradiction to key on - an outlet switched on
+  // with nothing plugged in is perfectly ordinary - so only the pending window
+  // separates a relay that has yet to close from an empty outlet. Deliberately
+  // NOT keyed on the local optimistic override as well: that clears on the next
+  // snapshot, but if none ever arrived the card would sit claiming a transition
+  // forever, which is the failure this window exists to bound.
+  const pendingStatus = String(outlet.pendingStatus || '').trim().toLowerCase();
+  const pendingUntilMs = toMetricNumber(outlet.pendingStatusUntilMs);
+  const isPendingOn = pendingStatus === 'on' && pendingUntilMs > nowMs;
+
+  if (isPendingOn && !isDrawing) return 'on';
+
+  return null;
+};
+
 export { LIVE_POWER_THRESHOLD_W };

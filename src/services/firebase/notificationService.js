@@ -41,8 +41,8 @@ export const notificationService = {
       });
 
       // Nothing, from a cache that was never filled, is not the same as
-      // nothing. Without this the page said "Nothing yet" to a user whose
-      // unread alerts simply had not been fetched.
+      // nothing. Without this the panel said "You're all caught up" to a user
+      // whose unread alerts simply had not been fetched.
       if (isUnconfirmedEmpty(notifications.length, snapshot.metadata)) {
         return UNREACHABLE_READ_RESULT;
       }
@@ -90,11 +90,11 @@ export const notificationService = {
         snapshot.forEach((doc) => {
           notifications.push({ id: doc.id, ...doc.data() });
         });
-
-        // A listener never errors when the connection drops - it keeps serving
-        // the local cache and marks the snapshot. Passing the metadata on is
-        // the only way the caller can tell an empty account from an empty
-        // cache.
+        // A listener does not raise an error when the network drops - it goes
+        // on serving the local cache and marks the snapshot. `getNotifications`
+        // above already guards its own empty result; this is the path the panel
+        // actually uses, so the metadata has to reach the caller too or an
+        // unread collection is indistinguishable from an empty one.
         onUpdate(notifications, snapshot.metadata);
       },
       (error) => {
@@ -118,7 +118,9 @@ export const notificationService = {
     return onSnapshot(
       q,
       (snapshot) => {
-        onUpdate(snapshot.size);
+        // Same reason as above: an unread count of zero read from an empty
+        // cache is not a count, and "All read" is drawn from it.
+        onUpdate(snapshot.size, snapshot.metadata);
       },
       (error) => {
         console.error('Error in unread count listener:', error);
