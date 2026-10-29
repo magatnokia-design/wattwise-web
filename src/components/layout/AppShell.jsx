@@ -63,6 +63,7 @@ const PAGE_TITLES = {
   '/safety': 'Power Safety',
   '/budget': 'Budget',
   '/comparison': 'Compare Months',
+  '/appliance-costs': 'Appliance Costs',
   '/notifications': 'Notifications',
   '/settings': 'Settings',
 };

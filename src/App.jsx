@@ -20,6 +20,7 @@ import SchedulePage from './pages/SchedulePage';
 import SafetyPage from './pages/SafetyPage';
 import BudgetPage from './pages/BudgetPage';
 import ComparisonPage from './pages/ComparisonPage';
+import ApplianceCostsPage from './pages/ApplianceCostsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
 import HelpPage from './pages/HelpPage';
@@ -161,6 +162,8 @@ export const App = () => (
         <Route path="safety" element={<SafetyPage />} />
         <Route path="budget" element={<BudgetPage />} />
         <Route path="comparison" element={<ComparisonPage />} />
+        {/* Opened from Analytics' Appliance costs block. */}
+        <Route path="appliance-costs" element={<ApplianceCostsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="help" element={<HelpPage />} />

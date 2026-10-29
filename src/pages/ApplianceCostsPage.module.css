@@ -1,0 +1,163 @@
+/* Appliance costs (Oct 2026): the rate, saved appliances, the calculator. */
+.rate {
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  border-radius: var(--ww-radius);
+  background: var(--ww-tint-success);
+}
+
+.rateValue {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--ww-primary-dark);
+  font-variant-numeric: tabular-nums;
+}
+
+.rateValue small {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rateText {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ww-text);
+  max-width: 62ch;
+}
+
+.appliance {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 4px;
+  border: 0;
+  border-top: 1px solid var(--ww-border);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.appliance:first-child {
+  border-top: 0;
+}
+
+.appliance:hover,
+.applianceActive {
+  background: var(--ww-bg);
+}
+
+.applianceText {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.applianceName {
+  font-weight: 600;
+  color: var(--ww-text-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.applianceDetail {
+  font-size: 12.5px;
+  color: var(--ww-text-light);
+}
+
+.perHour {
+  display: grid;
+  justify-items: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.perHour strong {
+  color: var(--ww-text-dark);
+}
+
+.perHour span {
+  font-size: 11.5px;
+  color: var(--ww-text-light);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.chip {
+  max-width: 220px;
+  padding: 6px 12px;
+  border: 1px solid var(--ww-border);
+  border-radius: 999px;
+  background: var(--ww-white);
+  color: var(--ww-text-dark);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.chipActive {
+  border-color: var(--ww-primary);
+  background: var(--ww-primary);
+  color: var(--ww-white);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.results {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.result {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  padding: 12px 8px;
+  border-radius: var(--ww-radius-sm);
+  background: var(--ww-bg);
+  font-variant-numeric: tabular-nums;
+}
+
+.result span {
+  font-size: 12px;
+  color: var(--ww-text-light);
+}
+
+.result strong {
+  font-size: 18px;
+  color: var(--ww-text-dark);
+}
+
+.resultStrong strong {
+  color: var(--ww-primary-dark);
+}
+
+.note {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--ww-text-light);
+}
+
+@media (max-width: 480px) {
+  .results {
+    grid-template-columns: 1fr;
+  }
+}

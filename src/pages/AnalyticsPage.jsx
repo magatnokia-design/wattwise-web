@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useLiveOutlets } from '../hooks/useLiveOutlets';
+import { foldApplianceRows, priceByEnergyShare } from '../utils/applianceBreakdown';
 import { useAnalytics, ANALYTICS_TABS } from '../hooks/useAnalytics';
 import { formatCurrency } from '../screens/BudgetTracking/utils/budgetHelpers';
 import { Card, CardHeader } from '../components/ui/Card';
@@ -100,10 +102,19 @@ export const AnalyticsPage = () => {
 
   const outletTotal = (Number(summary.outlet1Total) || 0) + (Number(summary.outlet2Total) || 0);
   const share = (kwh) => (outletTotal > 0 ? Math.round(((Number(kwh) || 0) / outletTotal) * 100) : 0);
-  const appliances = [...(summary.applianceUsage || [])]
-    .filter((row) => Number(row.energyKwh) > 0)
-    .sort((a, b) => b.energyKwh - a.energyKwh)
-    .slice(0, 5);
+  /*
+   * The period's cost split by energy share - the statement's rule, and the
+   * phone's Appliance costs card (Oct 2026). The rows used to show each
+   * appliance's stored daily costs summed, which are marginal by design and
+   * leave out the monthly metering charge, so on Monthly they did not add up
+   * to the cost in the hero above them. Folded rather than sliced, so a sixth
+   * appliance is an "Other" row instead of vanishing from the total.
+   */
+  const appliances = priceByEnergyShare(
+    foldApplianceRows(summary.applianceUsage || [], 5),
+    summary.totalCost,
+    summary.totalEnergy
+  );
   const usedDays = series.filter((point) => Number(point.total) > 0).length;
 
   return (
@@ -216,13 +227,13 @@ export const AnalyticsPage = () => {
       </div>
 
       <div className={styles.pair}>
-        <Section title="Top appliances" plain>
+        <Section title="Appliance costs" plain>
           <Card>
             {appliances.length === 0 ? (
               <p className={styles.muted}>Name an appliance while it runs and it appears here.</p>
             ) : (
               appliances.map((row) => {
-                const pct = summary.totalEnergy > 0 ? Math.round((row.energyKwh / summary.totalEnergy) * 100) : 0;
+                const pct = Math.round(row.share * 100);
                 return (
                   <div key={row.applianceName} className={analyticsStyles.split}>
                     <div className={analyticsStyles.splitHead}>
@@ -236,6 +247,15 @@ export const AnalyticsPage = () => {
                 );
               })
             )}
+            {appliances.length > 0 ? (
+              <p className={styles.muted} style={{ fontSize: 12.5 }}>
+                The period&apos;s cost split by each appliance&apos;s share of the energy - the same
+                split your statement uses.
+              </p>
+            ) : null}
+            <Link to="/appliance-costs" className={styles.linkButton}>
+              Cost per hour &amp; calculator →
+            </Link>
           </Card>
         </Section>
 
