@@ -21,7 +21,6 @@ import { TextField } from '../components/ui/Field';
 import { Badge, Banner, Spinner } from '../components/ui/Feedback';
 import styles from './page.module.css';
 import settingsStyles from './SettingsPage.module.css';
-import { formatLastSeen } from '../components/settings/lastSeen';
 import { Section, Row, RowButton } from '../components/ui/ListSection';
 import { PageHero } from '../components/ui/PageHero';
 
@@ -347,7 +346,6 @@ export const SettingsPage = () => {
               key={appliance.label}
               icon={applianceIconName(appliance.label)}
               label={appliance.label}
-              subtitle={formatLastSeen(appliance.lastSeen)}
               value={`~${appliance.meanPower.toFixed(0)} W`}
               action={(
                 <>
