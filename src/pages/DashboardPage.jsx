@@ -148,8 +148,14 @@ export const DashboardPage = () => {
     setConfirmToggle({ number: outletNumber, nextStatus });
   };
 
+  // The card blocks opening this while the Hub is silent; this covers the Hub
+  // going quiet while the dialog is already open.
+  const confirmHubOffline = confirmToggle
+    ? !(confirmToggle.number === 1 ? outlet1HasReading : outlet2HasReading)
+    : false;
+
   const runToggle = async () => {
-    if (!confirmToggle) return;
+    if (!confirmToggle || confirmHubOffline) return;
     const { number, nextStatus } = confirmToggle;
     setConfirmToggle(null);
     setToggleError('');
@@ -324,7 +330,7 @@ export const DashboardPage = () => {
       */}
       {!telemetryFresh ? (
         <Banner tone="warn" title="No readings from the Hub.">
-          Check its power and Wi-Fi. Switching may not work until it is back.
+          Check its power and Wi-Fi. Outlets can be switched again once it is back.
         </Banner>
       ) : null}
       <Modal
@@ -335,7 +341,11 @@ export const DashboardPage = () => {
         footer={(
           <>
             <Button variant="secondary" onClick={() => setConfirmToggle(null)}>Cancel</Button>
-            <Button variant={confirmToggle?.nextStatus ? 'primary' : 'danger'} onClick={runToggle}>
+            <Button
+              variant={confirmToggle?.nextStatus ? 'primary' : 'danger'}
+              onClick={runToggle}
+              disabled={confirmHubOffline}
+            >
               Turn {confirmVerb}
             </Button>
           </>
@@ -347,8 +357,8 @@ export const DashboardPage = () => {
               ? `This will turn on ${confirmName || `Outlet ${confirmToggle?.number}`} and start using power.`
               : `This will turn off ${confirmName || `Outlet ${confirmToggle?.number ?? ''}`} and cut its power.`}
           </p>
-          {!telemetryFresh ? (
-            <Banner tone="warn">The Hub may be offline, so this may not work.</Banner>
+          {confirmHubOffline ? (
+            <Banner tone="warn">The Hub went offline. Try again when it is back.</Banner>
           ) : null}
         </div>
       </Modal>

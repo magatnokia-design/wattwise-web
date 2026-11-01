@@ -481,3 +481,20 @@
 .toggleOff:hover:not(:disabled) {
   background: #fee2e2;
 }
+
+/* Hub offline: not a dimmed Turn on/off, which reads as "loading". */
+.toggleBlocked,
+.toggleBlocked:disabled {
+  border: 1px solid var(--ww-border);
+  background: var(--ww-bg, #f3f5f4);
+  color: var(--ww-text-light);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.toggleNote {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--ww-text-light);
+  text-align: center;
+}

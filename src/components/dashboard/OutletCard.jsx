@@ -365,16 +365,35 @@ export const OutletCard = ({
         </div>
       ) : null}
 
-      <button
-        type="button"
-        className={`${styles.toggle} ${isOn ? styles.toggleOff : styles.toggleOn}`}
-        onClick={() => onToggle(!isOn)}
-        disabled={disabled}
-        aria-label={`Turn ${fallbackLabel} ${isOn ? 'off' : 'on'}`}
-      >
-        <Icon name="power-outline" />
-        {switching === 'on' ? 'Turning on…' : switching === 'off' ? 'Turning off…' : isOn ? 'Turn off' : 'Turn on'}
-      </button>
+      {/* No switching while the Hub is silent (Nov 2026), as on the phone: the
+          command would time out after about a minute, and a Hub back inside
+          that minute would switch the outlet late with nobody watching. A
+          switch already in flight keeps its button. */}
+      {telemetryFresh === false && !switching ? (
+        <>
+          <button
+            type="button"
+            className={`${styles.toggle} ${styles.toggleBlocked}`}
+            disabled
+            aria-label={`${fallbackLabel}: Hub offline, can't switch`}
+          >
+            <Icon name="cloud-offline-outline" />
+            Hub offline
+          </button>
+          <p className={styles.toggleNote}>Can&apos;t switch while the Hub is offline.</p>
+        </>
+      ) : (
+        <button
+          type="button"
+          className={`${styles.toggle} ${isOn ? styles.toggleOff : styles.toggleOn}`}
+          onClick={() => onToggle(!isOn)}
+          disabled={disabled}
+          aria-label={`Turn ${fallbackLabel} ${isOn ? 'off' : 'on'}`}
+        >
+          <Icon name="power-outline" />
+          {switching === 'on' ? 'Turning on…' : switching === 'off' ? 'Turning off…' : isOn ? 'Turn off' : 'Turn on'}
+        </button>
+      )}
     </Card>
   );
 };
