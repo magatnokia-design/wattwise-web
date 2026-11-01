@@ -95,8 +95,8 @@ test('an invoice keeps its currency and its unit', () => {
 test('the overpower cutoff still explains itself', () => {
   const item = { metadata: { powerW: 512.4, limitW: 500, type: 'outlet_overpower' } };
 
-  assert.deepEqual(labels(item), ['Draw', 'Cut-off limit']);
-  assert.equal(value(item, 'Cut-off limit'), '500.0 W');
+  assert.deepEqual(labels(item), ['Draw', 'Shut-off limit']);
+  assert.equal(value(item, 'Shut-off limit'), '500.0 W');
 });
 
 test('the budget alert is unchanged', () => {

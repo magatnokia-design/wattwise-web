@@ -140,15 +140,31 @@ export const DashboardPage = () => {
 
   const [toggleError, setToggleError] = useState('');
 
-  const handleToggle = (outletNumber) => async (nextStatus) => {
+  // Asked first, as the phone's OutletControlModal does (Nov 2026): the button
+  // switches mains, and a stray click on a large web button should not.
+  const [confirmToggle, setConfirmToggle] = useState(null);
+
+  const handleToggle = (outletNumber) => (nextStatus) => {
+    setConfirmToggle({ number: outletNumber, nextStatus });
+  };
+
+  const runToggle = async () => {
+    if (!confirmToggle) return;
+    const { number, nextStatus } = confirmToggle;
+    setConfirmToggle(null);
     setToggleError('');
     // useOutletControl moves the switch before awaiting, and puts it back if
     // this fails. Do not gate the UI on the result.
-    const result = await toggleOutlet(outletNumber, nextStatus);
+    const result = await toggleOutlet(number, nextStatus);
     if (!result.success) {
       setToggleError(result.error || 'Could not reach the outlet. Try again.');
     }
   };
+
+  const confirmName = confirmToggle
+    ? (confirmToggle.number === 1 ? outlet1ApplianceName : outlet2ApplianceName)
+    : '';
+  const confirmVerb = confirmToggle?.nextStatus ? 'on' : 'off';
 
   const handleRename = (outletNumber) => async (name, options) => {
     const result = await updateApplianceName(outletNumber, name, options);
@@ -308,9 +324,34 @@ export const DashboardPage = () => {
       */}
       {!telemetryFresh ? (
         <Banner tone="warn" title="No readings from the Hub.">
-          Check its power and Wi-Fi. Toggles made here are sent when it reports again.
+          Check its power and Wi-Fi. Switching may not work until it is back.
         </Banner>
       ) : null}
+      <Modal
+        open={!!confirmToggle}
+        onClose={() => setConfirmToggle(null)}
+        title={`Turn ${confirmVerb} Outlet ${confirmToggle?.number ?? ''}?`}
+        width={400}
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setConfirmToggle(null)}>Cancel</Button>
+            <Button variant={confirmToggle?.nextStatus ? 'primary' : 'danger'} onClick={runToggle}>
+              Turn {confirmVerb}
+            </Button>
+          </>
+        )}
+      >
+        <div className={styles.stack}>
+          <p className={styles.muted}>
+            {confirmToggle?.nextStatus
+              ? `This will turn on ${confirmName || `Outlet ${confirmToggle?.number}`} and start using power.`
+              : `This will turn off ${confirmName || `Outlet ${confirmToggle?.number ?? ''}`} and cut its power.`}
+          </p>
+          {!telemetryFresh ? (
+            <Banner tone="warn">The Hub may be offline, so this may not work.</Banner>
+          ) : null}
+        </div>
+      </Modal>
       {/* Rename or forget the running appliance, as the phone's pencil does
           (Oct 2026). Forget clears the outlet's name and the saved signature,
           so Dagitab asks again the next time it runs. */}
@@ -348,7 +389,7 @@ export const DashboardPage = () => {
           ) : (
             <p className={styles.muted}>
               {manage?.mode === 'forget'
-                ? `Outlet ${manage?.number} goes back to unnamed, and the power pattern saved as ${manage?.name} is deleted.`
+                ? `Dagitab will forget ${manage?.name}.`
                 : 'Rename it, or forget it - Dagitab then asks again the next time it runs.'}
             </p>
           )}
