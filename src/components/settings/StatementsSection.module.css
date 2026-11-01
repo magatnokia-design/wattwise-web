@@ -1,0 +1,33 @@
+.message {
+  padding: var(--ww-space-2) 0;
+}
+
+/* Same footprint as a RowButton, so rows line up while one is sending and on
+   the current month, which has no email button. */
+.sending,
+.placeholder {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+}
+
+.sending > div {
+  padding: 0;
+}
+
+.note {
+  margin: 0;
+  padding: 0 var(--ww-space-4) var(--ww-space-3);
+  font-size: 12.5px;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.noteGood {
+  color: var(--ww-primary-dark);
+}
+
+.noteBad {
+  color: var(--ww-error);
+}

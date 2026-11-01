@@ -1,18 +1,19 @@
 import { collection, doc, getDoc, getDocs, limit, orderBy, query } from 'firebase/firestore';
-import { db } from './config';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from './config';
 
 /**
- * Monthly statements, read-only.
+ * Monthly statements: read, and emailed again on request.
  *
  * These documents are written entirely server-side - `processMonthlyInvoice`
  * builds one when a period closes and `finalizeInvoice` rewrites it with the
  * official PELCO III rates - and Firestore rules make the collection read-only
  * to clients (`allow write: if false`).
  *
- * The web client has no statements screen; finalizing a month is done from the
- * phone app. This exists so Compare Usage can show a finalized month at the
- * figure it was actually billed, rather than recomputing an estimate that the
- * emailed statement then contradicts.
+ * Settings lists them (Nov 2026: months finalize themselves since Oct, so the
+ * site no longer needs the phone for them). Finalizing a month by hand with a
+ * different rate is still done from the phone app. Compare Usage reads them too,
+ * so a finalized month shows the figure it was actually billed.
  */
 export const invoiceService = {
   /**
@@ -75,6 +76,22 @@ export const invoiceService = {
       return { success: true, data: { ...snapshot.data(), billingMonth: snapshot.id } };
     } catch (error) {
       console.error('Error getting invoice:', error);
+      return { success: false, error: error.message, code: error.code };
+    }
+  },
+
+  /**
+   * Emails one month's statement again, PDF attached - the phone's resendStatement.
+   * The server refuses a month still open and throttles to one per minute; both
+   * come back as ordinary failures in the server's own words.
+   */
+  resendStatement: async (billingMonth) => {
+    try {
+      const callable = httpsCallable(functions, 'sendInvoiceEmail');
+      const result = await callable({ billingMonth });
+      return { success: true, data: result?.data || null };
+    } catch (error) {
+      console.error('Error re-sending statement:', error);
       return { success: false, error: error.message, code: error.code };
     }
   },

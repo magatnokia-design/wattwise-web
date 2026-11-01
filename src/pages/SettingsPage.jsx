@@ -13,6 +13,7 @@ import {
   sumSupplyRates,
 } from '../utils/billing';
 import SecurityActivityCard from '../components/settings/SecurityActivityCard';
+import StatementsSection from '../components/settings/StatementsSection';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from '../components/ui/Button';
 import { Switch } from '../components/ui/Switch';
@@ -320,6 +321,8 @@ export const SettingsPage = () => {
           onClick={() => setRateOpen(true)}
         />
       </Section>
+
+      <StatementsSection userId={user?.uid} />
 
       <Section title="Dagitab Hub">
         <Row
