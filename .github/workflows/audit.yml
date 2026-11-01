@@ -23,11 +23,21 @@ jobs:
         with:
           node-version: '20'
 
-      # This is the client people load in a browser, and it currently reports
-      # zero advisories at any level - so the gate is set where it actually is
-      # rather than somewhere looser it could drift down to unnoticed.
-      - name: Audit
-        run: npm audit --audit-level=moderate
+      # What ships: the production dependencies, which are what people load in
+      # a browser. They report zero advisories at any level, so the gate sits
+      # where it actually is rather than somewhere looser it could drift to.
+      - name: Audit (shipped dependencies)
+        run: npm audit --omit=dev --audit-level=moderate
+
+      # Everything, developer tools included, still at moderate - but through
+      # audit-gate.cjs, which excuses individual advisories BY ID from
+      # audit-allowlist.json, each with its reason. Added 1 Nov 2026 for one:
+      # a moderate minimatch advisory (GHSA-g3hv-75wg-m249) reached only through
+      # eslint 9, which failed every push with npm's only "fix" a downgrade to
+      # eslint 4. Any other advisory fails exactly as plain npm audit would, and
+      # the gate warns once the excuse stops matching so it can be removed.
+      - name: Audit (all dependencies, reviewed allowlist)
+        run: node scripts/audit-gate.cjs --level moderate --allowlist audit-allowlist.json
 
       - name: Full report (informational)
         if: always()

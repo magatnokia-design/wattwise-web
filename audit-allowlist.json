@@ -1,0 +1,12 @@
+{
+  "//": "Read by scripts/audit-gate.cjs. Each entry excuses ONE advisory by ID, with the reason it cannot reach what users load and the condition for removing it. Keep it short: an allowlist that grows is a gate that has been switched off.",
+  "allow": [
+    {
+      "id": "GHSA-g3hv-75wg-m249",
+      "package": "minimatch",
+      "reason": "Moderate DoS in glob matching, reached only through eslint 9 (@eslint/config-array, @eslint/eslintrc), a developer tool that never ships in the bundle. npm's only offered fix is a downgrade to eslint 4.",
+      "added": "2026-11-01",
+      "remove_when": "eslint depends on minimatch >= 11.0.1 - the gate warns when this entry stops matching."
+    }
+  ]
+}
